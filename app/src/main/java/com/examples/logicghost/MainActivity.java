@@ -96,10 +96,10 @@ public class MainActivity extends AppCompatActivity {
     private PreviewView previewView;
     private ImageButton btnCapture;
 
-    private Button btnRestoreHud, btnQuickResult;
+    private View btnRestoreHud, btnQuickResult;
     private LinearLayout layoutResponseContainer, layoutCheckMode, layoutCompareMode, layoutTypeMode;
     private TextView tvTagHeader, tvResultDuration, tvVoicePayload, tvCheckSelected, tvCompareBest, tvCompareReason, tvCodePayload;
-    private Button btnMaximizeResult, btnCloseResult, btnCopyResult;
+    private TextView btnMaximizeResult, btnCloseResult, btnCopyResult;
     private Button btnTypeDirect, btnTypeBluetooth;
 
     private boolean isResultMaximized = false;
@@ -208,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Toggle Top HUD Collapse/Show
-        Button btnToggleHud = findViewById(R.id.btnToggleHud);
+        View btnToggleHud = findViewById(R.id.btnToggleHud);
         if (btnToggleHud != null) {
             btnToggleHud.setOnClickListener(v -> {
                 layoutTopHud.setVisibility(View.GONE);
@@ -224,19 +224,19 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 1-Click History Button
-        Button btnHistory = findViewById(R.id.btnHistory);
+        View btnHistory = findViewById(R.id.btnHistory);
         if (btnHistory != null) {
             btnHistory.setOnClickListener(v -> showHistoryDialog());
         }
 
         // 1-Click USB Tethering Button
-        Button btnUsbTether = findViewById(R.id.btnUsbTether);
+        View btnUsbTether = findViewById(R.id.btnUsbTether);
         if (btnUsbTether != null) {
             btnUsbTether.setOnClickListener(v -> openUsbTetheringSettings());
         }
 
         // 1-Click Setup Guide Button
-        Button btnGuide = findViewById(R.id.btnGuide);
+        View btnGuide = findViewById(R.id.btnGuide);
         if (btnGuide != null) {
             btnGuide.setOnClickListener(v -> showSetupGuideDialog(false));
         }

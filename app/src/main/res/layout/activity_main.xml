@@ -29,14 +29,15 @@
         android:layout_height="wrap_content"
         android:layout_gravity="top"
         android:orientation="vertical"
-        android:background="#DD070A12"
+        android:background="#E0070A12"
         android:paddingHorizontal="12dp"
-        android:paddingVertical="6dp">
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
 
         <!-- Top Bar Row 1: Brand, Status, and Action Icons -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="32dp"
+            android:layout_height="36dp"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
@@ -47,72 +48,83 @@
                 android:textColor="#00F0FF"
                 android:textSize="12sp"
                 android:textStyle="bold"
-                android:letterSpacing="0.08"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.06"
                 android:layout_marginEnd="8dp"/>
 
             <!-- Compact URL Input Pill -->
             <EditText
                 android:id="@+id/etServerUrl"
                 android:layout_width="0dp"
-                android:layout_height="26dp"
+                android:layout_height="32dp"
                 android:layout_weight="1"
                 android:background="#202A3C"
                 android:textColor="#00FF88"
                 android:text="http://127.0.0.1:5000"
                 android:hint="http://127.0.0.1:5000"
                 android:textColorHint="#627D98"
-                android:paddingHorizontal="8dp"
-                android:textSize="10sp"
+                android:paddingHorizontal="10dp"
+                android:textSize="11sp"
+                android:gravity="center_vertical"
+                android:includeFontPadding="false"
                 android:inputType="textUri"
                 android:singleLine="true"
                 android:layout_marginEnd="6dp"/>
 
-            <!-- 1-Click History Button -->
-            <Button
+            <!-- 1-Click History Icon Button -->
+            <TextView
                 android:id="@+id/btnHistory"
-                android:layout_width="wrap_content"
-                android:layout_height="26dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:text="⏱️"
-                android:textColor="#00F0FF"
-                android:background="#202A3C"
-                android:textSize="10sp"
-                android:paddingHorizontal="6dp"
-                android:layout_marginEnd="4dp"/>
+                android:textSize="13sp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:background="@drawable/btn_pill_cyber"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginEnd="5dp"/>
 
-            <!-- 1-Click USB Tethering Button -->
-            <Button
+            <!-- 1-Click USB Tethering Icon Button -->
+            <TextView
                 android:id="@+id/btnUsbTether"
-                android:layout_width="wrap_content"
-                android:layout_height="26dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:text="🔌"
-                android:textColor="#00F0FF"
-                android:background="#202A3C"
-                android:textSize="10sp"
-                android:paddingHorizontal="6dp"
-                android:layout_marginEnd="4dp"/>
+                android:textSize="13sp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:background="@drawable/btn_pill_cyber"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginEnd="5dp"/>
 
-            <!-- 1-Click Setup Guide Button -->
-            <Button
+            <!-- 1-Click Setup Guide Icon Button -->
+            <TextView
                 android:id="@+id/btnGuide"
-                android:layout_width="wrap_content"
-                android:layout_height="26dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:text="❓"
-                android:textColor="#00FF88"
-                android:background="#202A3C"
-                android:textSize="10sp"
-                android:paddingHorizontal="6dp"
-                android:layout_marginEnd="4dp"/>
+                android:textSize="13sp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:background="@drawable/btn_pill_cyber"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginEnd="5dp"/>
 
             <!-- 1-Click Collapse / Hide HUD Button -->
-            <Button
+            <TextView
                 android:id="@+id/btnToggleHud"
-                android:layout_width="wrap_content"
-                android:layout_height="26dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:text="👁️"
-                android:textColor="#94A3B8"
-                android:background="#202A3C"
-                android:textSize="10sp"
-                android:paddingHorizontal="6dp"/>
+                android:textSize="13sp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:background="@drawable/btn_pill_cyber"
+                android:clickable="true"
+                android:focusable="true"/>
 
         </LinearLayout>
 
@@ -122,7 +134,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginTop="3dp">
+            android:layout_marginTop="5dp">
 
             <TextView
                 android:id="@+id/tvStatus"
@@ -131,32 +143,34 @@
                 android:layout_weight="1"
                 android:text="READY • ZERO-CONFIG USB"
                 android:textColor="#38BDF8"
-                android:textSize="9sp"
+                android:textSize="10sp"
+                android:includeFontPadding="false"
                 android:textStyle="bold"/>
 
             <!-- Server Status Pill -->
             <LinearLayout
                 android:id="@+id/cardServerStatus"
                 android:layout_width="wrap_content"
-                android:layout_height="20dp"
+                android:layout_height="22dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="#151E2E"
-                android:paddingHorizontal="6dp"
+                android:paddingHorizontal="8dp"
                 android:layout_marginEnd="6dp">
                 <View
                     android:id="@+id/ledServer"
-                    android:layout_width="6dp"
-                    android:layout_height="6dp"
+                    android:layout_width="7dp"
+                    android:layout_height="7dp"
                     android:background="#FF3333"
-                    android:layout_marginEnd="4dp"/>
+                    android:layout_marginEnd="5dp"/>
                 <TextView
                     android:id="@+id/tvServerStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="SERVER: OFFLINE"
                     android:textColor="#E0E6ED"
-                    android:textSize="8sp"
+                    android:textSize="9sp"
+                    android:includeFontPadding="false"
                     android:textStyle="bold"/>
             </LinearLayout>
 
@@ -164,24 +178,25 @@
             <LinearLayout
                 android:id="@+id/cardBluetoothStatus"
                 android:layout_width="wrap_content"
-                android:layout_height="20dp"
+                android:layout_height="22dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="#151E2E"
-                android:paddingHorizontal="6dp">
+                android:paddingHorizontal="8dp">
                 <View
                     android:id="@+id/ledBluetooth"
-                    android:layout_width="6dp"
-                    android:layout_height="6dp"
+                    android:layout_width="7dp"
+                    android:layout_height="7dp"
                     android:background="#FF3333"
-                    android:layout_marginEnd="4dp"/>
+                    android:layout_marginEnd="5dp"/>
                 <TextView
                     android:id="@+id/tvBluetoothStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="BT: UNPAIRED"
                     android:textColor="#E0E6ED"
-                    android:textSize="8sp"
+                    android:textSize="9sp"
+                    android:includeFontPadding="false"
                     android:textStyle="bold"/>
             </LinearLayout>
 
@@ -189,19 +204,23 @@
     </LinearLayout>
 
     <!-- Floating Tiny HUD Restore Pill (Visible when Top HUD is hidden) -->
-    <Button
+    <TextView
         android:id="@+id/btnRestoreHud"
         android:layout_width="wrap_content"
-        android:layout_height="28dp"
+        android:layout_height="32dp"
         android:layout_gravity="top|end"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="10dp"
         android:text="👻 HUD"
         android:textColor="#00F0FF"
         android:background="@drawable/btn_pill_cyber"
-        android:textSize="9sp"
+        android:textSize="11sp"
         android:textStyle="bold"
-        android:paddingHorizontal="10dp"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:paddingHorizontal="14dp"
+        android:clickable="true"
+        android:focusable="true"
         android:visibility="gone"/>
 
     <!-- ======================================================== -->
@@ -217,42 +236,50 @@
         android:padding="16dp">
 
         <!-- Quick View Result Floating Pill -->
-        <Button
+        <TextView
             android:id="@+id/btnQuickResult"
             android:layout_width="wrap_content"
-            android:layout_height="32dp"
+            android:layout_height="36dp"
             android:text="📄 RESULT"
             android:textColor="#00F0FF"
             android:background="@drawable/btn_pill_cyber"
-            android:textSize="10sp"
+            android:textSize="11sp"
             android:textStyle="bold"
-            android:paddingHorizontal="12dp"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:paddingHorizontal="16dp"
             android:layout_marginBottom="8dp"
+            android:clickable="true"
+            android:focusable="true"
             android:visibility="gone"/>
 
         <!-- USB Typing Button (Glowing Emerald/Cyan Pill) -->
         <Button
             android:id="@+id/btnTypeDirect"
-            android:layout_width="120dp"
-            android:layout_height="44dp"
+            android:layout_width="128dp"
+            android:layout_height="48dp"
             android:text="⚡ TYPE (USB)"
             android:background="@drawable/btn_direct_type"
             android:textColor="#051522"
-            android:textSize="11sp"
+            android:textSize="12sp"
             android:textStyle="bold"
-            android:layout_marginBottom="6dp"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:layout_marginBottom="8dp"
             android:elevation="6dp"/>
 
         <!-- Bluetooth HID Typing Button (Cyber Glass Pill) -->
         <Button
             android:id="@+id/btnTypeBluetooth"
-            android:layout_width="120dp"
-            android:layout_height="38dp"
+            android:layout_width="128dp"
+            android:layout_height="42dp"
             android:text="📶 TYPE (BT)"
             android:background="@drawable/hud_panel_bg"
             android:textColor="#00FF88"
-            android:textSize="10sp"
+            android:textSize="11sp"
             android:textStyle="bold"
+            android:gravity="center"
+            android:includeFontPadding="false"
             android:elevation="4dp"/>
     </LinearLayout>
 
@@ -267,8 +294,8 @@
 
         <ImageButton
             android:id="@+id/btnCapture"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
+            android:layout_width="74dp"
+            android:layout_height="74dp"
             android:background="@drawable/btn_camera_shutter"
             android:contentDescription="Capture"
             android:elevation="10dp"/>
@@ -280,35 +307,36 @@
     <LinearLayout
         android:id="@+id/layoutResponseContainer"
         android:layout_width="match_parent"
-        android:layout_height="220dp"
+        android:layout_height="230dp"
         android:layout_gravity="bottom"
-        android:layout_marginBottom="76dp"
+        android:layout_marginBottom="80dp"
         android:layout_marginHorizontal="12dp"
         android:orientation="vertical"
         android:background="@drawable/hud_glass_card"
-        android:padding="12dp"
+        android:padding="14dp"
         android:elevation="12dp"
         android:visibility="gone">
 
         <!-- Result Header Bar: Tag, Duration, Maximize, Close -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="32dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="6dp">
+            android:layout_marginBottom="8dp">
 
             <TextView
                 android:id="@+id/tvTagHeader"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="26dp"
                 android:text="[TYPE]"
                 android:textColor="#000000"
                 android:textStyle="bold"
                 android:background="#00FF88"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="2dp"
-                android:textSize="10sp"/>
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:paddingHorizontal="10dp"
+                android:textSize="11sp"/>
 
             <TextView
                 android:id="@+id/tvResultDuration"
@@ -317,43 +345,54 @@
                 android:layout_weight="1"
                 android:text="⏱️ 0.8s"
                 android:textColor="#94A3B8"
-                android:textSize="10sp"
+                android:includeFontPadding="false"
+                android:textSize="11sp"
                 android:layout_marginStart="8dp"/>
 
             <!-- Copy Button -->
-            <Button
+            <TextView
                 android:id="@+id/btnCopyResult"
-                android:layout_width="wrap_content"
-                android:layout_height="24dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:text="📋"
-                android:textColor="#00F0FF"
-                android:background="#202A3C"
-                android:textSize="10sp"
-                android:paddingHorizontal="6dp"
-                android:layout_marginEnd="4dp"/>
+                android:textSize="12sp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:background="@drawable/btn_pill_cyber"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginEnd="6dp"/>
 
             <!-- Maximize / Restore Toggle Button -->
-            <Button
+            <TextView
                 android:id="@+id/btnMaximizeResult"
-                android:layout_width="wrap_content"
-                android:layout_height="24dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:text="⛶"
                 android:textColor="#00F0FF"
-                android:background="#202A3C"
-                android:textSize="10sp"
-                android:paddingHorizontal="6dp"
-                android:layout_marginEnd="4dp"/>
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:background="@drawable/btn_pill_cyber"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginEnd="6dp"/>
 
             <!-- Close / Minimize Button -->
-            <Button
+            <TextView
                 android:id="@+id/btnCloseResult"
-                android:layout_width="wrap_content"
-                android:layout_height="24dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:text="✕"
                 android:textColor="#FF5555"
-                android:background="#202A3C"
-                android:textSize="10sp"
-                android:paddingHorizontal="6dp"/>
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:background="@drawable/btn_pill_cyber"
+                android:clickable="true"
+                android:focusable="true"/>
         </LinearLayout>
 
         <!-- Scrollable Result Body -->
@@ -375,8 +414,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textColor="#FFFFFF"
-                    android:textSize="15sp"
+                    android:textSize="16sp"
                     android:lineSpacingExtra="4dp"
+                    android:includeFontPadding="false"
                     android:textStyle="bold"
                     android:visibility="gone"/>
 
@@ -393,7 +433,8 @@
                         android:layout_height="wrap_content"
                         android:text="Selected: Option"
                         android:textColor="#00FF88"
-                        android:textSize="14sp"
+                        android:textSize="15sp"
+                        android:includeFontPadding="false"
                         android:textStyle="bold"/>
                 </LinearLayout>
 
@@ -409,14 +450,16 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textColor="#00FF88"
-                        android:textSize="14sp"
+                        android:textSize="15sp"
+                        android:includeFontPadding="false"
                         android:textStyle="bold"/>
                     <TextView
                         android:id="@+id/tvCompareReason"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textColor="#94A3B8"
-                        android:textSize="12sp"
+                        android:textSize="13sp"
+                        android:includeFontPadding="false"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
@@ -433,7 +476,8 @@
                         android:layout_height="wrap_content"
                         android:textColor="#38BDF8"
                         android:fontFamily="monospace"
-                        android:textSize="12sp"
+                        android:textSize="13sp"
+                        android:includeFontPadding="false"
                         android:lineSpacingExtra="3dp"/>
                 </LinearLayout>
             </LinearLayout>
