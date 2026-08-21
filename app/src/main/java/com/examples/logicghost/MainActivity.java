@@ -298,15 +298,20 @@ public class MainActivity extends AppCompatActivity {
     private void toggleMaximizeResult() {
         isResultMaximized = !isResultMaximized;
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) layoutResponseContainer.getLayoutParams();
+        float density = getResources().getDisplayMetrics().density;
         if (isResultMaximized) {
             params.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            params.bottomMargin = 0;
-            params.topMargin = (int) (40 * getResources().getDisplayMetrics().density);
+            params.bottomMargin = (int) (12 * density);
+            params.topMargin = (int) (48 * density);
+            params.setMarginStart((int) (12 * density));
+            params.setMarginEnd((int) (12 * density));
             btnMaximizeResult.setText("🗗");
         } else {
-            params.height = (int) (220 * getResources().getDisplayMetrics().density);
-            params.bottomMargin = (int) (76 * getResources().getDisplayMetrics().density);
+            params.height = (int) (230 * density);
+            params.bottomMargin = (int) (16 * density);
             params.topMargin = 0;
+            params.setMarginStart((int) (148 * density));
+            params.setMarginEnd((int) (104 * density));
             btnMaximizeResult.setText("⛶");
         }
         layoutResponseContainer.setLayoutParams(params);
