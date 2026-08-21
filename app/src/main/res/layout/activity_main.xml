@@ -13,15 +13,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <!-- Cyber HUD Center Scanning Reticle -->
-    <View
-        android:layout_width="320dp"
-        android:layout_height="180dp"
-        android:layout_gravity="center"
-        android:background="@drawable/hud_reticle"/>
-
     <!-- ======================================================== -->
-    <!-- 2. TOP COLLAPSIBLE HUD BAR                               -->
+    <!-- 2. TOP FLOATING HUD CONTROLS (100% TRANSPARENT BACKGROUND) -->
     <!-- ======================================================== -->
     <LinearLayout
         android:id="@+id/layoutTopHud"
@@ -29,10 +22,10 @@
         android:layout_height="wrap_content"
         android:layout_gravity="top"
         android:orientation="vertical"
-        android:background="#E0070A12"
-        android:paddingHorizontal="12dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp">
+        android:background="@android:color/transparent"
+        android:paddingHorizontal="14dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="6dp">
 
         <!-- Top Bar Row 1: Brand, Status, and Action Icons -->
         <LinearLayout
@@ -49,21 +42,25 @@
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:includeFontPadding="false"
+                android:shadowColor="#000000"
+                android:shadowDx="1"
+                android:shadowDy="1"
+                android:shadowRadius="4"
                 android:letterSpacing="0.06"
                 android:layout_marginEnd="8dp"/>
 
-            <!-- Compact URL Input Pill -->
+            <!-- Compact URL Input Pill (Translucent Glass) -->
             <EditText
                 android:id="@+id/etServerUrl"
                 android:layout_width="0dp"
                 android:layout_height="32dp"
                 android:layout_weight="1"
-                android:background="#202A3C"
+                android:background="@drawable/btn_pill_cyber"
                 android:textColor="#00FF88"
                 android:text="http://127.0.0.1:5000"
                 android:hint="http://127.0.0.1:5000"
                 android:textColorHint="#627D98"
-                android:paddingHorizontal="10dp"
+                android:paddingHorizontal="12dp"
                 android:textSize="11sp"
                 android:gravity="center_vertical"
                 android:includeFontPadding="false"
@@ -145,6 +142,10 @@
                 android:textColor="#38BDF8"
                 android:textSize="10sp"
                 android:includeFontPadding="false"
+                android:shadowColor="#000000"
+                android:shadowDx="1"
+                android:shadowDy="1"
+                android:shadowRadius="3"
                 android:textStyle="bold"/>
 
             <!-- Server Status Pill -->
@@ -154,7 +155,7 @@
                 android:layout_height="22dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:background="#151E2E"
+                android:background="@drawable/btn_pill_cyber"
                 android:paddingHorizontal="8dp"
                 android:layout_marginEnd="6dp">
                 <View
@@ -181,7 +182,7 @@
                 android:layout_height="22dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:background="#151E2E"
+                android:background="@drawable/btn_pill_cyber"
                 android:paddingHorizontal="8dp">
                 <View
                     android:id="@+id/ledBluetooth"
@@ -209,8 +210,8 @@
         android:layout_width="wrap_content"
         android:layout_height="32dp"
         android:layout_gravity="top|end"
-        android:layout_marginTop="10dp"
-        android:layout_marginEnd="10dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="12dp"
         android:text="👻 HUD"
         android:textColor="#00F0FF"
         android:background="@drawable/btn_pill_cyber"
