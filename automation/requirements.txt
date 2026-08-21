@@ -1,0 +1,4 @@
+playwright>=1.40.0
+pyperclip>=1.8.2
+pywin32>=306
+flask>=3.0.0

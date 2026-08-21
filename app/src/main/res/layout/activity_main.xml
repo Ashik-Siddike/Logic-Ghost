@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- ======================================================== -->
+    <!-- 1. FULL-SCREEN EDGE-TO-EDGE CAMERA VIEWFINDER            -->
+    <!-- ======================================================== -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <!-- Cyber HUD Center Scanning Reticle -->
+    <View
+        android:layout_width="320dp"
+        android:layout_height="180dp"
+        android:layout_gravity="center"
+        android:background="@drawable/hud_reticle"/>
+
+    <!-- ======================================================== -->
+    <!-- 2. TOP FLOATING HUD BAR (Translucent Status & Config)    -->
+    <!-- ======================================================== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#CC0A0E17"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="6dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="LOGICGHOST"
+            android:textColor="#00E5FF"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1"
+            android:layout_marginEnd="12dp"/>
+
+        <!-- Compact URL Input Pill -->
+        <EditText
+            android:id="@+id/etServerUrl"
+            android:layout_width="160dp"
+            android:layout_height="28dp"
+            android:background="#202C3D"
+            android:textColor="#00FF66"
+            android:hint="http://192.168.0.115:5000"
+            android:textColorHint="#5E7691"
+            android:paddingHorizontal="8dp"
+            android:textSize="11sp"
+            android:inputType="textUri"
+            android:singleLine="true"
+            android:layout_marginEnd="6dp"/>
+
+        <!-- 1-Click USB Tethering Settings Button -->
+        <Button
+            android:id="@+id/btnUsbTether"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:text="🔌 TETHER"
+            android:textColor="#00E5FF"
+            android:background="#202C3D"
+            android:textSize="9sp"
+            android:textStyle="bold"
+            android:paddingHorizontal="6dp"
+            android:layout_marginEnd="6dp"/>
+
+        <!-- 1-Click Setup / Guide Button -->
+        <Button
+            android:id="@+id/btnGuide"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:text="❓ GUIDE"
+            android:textColor="#00FF66"
+            android:background="#202C3D"
+            android:textSize="9sp"
+            android:textStyle="bold"
+            android:paddingHorizontal="6dp"
+            android:layout_marginEnd="8dp"/>
+
+        <!-- Center Dynamic Status Pill -->
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="SYSTEM READY"
+            android:textColor="#00E5FF"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:gravity="center"/>
+
+        <!-- Server LED Pill -->
+        <LinearLayout
+            android:id="@+id/cardServerStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="26dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#202C3D"
+            android:paddingHorizontal="8dp"
+            android:layout_marginEnd="8dp">
+            <View
+                android:id="@+id/ledServer"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="#FF3333"
+                android:layout_marginEnd="5dp"/>
+            <TextView
+                android:id="@+id/tvServerStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SERVER: OFFLINE"
+                android:textColor="#E0E6ED"
+                android:textSize="10sp"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+        <!-- Bluetooth LED Pill -->
+        <LinearLayout
+            android:id="@+id/cardBluetoothStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="26dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#202C3D"
+            android:paddingHorizontal="8dp">
+            <View
+                android:id="@+id/ledBluetooth"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="#FF3333"
+                android:layout_marginEnd="5dp"/>
+            <TextView
+                android:id="@+id/tvBluetoothStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BT: UNPAIRED"
+                android:textColor="#E0E6ED"
+                android:textSize="10sp"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- ======================================================== -->
+    <!-- 3. LEFT FLOATING CONTROL (Big Capture Button for Left Thumb) -->
+    <!-- ======================================================== -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <Button
+            android:id="@+id/btnCapture"
+            android:layout_width="140dp"
+            android:layout_height="64dp"
+            android:text="📸 CAPTURE"
+            android:background="@drawable/btn_capture_hud"
+            android:textColor="#051208"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:elevation="8dp"
+            android:letterSpacing="0.05"/>
+    </LinearLayout>
+
+    <!-- ======================================================== -->
+    <!-- 4. RIGHT FLOATING CONTROL (AI Response & Type Buttons for Right Thumb) -->
+    <!-- ======================================================== -->
+    <LinearLayout
+        android:layout_width="290dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Floating Glassmorphic Response Card -->
+        <LinearLayout
+            android:id="@+id/layoutResponseContainer"
+            android:layout_width="match_parent"
+            android:layout_height="140dp"
+            android:orientation="vertical"
+            android:background="@drawable/hud_panel_bg"
+            android:padding="8dp"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvTagHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="[TYPE]"
+                android:textColor="#00FF66"
+                android:textStyle="bold"
+                android:background="#1E293B"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:textSize="10sp"
+                android:layout_marginBottom="4dp"/>
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- 1. [VOICE] Mode -->
+                    <TextView
+                        android:id="@+id/tvVoicePayload"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"/>
+
+                    <!-- 2. [CHECK] Mode -->
+                    <LinearLayout
+                        android:id="@+id/layoutCheckMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+                        <TextView
+                            android:id="@+id/tvCheckSelected"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Selected: Option"
+                            android:textColor="#00FF66"
+                            android:textSize="13sp"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+
+                    <!-- 3. [COMPARE] Mode -->
+                    <LinearLayout
+                        android:id="@+id/layoutCompareMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+                        <TextView
+                            android:id="@+id/tvCompareBest"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#00FF66"
+                            android:textSize="13sp"
+                            android:textStyle="bold"/>
+                        <TextView
+                            android:id="@+id/tvCompareReason"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#94A3B8"
+                            android:textSize="11sp"
+                            android:layout_marginTop="2dp"/>
+                    </LinearLayout>
+
+                    <!-- 4. [TYPE] Mode -->
+                    <LinearLayout
+                        android:id="@+id/layoutTypeMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+                        <TextView
+                            android:id="@+id/tvCodePayload"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#38BDF8"
+                            android:fontFamily="monospace"
+                            android:textSize="11sp"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </ScrollView>
+        </LinearLayout>
+
+        <!-- Floating Dual Injection Buttons (For Right Thumb) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- 1. Direct USB / Server Injection Button -->
+            <Button
+                android:id="@+id/btnTypeDirect"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="⚡ TYPE (USB)"
+                android:background="@drawable/btn_direct_type"
+                android:textColor="#051522"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginEnd="4dp"
+                android:elevation="6dp"/>
+
+            <!-- 2. Bluetooth HID Injection Button -->
+            <Button
+                android:id="@+id/btnTypeBluetooth"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="📶 TYPE (BT)"
+                android:background="@drawable/hud_panel_bg"
+                android:textColor="#00FF66"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:layout_marginStart="4dp"
+                android:elevation="6dp"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>
