@@ -419,20 +419,20 @@ app.get('/', (req, res) => {
             background: rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(0, 240, 255, 0.3);
             border-radius: 8px;
-            padding: 12px 16px;
+            padding: 10px 14px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 16px;
+            font-size: 15px;
             color: #fff;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .btn {
             background: rgba(0, 240, 255, 0.12);
             border: 1px solid var(--cyan);
             color: var(--cyan);
-            padding: 10px 16px;
+            padding: 8px 14px;
             border-radius: 8px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
@@ -448,12 +448,6 @@ app.get('/', (req, res) => {
             color: #000;
             box-shadow: 0 0 16px rgba(0, 240, 255, 0.6);
             transform: translateY(-1px);
-        }
-        .btn.active-preset {
-            background: var(--cyan);
-            color: #000;
-            box-shadow: 0 0 16px rgba(0, 240, 255, 0.8);
-            border-color: #fff;
         }
         .btn-green {
             background: rgba(0, 255, 136, 0.15);
@@ -485,6 +479,38 @@ app.get('/', (req, res) => {
             color: #fff;
             box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
         }
+        
+        /* High-Contrast Neon Glowing Preset Button Style */
+        .preset-btn {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            color: #94a3b8;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .preset-btn:hover {
+            border-color: var(--cyan);
+            color: #fff;
+            background: rgba(0, 240, 255, 0.15);
+            transform: translateY(-1px);
+        }
+        .preset-btn.active {
+            background: #00f0ff !important;
+            color: #030712 !important;
+            border: 2px solid #ffffff !important;
+            box-shadow: 0 0 22px rgba(0, 240, 255, 0.95), inset 0 0 6px rgba(255, 255, 255, 0.8) !important;
+            font-weight: 800 !important;
+            transform: scale(1.02);
+        }
+
         .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
         .feed-container {
             margin-top: 16px;
@@ -569,12 +595,33 @@ app.get('/', (req, res) => {
 
         <div class="grid">
             <div class="card">
-                <div class="card-title">📱 Mobile Connect URL</div>
-                <div class="url-box">
-                    <span id="serverUrlText">${serverUrl}</span>
-                    <button class="btn" onclick="copyUrl()">📋 Copy</button>
+                <div class="card-title">📱 Mobile Connect URLs</div>
+                
+                <!-- Option 1: USB Zero-Config Mode (Default & Recommended) -->
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--green); margin-bottom: 5px; display: flex; align-items: center; gap: 6px;">
+                        <span>⚡ 1. USB ZERO-CONFIG (RECOMMENDED)</span>
+                        <span style="background: rgba(0,255,136,0.2); padding: 1px 6px; border-radius: 4px; font-size: 9px;">NO IP NEEDED</span>
+                    </div>
+                    <div class="url-box">
+                        <span id="usbUrlText" style="color: var(--green); font-weight: bold;">http://127.0.0.1:5000</span>
+                        <button class="btn btn-green" onclick="copyText('http://127.0.0.1:5000', 'USB URL copied to clipboard!')">📋 Copy USB</button>
+                    </div>
                 </div>
-                <p style="font-size: 12px; color: var(--text-dim);">Enter this exact URL into your LogicGhost Android Mobile App (or use <b>http://127.0.0.1:5000</b> via USB Debugging).</p>
+
+                <!-- Option 2: Wi-Fi / Local LAN Mode -->
+                <div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--cyan); margin-bottom: 5px;">📶 2. LOCAL WI-FI / LAN MODE</div>
+                    <div class="url-box">
+                        <span id="wifiUrlText">${serverUrl}</span>
+                        <button class="btn" onclick="copyText('${serverUrl}', 'Wi-Fi URL copied to clipboard!')">📋 Copy Wi-Fi</button>
+                    </div>
+                </div>
+
+                <p style="font-size: 11px; color: var(--text-dim); margin-top: 8px;">
+                    🔌 <b>USB Cable:</b> Set phone to <b>http://127.0.0.1:5000</b> (Instant connection).<br>
+                    📶 <b>Same Wi-Fi:</b> Set phone to <b>${serverUrl}</b>.
+                </p>
             </div>
 
             <div class="card">
@@ -624,27 +671,38 @@ app.get('/', (req, res) => {
                 <span>⌨️ Organic Human Typing Speed & Jitter Engine</span>
                 <span style="font-size: 11px; color: var(--cyan);" id="activePresetTag">Preset: Normal Human</span>
             </div>
+
+            <!-- Real-Time Active Speed Banner -->
+            <div style="background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-family: 'JetBrains Mono'; font-size: 13px; color: var(--cyan);">
+                    ⚡ <b>CURRENT SPEED:</b> <span id="currentSpeedDisplay" style="color: var(--green); font-weight: bold;">Normal Human (45ms - 90ms)</span>
+                </span>
+                <span id="speedEstimatedChars" style="font-size: 12px; color: var(--green); font-family: 'JetBrains Mono'; font-weight: bold;">~10-15 chars/sec</span>
+            </div>
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 16px;">
                 <div>
-                    <label style="font-size: 12px; font-family: 'JetBrains Mono'; color: var(--cyan);">Min Delay: <span id="minVal">45</span>ms</label>
+                    <label style="font-size: 12px; font-family: 'JetBrains Mono'; color: var(--cyan);">Min Delay: <span id="minVal" style="color: var(--green); font-weight: bold;">45</span>ms</label>
                     <input type="range" id="minRange" min="2" max="500" value="45" style="width: 100%; accent-color: var(--cyan);" oninput="onSliderChange()">
                 </div>
                 <div>
-                    <label style="font-size: 12px; font-family: 'JetBrains Mono'; color: var(--cyan);">Max Delay: <span id="maxVal">90</span>ms</label>
+                    <label style="font-size: 12px; font-family: 'JetBrains Mono'; color: var(--cyan);">Max Delay: <span id="maxVal" style="color: var(--green); font-weight: bold;">90</span>ms</label>
                     <input type="range" id="maxRange" min="5" max="900" value="90" style="width: 100%; accent-color: var(--cyan);" oninput="onSliderChange()">
                 </div>
             </div>
-            <div class="btn-group" id="presetButtonGroup" style="margin-bottom: 12px;">
-                <button class="btn" id="btn-ultra" onclick="setSpeedPreset('ultra', 5, 15)">⚡ Ultra (5-15ms)</button>
-                <button class="btn" id="btn-fast" onclick="setSpeedPreset('fast', 20, 45)">🏃 Fast Human (20-45ms)</button>
-                <button class="btn" id="btn-normal" onclick="setSpeedPreset('normal', 45, 90)">🚶 Normal Human (45-90ms)</button>
-                <button class="btn" id="btn-relaxed" onclick="setSpeedPreset('relaxed', 90, 180)">🐢 Relaxed Human (90-180ms)</button>
-                <button class="btn btn-purple" id="btn-stealth" onclick="setSpeedPreset('stealth', 180, 350)">🦥 Ultra Stealth (180-350ms)</button>
-                <button class="btn btn-purple" id="btn-ninja" onclick="setSpeedPreset('ninja', 350, 700)">🕵️ Ghost Ninja (350-700ms)</button>
+
+            <div class="btn-group" id="presetButtonGroup" style="margin-bottom: 16px;">
+                <button class="preset-btn" id="btn-ultra" onclick="setSpeedPreset('ultra', 5, 15)">⚡ Ultra (5-15ms)</button>
+                <button class="preset-btn" id="btn-fast" onclick="setSpeedPreset('fast', 20, 45)">🏃 Fast Human (20-45ms)</button>
+                <button class="preset-btn" id="btn-normal" onclick="setSpeedPreset('normal', 45, 90)">🚶 Normal Human (45-90ms)</button>
+                <button class="preset-btn" id="btn-relaxed" onclick="setSpeedPreset('relaxed', 90, 180)">🐢 Relaxed Human (90-180ms)</button>
+                <button class="preset-btn" id="btn-stealth" onclick="setSpeedPreset('stealth', 180, 350)">🦥 Ultra Stealth (180-350ms)</button>
+                <button class="preset-btn" id="btn-ninja" onclick="setSpeedPreset('ninja', 350, 700)">🕵️ Ghost Ninja (350-700ms)</button>
             </div>
+
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <button class="btn btn-green" onclick="saveSpeedDefault()">💾 Save Speed as Default</button>
-                <span id="speedSaveMsg" style="font-size: 11px; color: var(--green);"></span>
+                <span id="speedSaveMsg" style="font-size: 11px; color: var(--green); font-weight: bold;"></span>
             </div>
         </div>
 
@@ -678,9 +736,9 @@ app.get('/', (req, res) => {
     </div>
 
     <script>
-        function copyUrl() {
-            navigator.clipboard.writeText(document.getElementById('serverUrlText').innerText);
-            alert('Mobile URL copied to clipboard!');
+        function copyText(text, msg) {
+            navigator.clipboard.writeText(text);
+            alert(msg || 'Copied to clipboard: ' + text);
         }
 
         async function stealthAction(action) {
@@ -699,33 +757,50 @@ app.get('/', (req, res) => {
         let currentPreset = 'normal';
 
         const PRESETS = {
-            'ultra': { min: 5, max: 15, name: '⚡ Ultra (5-15ms)' },
-            'fast': { min: 20, max: 45, name: '🏃 Fast Human (20-45ms)' },
-            'normal': { min: 45, max: 90, name: '🚶 Normal Human (45-90ms)' },
-            'relaxed': { min: 90, max: 180, name: '🐢 Relaxed Human (90-180ms)' },
-            'stealth': { min: 180, max: 350, name: '🦥 Ultra Stealth (180-350ms)' },
-            'ninja': { min: 350, max: 700, name: '🕵️ Ghost Ninja (350-700ms)' }
+            'ultra': { min: 5, max: 15, name: '⚡ Ultra (5-15ms)', cps: '~50-100 chars/sec' },
+            'fast': { min: 20, max: 45, name: '🏃 Fast Human (20-45ms)', cps: '~25-40 chars/sec' },
+            'normal': { min: 45, max: 90, name: '🚶 Normal Human (45-90ms)', cps: '~12-18 chars/sec' },
+            'relaxed': { min: 90, max: 180, name: '🐢 Relaxed Human (90-180ms)', cps: '~6-10 chars/sec' },
+            'stealth': { min: 180, max: 350, name: '🦥 Ultra Stealth (180-350ms)', cps: '~3-5 chars/sec' },
+            'ninja': { min: 350, max: 700, name: '🕵️ Ghost Ninja (350-700ms)', cps: '~1.5-3 chars/sec' }
         };
 
-        function highlightPresetButton(presetKey) {
-            document.querySelectorAll('#presetButtonGroup .btn').forEach(b => b.classList.remove('active-preset'));
+        function highlightPresetButton(presetKey, minMs, maxMs) {
+            // Remove active from all preset buttons
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+            
             const btn = document.getElementById('btn-' + presetKey);
-            if (btn) btn.classList.add('active-preset');
+            if (btn) {
+                btn.classList.add('active');
+            }
+
             const tagEl = document.getElementById('activePresetTag');
+            const displayEl = document.getElementById('currentSpeedDisplay');
+            const cpsEl = document.getElementById('speedEstimatedChars');
+
             if (PRESETS[presetKey]) {
                 tagEl.innerText = 'Preset: ' + PRESETS[presetKey].name;
+                displayEl.innerText = PRESETS[presetKey].name + ' (' + PRESETS[presetKey].min + 'ms - ' + PRESETS[presetKey].max + 'ms)';
+                cpsEl.innerText = PRESETS[presetKey].cps;
             } else {
                 tagEl.innerText = 'Preset: Custom Range';
+                displayEl.innerText = 'Custom Range (' + minMs + 'ms - ' + maxMs + 'ms)';
+                const avg = (minMs + maxMs) / 2;
+                const est = (1000 / Math.max(10, avg)).toFixed(1);
+                cpsEl.innerText = '~' + est + ' chars/sec';
             }
         }
 
         function setSpeedPreset(key, min, max) {
             currentPreset = key;
+            // Update slider UI
             document.getElementById('minRange').value = min;
             document.getElementById('maxRange').value = max;
             document.getElementById('minVal').innerText = min;
             document.getElementById('maxVal').innerText = max;
-            highlightPresetButton(key);
+
+            // Highlight button and update current speed status
+            highlightPresetButton(key, min, max);
 
             fetch('/settings/speed', {
                 method: 'POST',
@@ -747,7 +822,8 @@ app.get('/', (req, res) => {
                     break;
                 }
             }
-            highlightPresetButton(matchedPreset);
+            currentPreset = matchedPreset;
+            highlightPresetButton(matchedPreset, min, max);
 
             fetch('/settings/speed', {
                 method: 'POST',
@@ -767,8 +843,8 @@ app.get('/', (req, res) => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ min_delay_ms: min, max_delay_ms: max, preset_name: currentPreset, save: true })
                 });
-                msgEl.innerText = '✅ Speed saved as default across restarts!';
-                setTimeout(() => { msgEl.innerText = ''; }, 3000);
+                msgEl.innerText = '✅ Saved permanently! Next time you launch LogicGhost, it will boot with this speed.';
+                setTimeout(() => { msgEl.innerText = ''; }, 4000);
             } catch (e) {
                 msgEl.innerText = 'Failed to save: ' + e.message;
             }
@@ -783,7 +859,7 @@ app.get('/', (req, res) => {
                 document.getElementById('minVal').innerText = d.min_delay_ms;
                 document.getElementById('maxVal').innerText = d.max_delay_ms;
                 currentPreset = d.preset_name || 'normal';
-                highlightPresetButton(currentPreset);
+                highlightPresetButton(currentPreset, d.min_delay_ms, d.max_delay_ms);
             } catch (e) {}
         }
 
