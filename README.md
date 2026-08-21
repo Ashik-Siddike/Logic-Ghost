@@ -2,6 +2,15 @@
 > **Stealth Physical-to-Digital AI Automation Bridge & Hardware Keyboard Emulator**  
 > *গুগল জেমিনাই ২.৫ ফ্ল্যাশ এআই, মাল্টি-এপিআই রোটেশন, অর্গানিক হিউম্যান টাইপিং ও ফুল-স্ক্রিন মোবাইল HUD*
 
+<p align="center">
+  <a href="https://github.com/Ashik-Siddike/Logic-Ghost/releases/download/v1.0.0-on-publish/LogicGhost-v1.0.apk">
+    <img src="https://img.shields.io/badge/Download_APK-LogicGhost_v1.0_Android-00E5FF?style=for-the-badge&logo=android&logoColor=black" alt="Download LogicGhost APK" />
+  </a>
+  <a href="https://github.com/Ashik-Siddike/Logic-Ghost/releases">
+    <img src="https://img.shields.io/badge/Release-v1.0.0--Production-00FF66?style=for-the-badge&logo=github" alt="GitHub Release" />
+  </a>
+</p>
+
 ---
 
 ## 🌟 প্রধান বৈশিষ্ট্যসমূহ (Key Features)
@@ -46,7 +55,9 @@
 *(সাথে সাথে ল্যাপটপের ব্রাউজারে `http://localhost:5000` ড্যাশবোর্ড খুলে যাবে এবং সার্ভার ব্যাকগ্রাউন্ডে সচল হয়ে যাবে।)*
 
 ### ধাপ ৩: ফোনে অ্যাপ ইন্সটল করা
-* প্রজেক্টের **`release/`** ফোল্ডারে থাকা **`LogicGhost-v1.0.apk`** ফাইলটি আপনার অ্যান্ড্রয়েড ফোনে নিয়ে ইন্সটল করুন।
+* সরাসরি ১-ক্লিক ডাউনলোড লিঙ্ক থেকে ফোনে APK ইন্সটল করুন:  
+  📲 **[Download LogicGhost-v1.0.apk (Direct Download)](https://github.com/Ashik-Siddike/Logic-Ghost/releases/download/v1.0.0-on-publish/LogicGhost-v1.0.apk)**  
+  *(অথবা প্রজেক্টের `release/` ফোল্ডারে থাকা `LogicGhost-v1.0.apk` ফাইলটি ফোনে নিয়ে ইন্সটল করুন।)*
 
 ---
 
