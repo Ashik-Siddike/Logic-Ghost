@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Outer Glowing Translucent Ring -->
+    <item>
+        <shape android:shape="oval">
+            <stroke android:width="3dp" android:color="#00F0FF"/>
+            <solid android:color="#40000000"/>
+            <size android:width="68dp" android:height="68dp"/>
+        </shape>
+    </item>
+    <!-- Inner Solid Pure White Shutter Button -->
+    <item android:top="6dp" android:bottom="6dp" android:left="6dp" android:right="6dp">
+        <shape android:shape="oval">
+            <solid android:color="#FFFFFF"/>
+        </shape>
+    </item>
+</layer-list>

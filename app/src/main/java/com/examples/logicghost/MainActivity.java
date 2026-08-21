@@ -3,6 +3,8 @@ package com.examples.logicghost;
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -17,10 +19,13 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,8 +47,11 @@ import com.google.gson.JsonParser;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -63,17 +71,38 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERM_CODE = 1001;
     private static final String PREFS_NAME = "LogicGhostPrefs";
     private static final String KEY_SERVER_URL = "server_url";
+    private static final String DEFAULT_SERVER_URL = "http://127.0.0.1:5000";
 
+    public static class HistoryItem {
+        public String tag;
+        public String payload;
+        public String duration;
+        public String timeFormatted;
+
+        public HistoryItem(String tag, String payload, String duration, String timeFormatted) {
+            this.tag = tag;
+            this.payload = payload;
+            this.duration = duration;
+            this.timeFormatted = timeFormatted;
+        }
+    }
+
+    private final List<HistoryItem> historyList = new ArrayList<>();
+
+    private LinearLayout layoutTopHud;
     private EditText etServerUrl;
     private View ledServer, ledBluetooth;
     private TextView tvServerStatus, tvBluetoothStatus, tvStatus;
     private PreviewView previewView;
-    private Button btnCapture;
+    private ImageButton btnCapture;
 
+    private Button btnRestoreHud, btnQuickResult;
     private LinearLayout layoutResponseContainer, layoutCheckMode, layoutCompareMode, layoutTypeMode;
-    private TextView tvTagHeader, tvVoicePayload, tvCheckSelected, tvCompareBest, tvCompareReason, tvCodePayload;
+    private TextView tvTagHeader, tvResultDuration, tvVoicePayload, tvCheckSelected, tvCompareBest, tvCompareReason, tvCodePayload;
+    private Button btnMaximizeResult, btnCloseResult, btnCopyResult;
     private Button btnTypeDirect, btnTypeBluetooth;
 
+    private boolean isResultMaximized = false;
     private ImageCapture imageCapture;
     private BluetoothHidManager hidManager;
 
@@ -124,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initViews() {
+        layoutTopHud = findViewById(R.id.layoutTopHud);
         etServerUrl = findViewById(R.id.etServerUrl);
         ledServer = findViewById(R.id.ledServer);
         ledBluetooth = findViewById(R.id.ledBluetooth);
@@ -133,23 +163,34 @@ public class MainActivity extends AppCompatActivity {
         previewView = findViewById(R.id.previewView);
         btnCapture = findViewById(R.id.btnCapture);
 
+        btnRestoreHud = findViewById(R.id.btnRestoreHud);
+        btnQuickResult = findViewById(R.id.btnQuickResult);
+
         layoutResponseContainer = findViewById(R.id.layoutResponseContainer);
         layoutCheckMode = findViewById(R.id.layoutCheckMode);
         layoutCompareMode = findViewById(R.id.layoutCompareMode);
         layoutTypeMode = findViewById(R.id.layoutTypeMode);
 
         tvTagHeader = findViewById(R.id.tvTagHeader);
+        tvResultDuration = findViewById(R.id.tvResultDuration);
         tvVoicePayload = findViewById(R.id.tvVoicePayload);
         tvCheckSelected = findViewById(R.id.tvCheckSelected);
         tvCompareBest = findViewById(R.id.tvCompareBest);
         tvCompareReason = findViewById(R.id.tvCompareReason);
         tvCodePayload = findViewById(R.id.tvCodePayload);
 
+        btnMaximizeResult = findViewById(R.id.btnMaximizeResult);
+        btnCloseResult = findViewById(R.id.btnCloseResult);
+        btnCopyResult = findViewById(R.id.btnCopyResult);
+
         btnTypeDirect = findViewById(R.id.btnTypeDirect);
         btnTypeBluetooth = findViewById(R.id.btnTypeBluetooth);
 
-        // Restore previously saved server URL (Defaults to http://127.0.0.1:5000)
-        String savedUrl = prefs.getString(KEY_SERVER_URL, "http://127.0.0.1:5000");
+        // Always ensure a valid URL exists (Defaults to http://127.0.0.1:5000)
+        String savedUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL);
+        if (savedUrl == null || savedUrl.trim().isEmpty()) {
+            savedUrl = DEFAULT_SERVER_URL;
+        }
         etServerUrl.setText(savedUrl);
 
         etServerUrl.addTextChangedListener(new TextWatcher() {
@@ -158,59 +199,145 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                prefs.edit().putString(KEY_SERVER_URL, s.toString().trim()).apply();
+                String val = s.toString().trim();
+                prefs.edit().putString(KEY_SERVER_URL, val.isEmpty() ? DEFAULT_SERVER_URL : val).apply();
             }
 
             @Override
             public void afterTextChanged(Editable s) {}
         });
 
+        // Toggle Top HUD Collapse/Show
+        Button btnToggleHud = findViewById(R.id.btnToggleHud);
+        if (btnToggleHud != null) {
+            btnToggleHud.setOnClickListener(v -> {
+                layoutTopHud.setVisibility(View.GONE);
+                btnRestoreHud.setVisibility(View.VISIBLE);
+            });
+        }
 
-        btnCapture.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                captureAndProcessScreen();
-            }
-        });
+        if (btnRestoreHud != null) {
+            btnRestoreHud.setOnClickListener(v -> {
+                layoutTopHud.setVisibility(View.VISIBLE);
+                btnRestoreHud.setVisibility(View.GONE);
+            });
+        }
 
-        btnTypeDirect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerDirectServerTyping(currentPayload);
-            }
-        });
+        // 1-Click History Button
+        Button btnHistory = findViewById(R.id.btnHistory);
+        if (btnHistory != null) {
+            btnHistory.setOnClickListener(v -> showHistoryDialog());
+        }
 
-        btnTypeBluetooth.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                triggerBluetoothTyping(currentPayload);
-            }
-        });
-
+        // 1-Click USB Tethering Button
         Button btnUsbTether = findViewById(R.id.btnUsbTether);
         if (btnUsbTether != null) {
             btnUsbTether.setOnClickListener(v -> openUsbTetheringSettings());
         }
 
+        // 1-Click Setup Guide Button
         Button btnGuide = findViewById(R.id.btnGuide);
         if (btnGuide != null) {
             btnGuide.setOnClickListener(v -> showSetupGuideDialog(false));
         }
+
+        // Capture Shutter Button
+        btnCapture.setOnClickListener(v -> captureAndProcessScreen());
+
+        // Quick View Result Floating Pill
+        if (btnQuickResult != null) {
+            btnQuickResult.setOnClickListener(v -> {
+                layoutResponseContainer.setVisibility(View.VISIBLE);
+                btnQuickResult.setVisibility(View.GONE);
+            });
+        }
+
+        // Result Sheet Maximize / Restore
+        if (btnMaximizeResult != null) {
+            btnMaximizeResult.setOnClickListener(v -> toggleMaximizeResult());
+        }
+
+        // Result Sheet Close / Minimize
+        if (btnCloseResult != null) {
+            btnCloseResult.setOnClickListener(v -> {
+                layoutResponseContainer.setVisibility(View.GONE);
+                if (!currentPayload.isEmpty()) {
+                    btnQuickResult.setVisibility(View.VISIBLE);
+                }
+            });
+        }
+
+        // Result Sheet Copy Button
+        if (btnCopyResult != null) {
+            btnCopyResult.setOnClickListener(v -> {
+                if (!currentPayload.isEmpty()) {
+                    ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newPlainText("LogicGhost Payload", currentPayload);
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(MainActivity.this, "📋 Copied to clipboard!", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        // Typing Actions
+        btnTypeDirect.setOnClickListener(v -> triggerDirectServerTyping(currentPayload));
+        btnTypeBluetooth.setOnClickListener(v -> triggerBluetoothTyping(currentPayload));
+
+        View.OnClickListener btReconnectListener = v -> showBluetoothDeviceSelectorDialog();
+        ledBluetooth.setOnClickListener(btReconnectListener);
+        tvBluetoothStatus.setOnClickListener(btReconnectListener);
+        findViewById(R.id.cardBluetoothStatus).setOnClickListener(btReconnectListener);
 
         // Show setup guide on first run
         boolean setupDone = prefs.getBoolean("first_run_setup_done", false);
         if (!setupDone) {
             handler.postDelayed(() -> showSetupGuideDialog(true), 800);
         }
+    }
 
-        View.OnClickListener btReconnectListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showBluetoothDeviceSelectorDialog();
-            }
-        };
-        ledBluetooth.setOnClickListener(btReconnectListener);
-        tvBluetoothStatus.setOnClickListener(btReconnectListener);
+    private void toggleMaximizeResult() {
+        isResultMaximized = !isResultMaximized;
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) layoutResponseContainer.getLayoutParams();
+        if (isResultMaximized) {
+            params.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            params.bottomMargin = 0;
+            params.topMargin = (int) (40 * getResources().getDisplayMetrics().density);
+            btnMaximizeResult.setText("🗗");
+        } else {
+            params.height = (int) (220 * getResources().getDisplayMetrics().density);
+            params.bottomMargin = (int) (76 * getResources().getDisplayMetrics().density);
+            params.topMargin = 0;
+            btnMaximizeResult.setText("⛶");
+        }
+        layoutResponseContainer.setLayoutParams(params);
+    }
+
+    /**
+     * Shows Dialog with Last 10 Captures History
+     */
+    private void showHistoryDialog() {
+        if (historyList.isEmpty()) {
+            Toast.makeText(this, "No capture history yet. Take a picture first!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] items = new String[historyList.size()];
+        for (int i = 0; i < historyList.size(); i++) {
+            HistoryItem h = historyList.get(i);
+            String snippet = h.payload.replace("\n", " ").trim();
+            if (snippet.length() > 36) snippet = snippet.substring(0, 36) + "...";
+            items[i] = (i + 1) + ". " + h.tag + " (" + h.timeFormatted + ")\n   " + snippet;
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("⏱️ RECENT CAPTURES HISTORY (LAST 10)")
+                .setItems(items, (dialog, which) -> {
+                    HistoryItem selected = historyList.get(which);
+                    renderResponseUI(selected.tag, selected.payload, selected.duration);
+                    Toast.makeText(MainActivity.this, "Loaded " + selected.tag + " into view. Tap TYPE to type!", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Close", null)
+                .show();
     }
 
     /**
@@ -224,7 +351,7 @@ public class MainActivity extends AppCompatActivity {
                 "⚡ 1. USB DEBUGGING (RECOMMENDED):\n" +
                 " • Go to 'About Phone' ➔ Tap 'Build number' 7 times\n" +
                 " • Open 'Developer options' ➔ Turn ON 'USB debugging'\n" +
-                " • Connect cable to PC (Zero IP config needed!)\n\n" +
+                " • Connect cable to PC (Zero IP config needed at http://127.0.0.1:5000!)\n\n" +
                 "🔌 2. USB TETHERING (OPTIONAL):\n" +
                 " • Turn ON USB Tethering for direct local LAN.\n\n" +
                 "📶 3. BLUETOOTH KEYBOARD MODE:\n" +
@@ -268,295 +395,172 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent("android.settings.TETHER_SETTINGS"));
             } catch (Exception e2) {
                 try {
-                    startActivity(new Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS));
+                    startActivity(new Intent(Settings.ACTION_WIRELESS_SETTINGS));
                 } catch (Exception e3) {
-                    startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS));
+                    Toast.makeText(this, "Could not open Tethering Settings directly", Toast.LENGTH_SHORT).show();
                 }
             }
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        hideSystemUI();
-        checkServerHealth();
-        checkBluetoothStatus();
-    }
-
-    private void showBluetoothDeviceSelectorDialog() {
-        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-        if (adapter == null) {
-            Toast.makeText(this, "Bluetooth is not supported on this device", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        Set<BluetoothDevice> bonded = adapter.getBondedDevices();
-        if (bonded != null && !bonded.isEmpty()) {
-            final BluetoothDevice[] devices = bonded.toArray(new BluetoothDevice[0]);
-            final String[] names = new String[devices.length];
-            for (int i = 0; i < devices.length; i++) {
-                names[i] = (devices[i].getName() != null ? devices[i].getName() : "Device") + " (" + devices[i].getAddress() + ")";
-            }
-
-            new AlertDialog.Builder(this)
-                    .setTitle("Select Bluetooth Host (PC)")
-                    .setItems(names, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            Toast.makeText(MainActivity.this, "Connecting to " + devices[which].getName() + "...", Toast.LENGTH_SHORT).show();
-                            hidManager.connectToDevice(devices[which]);
-                        }
-                    })
-                    .setNeutralButton("Make Discoverable", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            Intent disc = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-                            disc.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
-                            startActivity(disc);
-                        }
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
-        } else {
-            Toast.makeText(this, "Making phone discoverable for Laptop scan...", Toast.LENGTH_LONG).show();
-            Intent disc = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            disc.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
-            startActivity(disc);
-        }
-    }
-
     private boolean hasAllPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            return false;
-        }
+        boolean camera = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+        boolean btConnect = true;
+        boolean btScan = true;
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) != PackageManager.PERMISSION_GRANTED) {
-                return false;
-            }
+            btConnect = ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED;
+            btScan = ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED;
         }
-        return true;
+
+        return camera && btConnect && btScan;
     }
 
     private void requestAppPermissions() {
-        List<String> perms = new ArrayList<>();
-        perms.add(Manifest.permission.CAMERA);
+        List<String> list = new ArrayList<>();
+        list.add(Manifest.permission.CAMERA);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            perms.add(Manifest.permission.BLUETOOTH_CONNECT);
-            perms.add(Manifest.permission.BLUETOOTH_ADVERTISE);
-            perms.add(Manifest.permission.BLUETOOTH_SCAN);
-        } else {
-            perms.add(Manifest.permission.ACCESS_FINE_LOCATION);
+            list.add(Manifest.permission.BLUETOOTH_CONNECT);
+            list.add(Manifest.permission.BLUETOOTH_SCAN);
         }
 
-        ActivityCompat.requestPermissions(this, perms.toArray(new String[0]), PERM_CODE);
+        ActivityCompat.requestPermissions(this, list.toArray(new String[0]), PERM_CODE);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERM_CODE && grantResults.length > 0) {
-            boolean allGranted = true;
-            for (int result : grantResults) {
-                if (result != PackageManager.PERMISSION_GRANTED) {
-                    allGranted = false;
-                    break;
-                }
-            }
-            if (allGranted || ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+        if (requestCode == PERM_CODE) {
+            if (hasAllPermissions()) {
                 startCamera();
+            } else {
+                Toast.makeText(this, "Permissions required for camera and Bluetooth HID", Toast.LENGTH_LONG).show();
             }
         }
     }
 
     private void startCamera() {
-        try {
-            ProcessCameraProvider cameraProvider = ProcessCameraProvider.getInstance(this).get();
-            Preview preview = new Preview.Builder().build();
-            preview.setSurfaceProvider(previewView.getSurfaceProvider());
+        ProcessCameraProvider.getInstance(this).addListener(() -> {
+            try {
+                ProcessCameraProvider cameraProvider = ProcessCameraProvider.getInstance(this).get();
+                Preview preview = new Preview.Builder().build();
+                preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
-            imageCapture = new ImageCapture.Builder().build();
+                imageCapture = new ImageCapture.Builder()
+                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                        .build();
 
-            CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
-            cameraProvider.unbindAll();
-            cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
-        } catch (ExecutionException | InterruptedException e) {
-            Log.e(TAG, "CameraX init failed", e);
-        }
-    }
+                CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
+                cameraProvider.unbindAll();
+                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
 
-    private void startHealthCheckLoop() {
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                checkServerHealth();
-                checkBluetoothStatus();
-                handler.postDelayed(this, 3000);
+                updateStatusText("CAMERA READY");
+            } catch (ExecutionException | InterruptedException e) {
+                Log.e(TAG, "Use case binding failed", e);
+                updateStatusText("CAMERA ERROR: " + e.getMessage());
             }
-        }, 1000);
-    }
-
-    private void checkServerHealth() {
-        String baseUrl = etServerUrl.getText().toString().trim();
-        if (baseUrl.isEmpty()) return;
-
-        Request request = new Request.Builder()
-                .url(baseUrl.replaceAll("/$", "") + "/health")
-                .build();
-
-        httpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ledServer.setBackgroundColor(Color.parseColor("#FF3333"));
-                        tvServerStatus.setText("SERVER: OFFLINE");
-                    }
-                });
-            }
-
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) {
-                final boolean ok = response.isSuccessful();
-                response.close();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (ok) {
-                            ledServer.setBackgroundColor(Color.parseColor("#00FF66"));
-                            tvServerStatus.setText("SERVER: ONLINE");
-                        } else {
-                            ledServer.setBackgroundColor(Color.parseColor("#FF3333"));
-                            tvServerStatus.setText("SERVER: ERROR");
-                        }
-                    }
-                });
-            }
-        });
-    }
-
-    private void checkBluetoothStatus() {
-        boolean connected = hidManager.isConnected();
-        String deviceName = hidManager.getConnectedDeviceName();
-
-        if (connected) {
-            ledBluetooth.setBackgroundColor(Color.parseColor("#00FF66"));
-            tvBluetoothStatus.setText("BT HID: PAIRED (" + deviceName + ")");
-        } else {
-            ledBluetooth.setBackgroundColor(Color.parseColor("#FF3333"));
-            tvBluetoothStatus.setText("BT HID: UNPAIRED (TAP)");
-        }
+        }, ContextCompat.getMainExecutor(this));
     }
 
     private void captureAndProcessScreen() {
         if (imageCapture == null) {
-            Toast.makeText(this, "Camera not ready", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Camera not initialized", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        tvStatus.setText("CAPTURING SCREEN...");
-        btnCapture.setEnabled(false);
-
+        updateStatusText("📸 CAPTURING FRAME...");
         File photoFile = new File(getCacheDir(), "capture_" + System.currentTimeMillis() + ".jpg");
-        ImageCapture.OutputFileOptions opts = new ImageCapture.OutputFileOptions.Builder(photoFile).build();
 
-        imageCapture.takePicture(opts, ContextCompat.getMainExecutor(this), new ImageCapture.OnImageSavedCallback() {
+        ImageCapture.OutputFileOptions outputOptions = new ImageCapture.OutputFileOptions.Builder(photoFile).build();
+        imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(this), new ImageCapture.OnImageSavedCallback() {
             @Override
-            public void onImageSaved(@NonNull ImageCapture.OutputFileResults results) {
-                tvStatus.setText("ANALYZING WITH GEMINI...");
-                sendImageToServer(photoFile);
+            public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+                updateStatusText("⚡ SOLVING WITH GEMINI AI...");
+                uploadImageToServer(photoFile);
             }
 
             @Override
             public void onError(@NonNull ImageCaptureException exception) {
-                tvStatus.setText("CAPTURE FAILED: " + exception.getMessage());
-                btnCapture.setEnabled(true);
+                Log.e(TAG, "Photo capture failed: " + exception.getMessage(), exception);
+                updateStatusText("CAPTURE FAILED: " + exception.getMessage());
             }
         });
     }
 
-    private void sendImageToServer(final File imageFile) {
-        String baseUrl = etServerUrl.getText().toString().trim().replaceAll("/$", "");
-        if (baseUrl.isEmpty()) {
-            Toast.makeText(this, "Please enter Server URL first!", Toast.LENGTH_LONG).show();
-            btnCapture.setEnabled(true);
-            return;
+    private String getResolvedServerUrl() {
+        String url = etServerUrl.getText().toString().trim();
+        if (url.isEmpty()) {
+            url = DEFAULT_SERVER_URL;
         }
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "http://" + url;
+        }
+        return url;
+    }
 
-        String targetUrl = baseUrl + "/capture";
-        RequestBody fileBody = RequestBody.create(imageFile, MediaType.parse("image/jpeg"));
+    private void uploadImageToServer(File file) {
+        String serverUrl = getResolvedServerUrl();
+        String uploadEndpoint = serverUrl.replaceAll("/+$", "") + "/capture";
+
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("image", imageFile.getName(), fileBody)
+                .addFormDataPart("image", file.getName(),
+                        RequestBody.create(file, MediaType.parse("image/jpeg")))
                 .build();
 
         Request request = new Request.Builder()
-                .url(targetUrl)
+                .url(uploadEndpoint)
                 .post(requestBody)
                 .build();
 
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        tvStatus.setText("UPLOAD FAILED: " + e.getMessage());
-                        btnCapture.setEnabled(true);
-                    }
+                handler.post(() -> {
+                    updateStatusText("NETWORK ERROR: " + e.getMessage());
+                    Toast.makeText(MainActivity.this, "Server unreachable. Check USB cable / URL.", Toast.LENGTH_SHORT).show();
                 });
             }
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        btnCapture.setEnabled(true);
-                    }
-                });
-
-                if (!response.isSuccessful() || response.body() == null) {
-                    final int code = response.code();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            tvStatus.setText("SERVER ERROR: HTTP " + code);
-                        }
-                    });
+                if (!response.isSuccessful()) {
+                    handler.post(() -> updateStatusText("SERVER ERROR (" + response.code() + ")"));
                     return;
                 }
 
-                String jsonStr = response.body().string();
-                response.close();
-
+                String responseBody = response.body() != null ? response.body().string() : "";
                 try {
-                    JsonObject json = JsonParser.parseString(jsonStr).getAsJsonObject();
-                    final String tag = json.has("tag") ? json.get("tag").getAsString() : "[TYPE]";
-                    final String payload = json.has("payload") ? json.get("payload").getAsString() : "";
+                    JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
+                    String tag = json.has("tag") ? json.get("tag").getAsString() : "[TYPE]";
+                    String payload = json.has("payload") ? json.get("payload").getAsString() : "";
+                    String duration = json.has("duration") ? json.get("duration").getAsString() : "0.8s";
 
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            renderResponseUI(tag, payload);
-                        }
+                    handler.post(() -> {
+                        updateStatusText("✅ SOLVED (" + duration + ")");
+                        renderResponseUI(tag, payload, duration);
+
+                        // Save to history
+                        String timeNow = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+                        historyList.add(0, new HistoryItem(tag, payload, duration, timeNow));
+                        if (historyList.size() > 10) historyList.remove(historyList.size() - 1);
                     });
                 } catch (Exception e) {
-                    Log.e(TAG, "JSON parse error", e);
+                    handler.post(() -> updateStatusText("PARSE ERROR: " + e.getMessage()));
                 }
             }
         });
     }
 
-    private void renderResponseUI(String tag, String payload) {
+    private void renderResponseUI(String tag, String payload, String duration) {
         this.currentPayload = payload;
-        tvStatus.setText("AI READY: " + tag);
 
         layoutResponseContainer.setVisibility(View.VISIBLE);
+        if (btnQuickResult != null) btnQuickResult.setVisibility(View.GONE);
+
         tvTagHeader.setText(tag);
+        if (tvResultDuration != null) tvResultDuration.setText("⏱️ " + duration);
 
         tvVoicePayload.setVisibility(View.GONE);
         layoutCheckMode.setVisibility(View.GONE);
@@ -564,119 +568,205 @@ public class MainActivity extends AppCompatActivity {
         layoutTypeMode.setVisibility(View.GONE);
 
         if ("[VOICE]".equalsIgnoreCase(tag)) {
+            tvTagHeader.setBackgroundColor(Color.parseColor("#3B82F6"));
             tvVoicePayload.setVisibility(View.VISIBLE);
             tvVoicePayload.setText(payload);
         } else if ("[CHECK]".equalsIgnoreCase(tag)) {
+            tvTagHeader.setBackgroundColor(Color.parseColor("#10B981"));
             layoutCheckMode.setVisibility(View.VISIBLE);
-            tvCheckSelected.setText("Selected: " + payload);
+            tvCheckSelected.setText(payload);
         } else if ("[COMPARE]".equalsIgnoreCase(tag)) {
+            tvTagHeader.setBackgroundColor(Color.parseColor("#8B5CF6"));
             layoutCompareMode.setVisibility(View.VISIBLE);
-            String best = payload;
-            String reason = "";
-            if (payload.contains("|")) {
-                String[] parts = payload.split("\\|", 2);
-                best = parts[0].replaceAll("(?i)BEST:\\s*", "").trim();
-                reason = parts[1].replaceAll("(?i)WHY:\\s*", "").trim();
+            String[] parts = payload.split("\\|", 2);
+            tvCompareBest.setText(parts[0].trim());
+            if (parts.length > 1) {
+                tvCompareReason.setText(parts[1].trim());
+            } else {
+                tvCompareReason.setText("");
             }
-            tvCompareBest.setText(best);
-            tvCompareReason.setText(reason.isEmpty() ? "Recommended choice" : reason);
-            this.currentPayload = best;
         } else {
+            // [TYPE] Default Code Mode
+            tvTagHeader.setBackgroundColor(Color.parseColor("#00FF88"));
             layoutTypeMode.setVisibility(View.VISIBLE);
             tvCodePayload.setText(payload);
         }
     }
 
-    /**
-     * Injects keystrokes directly into PC foreground window via Desktop Server (USB / Direct LAN mode)
-     */
     private void triggerDirectServerTyping(String payloadToType) {
-        if (payloadToType == null || payloadToType.isEmpty()) {
-            Toast.makeText(this, "No answer to type yet. Capture a screen first!", Toast.LENGTH_SHORT).show();
+        if (payloadToType == null || payloadToType.trim().isEmpty()) {
+            Toast.makeText(this, "No text/code available to type. Capture a question first.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String baseUrl = etServerUrl.getText().toString().trim().replaceAll("/$", "");
-        if (baseUrl.isEmpty()) {
-            Toast.makeText(this, "Enter Desktop Server URL", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        tvStatus.setText("⚡ INJECTING VIA USB/DIRECT...");
-        btnTypeDirect.setEnabled(false);
+        updateStatusText("⚡ INJECTING KEYSTROKES TO ACTIVE WINDOW...");
+        String serverUrl = getResolvedServerUrl();
+        String typeEndpoint = serverUrl.replaceAll("/+$", "") + "/type";
 
         JsonObject json = new JsonObject();
         json.addProperty("text", payloadToType);
 
         RequestBody body = RequestBody.create(json.toString(), MediaType.parse("application/json; charset=utf-8"));
         Request request = new Request.Builder()
-                .url(baseUrl + "/type")
+                .url(typeEndpoint)
                 .post(body)
                 .build();
 
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        tvStatus.setText("DIRECT INJECT FAILED: " + e.getMessage());
-                        btnTypeDirect.setEnabled(true);
-                    }
+                handler.post(() -> {
+                    updateStatusText("TYPE ERROR: " + e.getMessage());
+                    Toast.makeText(MainActivity.this, "Typing failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
             }
 
             @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                final boolean ok = response.isSuccessful();
-                response.close();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        btnTypeDirect.setEnabled(true);
-                        if (ok) {
-                            tvStatus.setText("⚡ INJECTED SUCCESSFULLY (USB)");
-                            Toast.makeText(MainActivity.this, "Keystrokes typed into active PC window!", Toast.LENGTH_SHORT).show();
-                        } else {
-                            tvStatus.setText("DIRECT INJECT ERROR");
-                        }
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
+                handler.post(() -> {
+                    if (response.isSuccessful()) {
+                        updateStatusText("✅ TYPED " + payloadToType.length() + " CHARACTERS TO PC");
+                        Toast.makeText(MainActivity.this, "Typed " + payloadToType.length() + " chars into active window!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        updateStatusText("TYPE ERROR (" + response.code() + ")");
                     }
                 });
             }
         });
     }
 
-    /**
-     * Injects keystrokes via Bluetooth HID Keyboard profile
-     */
     private void triggerBluetoothTyping(String payloadToType) {
-        if (payloadToType == null || payloadToType.isEmpty()) {
-            Toast.makeText(this, "No answer to type yet. Capture a screen first!", Toast.LENGTH_SHORT).show();
+        if (payloadToType == null || payloadToType.trim().isEmpty()) {
+            Toast.makeText(this, "No text/code available to type", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        tvStatus.setText("📶 INJECTING VIA BLUETOOTH HID...");
+        if (hidManager == null || !hidManager.isConnected()) {
+            Toast.makeText(this, "Bluetooth HID Keyboard not connected. Tap BT indicator to pair.", Toast.LENGTH_LONG).show();
+            showBluetoothDeviceSelectorDialog();
+            return;
+        }
+
+        updateStatusText("📶 TYPING VIA BLUETOOTH HID...");
         hidManager.sendKeystrokes(payloadToType, new BluetoothHidManager.KeystrokeCallback() {
             @Override
             public void onSuccess() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        tvStatus.setText("📶 BLUETOOTH TYPING DONE");
-                        Toast.makeText(MainActivity.this, "Bluetooth keystrokes sent successfully!", Toast.LENGTH_SHORT).show();
-                    }
+                handler.post(() -> {
+                    updateStatusText("✅ BLUETOOTH TYPING COMPLETE");
+                    Toast.makeText(MainActivity.this, "Keystrokes sent via Bluetooth HID!", Toast.LENGTH_SHORT).show();
                 });
             }
 
             @Override
-            public void onError(final String error) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(MainActivity.this, "HID Error: " + error, Toast.LENGTH_LONG).show();
+            public void onError(String error) {
+                handler.post(() -> {
+                    updateStatusText("BT ERROR: " + error);
+                    Toast.makeText(MainActivity.this, "BT Typing Error: " + error, Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
+    private void showBluetoothDeviceSelectorDialog() {
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        if (adapter == null) {
+            Toast.makeText(this, "Bluetooth not supported on this device", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!adapter.isEnabled()) {
+            Toast.makeText(this, "Please turn ON Bluetooth first", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
+            return;
+        }
+
+        Set<BluetoothDevice> bondedDevices = adapter.getBondedDevices();
+        if (bondedDevices == null || bondedDevices.isEmpty()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Pair Bluetooth Host")
+                    .setMessage("No paired devices found. Please pair your phone with your Computer in Windows Bluetooth Settings.")
+                    .setPositiveButton("Open Bluetooth Settings", (dialog, which) -> startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)))
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            return;
+        }
+
+        final List<BluetoothDevice> deviceList = new ArrayList<>(bondedDevices);
+        String[] names = new String[deviceList.size()];
+        for (int i = 0; i < deviceList.size(); i++) {
+            BluetoothDevice d = deviceList.get(i);
+            String name = d.getName() != null ? d.getName() : d.getAddress();
+            names[i] = name + " (" + d.getAddress() + ")";
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Select Bluetooth Computer / Host")
+                .setItems(names, (dialog, which) -> {
+                    BluetoothDevice selected = deviceList.get(which);
+                    Toast.makeText(MainActivity.this, "Connecting HID to " + selected.getName() + "...", Toast.LENGTH_SHORT).show();
+                    hidManager.connectToDevice(selected);
+                })
+                .setNeutralButton("Open Settings", (dialog, which) -> startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void updateStatusText(String text) {
+        handler.post(() -> tvStatus.setText(text));
+    }
+
+    private void startHealthCheckLoop() {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                checkServerStatus();
+                checkBluetoothStatus();
+                handler.postDelayed(this, 3000);
+            }
+        });
+    }
+
+    private void checkServerStatus() {
+        String serverUrl = getResolvedServerUrl();
+        String healthEndpoint = serverUrl.replaceAll("/+$", "") + "/health";
+
+        Request request = new Request.Builder()
+                .url(healthEndpoint)
+                .get()
+                .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                handler.post(() -> {
+                    ledServer.setBackgroundColor(Color.parseColor("#FF3333")); // Red
+                    tvServerStatus.setText("SERVER: OFFLINE");
+                });
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
+                handler.post(() -> {
+                    if (response.isSuccessful()) {
+                        ledServer.setBackgroundColor(Color.parseColor("#00FF88")); // Green
+                        tvServerStatus.setText("SERVER: ONLINE");
+                    } else {
+                        ledServer.setBackgroundColor(Color.parseColor("#FF3333"));
+                        tvServerStatus.setText("SERVER: ERROR (" + response.code() + ")");
                     }
                 });
             }
         });
+    }
+
+    private void checkBluetoothStatus() {
+        if (hidManager != null && hidManager.isConnected()) {
+            ledBluetooth.setBackgroundColor(Color.parseColor("#00FF88")); // Green
+            String deviceName = hidManager.getConnectedDeviceName();
+            tvBluetoothStatus.setText("BT: " + (deviceName.length() > 10 ? deviceName.substring(0, 8) + ".." : deviceName));
+        } else {
+            ledBluetooth.setBackgroundColor(Color.parseColor("#FF3333")); // Red
+            tvBluetoothStatus.setText("BT: UNPAIRED");
+        }
     }
 }
