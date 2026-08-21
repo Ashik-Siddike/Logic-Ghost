@@ -999,7 +999,7 @@ app.get('/', (req, res) => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        text: '// [LogicGhost] Organic Human Typing Verified Successfully!\n',
+                        text: '// [LogicGhost] Organic Human Typing Verified Successfully!\\n',
                         min_delay_ms: min,
                         max_delay_ms: max
                     })
