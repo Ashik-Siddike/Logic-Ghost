@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import re
+import json
 import collections
 import traceback
 import queue
@@ -17,8 +18,12 @@ from PIL import Image
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(line_buffering=True)
 
-# Path to .env file
-ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+# File Paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ENV_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", ".env"))
+CONTEXT_FILE = os.path.join(BASE_DIR, "custom_context.txt")
+CONTEXT_CONFIG_FILE = os.path.join(BASE_DIR, "context_config.json")
+SPEED_CONFIG_FILE = os.path.join(BASE_DIR, "speed_config.json")
 
 # Multi-API Key Manager with Round-Robin Rotation & Auto-Failover
 class ApiKeyRotator:
@@ -85,6 +90,154 @@ class ApiKeyRotator:
 
 rotator = ApiKeyRotator()
 
+# Custom Reference Knowledgebase & Rulebook Context Manager
+class KnowledgeContextManager:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.enabled = False
+        self.text = ""
+        self.filename = ""
+        self.load()
+
+    def load(self):
+        with self.lock:
+            if os.path.exists(CONTEXT_CONFIG_FILE):
+                try:
+                    with open(CONTEXT_CONFIG_FILE, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        self.enabled = data.get("enabled", False)
+                        self.filename = data.get("filename", "")
+                except Exception as e:
+                    print(f"[Context Warning] Failed to load context config: {e}", flush=True)
+
+            if os.path.exists(CONTEXT_FILE):
+                try:
+                    with open(CONTEXT_FILE, "r", encoding="utf-8") as f:
+                        self.text = f.read()
+                except Exception as e:
+                    print(f"[Context Warning] Failed to read context text: {e}", flush=True)
+
+    def save(self, text, enabled=True, filename=""):
+        with self.lock:
+            self.text = text or ""
+            self.enabled = enabled
+            if filename:
+                self.filename = filename
+            try:
+                with open(CONTEXT_FILE, "w", encoding="utf-8") as f:
+                    f.write(self.text)
+                with open(CONTEXT_CONFIG_FILE, "w", encoding="utf-8") as f:
+                    json.dump({"enabled": self.enabled, "filename": self.filename}, f)
+                print(f"[Context Engine] Saved {len(self.text.split())} words of custom context (Enabled={self.enabled}).", flush=True)
+            except Exception as e:
+                print(f"[Context Error] Failed to save context: {e}", flush=True)
+
+    def clear(self):
+        with self.lock:
+            self.text = ""
+            self.enabled = False
+            self.filename = ""
+            try:
+                if os.path.exists(CONTEXT_FILE):
+                    os.remove(CONTEXT_FILE)
+                with open(CONTEXT_CONFIG_FILE, "w", encoding="utf-8") as f:
+                    json.dump({"enabled": False, "filename": ""}, f)
+                print("[Context Engine] Cleared custom context completely.", flush=True)
+            except Exception as e:
+                print(f"[Context Error] Failed to clear context: {e}", flush=True)
+
+    def get_info(self):
+        with self.lock:
+            words = len(self.text.split()) if self.text else 0
+            chars = len(self.text) if self.text else 0
+            return {
+                "enabled": self.enabled,
+                "text": self.text,
+                "filename": self.filename,
+                "word_count": words,
+                "char_count": chars
+            }
+
+    def extract_text_from_file(self, file_path, original_filename=""):
+        ext = os.path.splitext(file_path)[1].lower()
+        extracted = ""
+        if ext == ".pdf":
+            try:
+                import pypdf
+                reader = pypdf.PdfReader(file_path)
+                pages_text = []
+                for i, page in enumerate(reader.pages):
+                    t = page.extract_text()
+                    if t:
+                        pages_text.append(f"--- PAGE {i+1} ---\n{t}")
+                extracted = "\n\n".join(pages_text)
+            except Exception as e:
+                print(f"[PDF Extract Error] {e}", flush=True)
+                raise Exception(f"Failed to read PDF: {e}")
+        else:
+            try:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    extracted = f.read()
+            except Exception as e:
+                raise Exception(f"Failed to read text file: {e}")
+
+        clean_text = extracted.strip()
+        if not clean_text:
+            raise Exception("No readable text could be extracted from this document.")
+
+        self.save(clean_text, enabled=True, filename=original_filename or os.path.basename(file_path))
+        return self.get_info()
+
+context_manager = KnowledgeContextManager()
+
+# Persistent Typing Speed Configuration
+class TypingSpeedManager:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.min_delay_ms = 45
+        self.max_delay_ms = 90
+        self.preset_name = "normal"
+        self.load()
+
+    def load(self):
+        with self.lock:
+            if os.path.exists(SPEED_CONFIG_FILE):
+                try:
+                    with open(SPEED_CONFIG_FILE, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        self.min_delay_ms = int(data.get("min_delay_ms", 45))
+                        self.max_delay_ms = int(data.get("max_delay_ms", 90))
+                        self.preset_name = data.get("preset_name", "normal")
+                except Exception as e:
+                    print(f"[Speed Config Warning] {e}", flush=True)
+
+    def set_speed(self, min_ms, max_ms, preset_name="custom", save=True):
+        with self.lock:
+            self.min_delay_ms = max(2, int(min_ms))
+            self.max_delay_ms = max(self.min_delay_ms, int(max_ms))
+            self.preset_name = preset_name
+            if save:
+                try:
+                    with open(SPEED_CONFIG_FILE, "w", encoding="utf-8") as f:
+                        json.dump({
+                            "min_delay_ms": self.min_delay_ms,
+                            "max_delay_ms": self.max_delay_ms,
+                            "preset_name": self.preset_name
+                        }, f)
+                    print(f"[Speed Config] Saved speed config ({self.preset_name}: {self.min_delay_ms}-{self.max_delay_ms}ms).", flush=True)
+                except Exception as e:
+                    print(f"[Speed Config Error] {e}", flush=True)
+
+    def get_info(self):
+        with self.lock:
+            return {
+                "min_delay_ms": self.min_delay_ms,
+                "max_delay_ms": self.max_delay_ms,
+                "preset_name": self.preset_name
+            }
+
+speed_manager = TypingSpeedManager()
+
 try:
     from google import genai
     HAS_GENAI = True
@@ -98,7 +251,7 @@ GEMINI_URL = "https://gemini.google.com/app"
 USER_DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "user_data"))
 
 # Elite Problem-Solving Master Prompt
-MASTER_PROMPT = (
+BASE_MASTER_PROMPT = (
     "You are an elite coding expert, exam solver, and technical assistant. "
     "Your task is to SOLVE the coding problem, technical question, or multiple choice question shown in the image completely. "
     "DO NOT repeat the question. DO NOT summarize the question. DO NOT include introductory or conversational filler. "
@@ -114,6 +267,21 @@ MASTER_PROMPT = (
     "[COMPARE] BEST: Option C | WHY: More efficient time complexity.\n"
     "4. General / Spoken Questions: Prefix with [VOICE] followed by a 1-2 sentence direct answer."
 )
+
+def build_effective_master_prompt():
+    """Injects custom PDF/Text rulebook knowledge into the master prompt if active."""
+    ctx = context_manager.get_info()
+    if ctx["enabled"] and ctx["text"].strip():
+        rules = ctx["text"].strip()
+        return (
+            f"{BASE_MASTER_PROMPT}\n\n"
+            f"CRITICAL REFERENCE RULES & EXAM GUIDELINES (STRICTLY OBEY ALL RULES BELOW):\n"
+            f"=======================================================================\n"
+            f"{rules}\n"
+            f"=======================================================================\n"
+            f"TASK: Solve the problem shown in the image strictly adhering to and applying the reference rules and guidelines provided above."
+        )
+    return BASE_MASTER_PROMPT
 
 # Win32 API Window Manipulation
 GWL_EXSTYLE = -20
@@ -176,23 +344,18 @@ def show_browser_onscreen():
     except Exception as e:
         print(f"[Visible Warning] {e}", flush=True)
 
-# Global Typing Speed Configuration (in milliseconds)
-TYPING_SPEED_CONFIG = {
-    "min_delay_ms": 18,
-    "max_delay_ms": 50
-}
-
 def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=None):
     """
-    Types text character-by-character into the active foreground window on Windows,
-    simulating real human physical typing with organic non-uniform keypress intervals and micro-pauses.
+    Types text character-by-character into active foreground window on Windows.
+    Simulates real human physical typing with non-uniform keypress intervals and micro-pauses.
     """
     import random
     if sys.platform != "win32":
         return
 
-    min_ms = min_delay_ms if min_delay_ms is not None else TYPING_SPEED_CONFIG["min_delay_ms"]
-    max_ms = max_delay_ms if max_delay_ms is not None else TYPING_SPEED_CONFIG["max_delay_ms"]
+    speed_info = speed_manager.get_info()
+    min_ms = min_delay_ms if min_delay_ms is not None else speed_info["min_delay_ms"]
+    max_ms = max_delay_ms if max_delay_ms is not None else speed_info["max_delay_ms"]
     min_ms = max(2, min_ms)
     max_ms = max(min_ms, max_ms)
 
@@ -202,7 +365,7 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     VK_RETURN = 0x0D
     VK_TAB = 0x09
 
-    print(f"[Organic Human Typing] Typing {len(text)} characters (Random Delay: {min_ms}ms - {max_ms}ms)...", flush=True)
+    print(f"[Organic Human Typing] Typing {len(text)} characters (Random Range: {min_ms}ms - {max_ms}ms)...", flush=True)
 
     try:
         pyperclip.copy(text)
@@ -214,11 +377,15 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
             continue
 
         code = ord(char)
-        key_hold_time = random.uniform(0.008, 0.020)
+        # Random physical key contact time
+        key_hold_time = random.uniform(0.010, 0.026) if min_ms < 150 else random.uniform(0.020, 0.055)
+        # Random inter-key delay
         char_delay = random.uniform(min_ms, max_ms) / 1000.0
 
+        # Organic human pauses on special characters, spaces, and brackets
         if char in ['\n', ' ', '{', '}', '(', ')', ';', '=']:
-            char_delay += random.uniform(0.015, 0.045)
+            extra = random.uniform(0.020, 0.060) if min_ms < 150 else random.uniform(0.080, 0.250)
+            char_delay += extra
 
         if char == '\n':
             user32.keybd_event(VK_RETURN, 0x1C, 0, 0)
@@ -279,6 +446,10 @@ def analyze_with_rotated_gemini_api(image_path):
 
     last_err = None
     img = Image.open(image_path)
+    prompt = build_effective_master_prompt()
+    ctx_info = context_manager.get_info()
+    if ctx_info["enabled"]:
+        print(f"[Context Engine] Attaching {ctx_info['word_count']} words of reference guidelines to prompt.", flush=True)
 
     for attempt in range(total_keys):
         api_key = rotator.get_next_key()
@@ -289,7 +460,7 @@ def analyze_with_rotated_gemini_api(image_path):
             client = genai.Client(api_key=api_key)
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
-                contents=[MASTER_PROMPT, img]
+                contents=[prompt, img]
             )
 
             raw_text = (response.text or "").strip()
@@ -301,7 +472,8 @@ def analyze_with_rotated_gemini_api(image_path):
                 "tag": tag,
                 "payload": payload,
                 "engine": "gemini-2.5-flash-api",
-                "key_used": masked_key
+                "key_used": masked_key,
+                "rules_active": ctx_info["enabled"]
             }
         except Exception as e:
             last_err = e
@@ -372,6 +544,7 @@ class GeminiAutomationEngine:
             self.page.set_input_files('input[type="file"]', image_path)
             time.sleep(2)
 
+        prompt = build_effective_master_prompt()
         prompt_editable = self.page.query_selector('rich-textarea div[contenteditable="true"], div[aria-label*="prompt" i], div[contenteditable="true"]')
         if prompt_editable:
             prompt_editable.click()
@@ -379,7 +552,7 @@ class GeminiAutomationEngine:
             prompt_box.click()
             
         time.sleep(0.5)
-        self.page.keyboard.insert_text(MASTER_PROMPT)
+        self.page.keyboard.insert_text(prompt)
         time.sleep(1)
 
         send_btn = self.page.query_selector('button[aria-label*="Send message" i], button[aria-label*="Send" i], button.send-button, [aria-label*="Submit" i]')
@@ -511,15 +684,51 @@ def handle_set_speed():
     data = request.json or {}
     min_ms = data.get('min_delay_ms')
     max_ms = data.get('max_delay_ms')
-    if min_ms is not None:
-        TYPING_SPEED_CONFIG["min_delay_ms"] = int(min_ms)
-    if max_ms is not None:
-        TYPING_SPEED_CONFIG["max_delay_ms"] = int(max_ms)
-    return jsonify({"success": True, "speed": TYPING_SPEED_CONFIG})
+    preset_name = data.get('preset_name', 'custom')
+    save_permanent = data.get('save', True)
+    if min_ms is not None and max_ms is not None:
+        speed_manager.set_speed(min_ms, max_ms, preset_name, save=save_permanent)
+    return jsonify({"success": True, "speed": speed_manager.get_info()})
 
 @app.route('/settings/speed', methods=['GET'])
 def handle_get_speed():
-    return jsonify(TYPING_SPEED_CONFIG)
+    return jsonify(speed_manager.get_info())
+
+# Knowledge Context Endpoints
+@app.route('/api/context', methods=['GET'])
+def handle_get_context():
+    return jsonify(context_manager.get_info())
+
+@app.route('/api/context', methods=['POST'])
+def handle_set_context():
+    data = request.json or {}
+    text = data.get('text', '')
+    enabled = data.get('enabled', True)
+    filename = data.get('filename', '')
+    context_manager.save(text, enabled=enabled, filename=filename)
+    return jsonify({"success": True, "context": context_manager.get_info()})
+
+@app.route('/api/context/clear', methods=['POST'])
+def handle_clear_context():
+    context_manager.clear()
+    return jsonify({"success": True, "context": context_manager.get_info()})
+
+@app.route('/api/context/upload', methods=['POST'])
+def handle_upload_context():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    f = request.files['file']
+    if f.filename == '':
+        return jsonify({"error": "Empty filename"}), 400
+
+    temp_path = os.path.join(BASE_DIR, "temp_" + f.filename)
+    f.save(temp_path)
+    try:
+        info = context_manager.extract_text_from_file(temp_path, original_filename=f.filename)
+        return jsonify({"success": True, "context": info})
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 # API Keys Management Endpoints
 @app.route('/api/keys', methods=['GET'])
@@ -560,11 +769,14 @@ def handle_stealth_show():
 
 @app.route('/status', methods=['GET'])
 def handle_status():
+    ctx = context_manager.get_info()
     return jsonify({
         "status": "online",
         "totalKeys": len(rotator.keys),
         "engine": "gemini-2.5-flash-rotator" if len(rotator.keys) > 0 else "playwright-stealth-browser",
-        "hasPlaywright": playwright_engine is not None
+        "hasPlaywright": playwright_engine is not None,
+        "contextEnabled": ctx["enabled"],
+        "contextWordCount": ctx["word_count"]
     })
 
 if __name__ == '__main__':

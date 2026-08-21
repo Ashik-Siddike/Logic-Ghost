@@ -5,6 +5,7 @@ const path = require('path');
 const os = require('os');
 const axios = require('axios');
 const fs = require('fs');
+const FormData = require('form-data');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -14,17 +15,21 @@ const PYTHON_STATUS_URL = 'http://127.0.0.1:5001/status';
 const PYTHON_STEALTH_HIDE = 'http://127.0.0.1:5001/stealth/hide';
 const PYTHON_STEALTH_SHOW = 'http://127.0.0.1:5001/stealth/show';
 const PYTHON_KEYS_URL = 'http://127.0.0.1:5001/api/keys';
+const PYTHON_CONTEXT_URL = 'http://127.0.0.1:5001/api/context';
+const PYTHON_CONTEXT_CLEAR = 'http://127.0.0.1:5001/api/context/clear';
+const PYTHON_CONTEXT_UPLOAD = 'http://127.0.0.1:5001/api/context/upload';
+const PYTHON_SPEED_URL = 'http://127.0.0.1:5001/settings/speed';
 
 // In-memory feed of recent captures
 const activityFeed = [];
 
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Configure Multer Storage for Screen Captures
+// Configure Multer Storage for Screen Captures and Documents
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -35,14 +40,14 @@ const storage = multer.diskStorage({
         cb(null, uploadsDir);
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + path.extname(file.originalname || 'capture.jpg');
-        cb(null, 'capture_' + uniqueSuffix);
+        const uniqueSuffix = Date.now() + path.extname(file.originalname || 'file.dat');
+        cb(null, 'file_' + uniqueSuffix);
     }
 });
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 25 * 1024 * 1024 } // 25MB max
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB max
 });
 
 /**
@@ -112,7 +117,8 @@ app.post('/capture', upload.single('image'), async (req, res) => {
             tag: data.tag || '[TYPE]',
             payload: data.payload || '',
             engine: data.engine || 'gemini-api',
-            key_used: data.key_used || ''
+            key_used: data.key_used || '',
+            rules_active: data.rules_active || false
         };
 
         activityFeed.unshift(item);
@@ -125,6 +131,7 @@ app.post('/capture', upload.single('image'), async (req, res) => {
             raw_answer: data.raw_answer || '',
             engine: data.engine,
             key_used: data.key_used,
+            rules_active: data.rules_active || false,
             duration: duration + 's'
         });
     } catch (err) {
@@ -154,12 +161,86 @@ app.post('/type', async (req, res) => {
             text,
             min_delay_ms,
             max_delay_ms
-        }, { timeout: 60000 });
+        }, { timeout: 120000 });
 
         return res.json(pythonResponse.data);
     } catch (err) {
         console.error('[Express] Error forwarding typing request:', err.message);
         return res.status(500).json({ error: 'Failed to inject keystrokes', details: err.message });
+    }
+});
+
+/**
+ * Knowledgebase Context Endpoints
+ */
+app.get('/api/context', async (req, res) => {
+    try {
+        const r = await axios.get(PYTHON_CONTEXT_URL, { timeout: 5000 });
+        return res.json(r.data);
+    } catch (e) {
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/context', async (req, res) => {
+    try {
+        const r = await axios.post(PYTHON_CONTEXT_URL, req.body, { timeout: 5000 });
+        return res.json(r.data);
+    } catch (e) {
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/context/clear', async (req, res) => {
+    try {
+        const r = await axios.post(PYTHON_CONTEXT_CLEAR, {}, { timeout: 5000 });
+        return res.json(r.data);
+    } catch (e) {
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/context/upload', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const formData = new FormData();
+        formData.append('file', fs.createReadStream(req.file.path), req.file.originalname);
+
+        const r = await axios.post(PYTHON_CONTEXT_UPLOAD, formData, {
+            headers: formData.getHeaders(),
+            timeout: 30000
+        });
+
+        // Cleanup temp file
+        fs.unlink(req.file.path, () => {});
+        return res.json(r.data);
+    } catch (e) {
+        if (req.file) fs.unlink(req.file.path, () => {});
+        return res.status(500).json({ error: e.response ? e.response.data : e.message });
+    }
+});
+
+/**
+ * Speed Configuration Endpoints
+ */
+app.get('/settings/speed', async (req, res) => {
+    try {
+        const r = await axios.get(PYTHON_SPEED_URL, { timeout: 5000 });
+        return res.json(r.data);
+    } catch (e) {
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/settings/speed', async (req, res) => {
+    try {
+        const r = await axios.post(PYTHON_SPEED_URL, req.body, { timeout: 5000 });
+        return res.json(r.data);
+    } catch (e) {
+        return res.status(500).json({ error: e.message });
     }
 });
 
@@ -251,6 +332,8 @@ app.get('/', (req, res) => {
             --cyan: #00f0ff;
             --green: #00ff88;
             --purple: #a855f7;
+            --amber: #f59e0b;
+            --red: #ef4444;
             --text: #f1f5f9;
             --text-dim: #94a3b8;
         }
@@ -263,7 +346,7 @@ app.get('/', (req, res) => {
             min-height: 100vh;
             padding: 24px;
         }
-        .container { max-width: 1100px; margin: 0 auto; }
+        .container { max-width: 1150px; margin: 0 auto; }
         .header {
             display: flex;
             align-items: center;
@@ -289,7 +372,7 @@ app.get('/', (req, res) => {
             background: rgba(0, 255, 136, 0.15);
             border: 1px solid var(--green);
             color: var(--green);
-            padding: 4px 10px;
+            padding: 4px 12px;
             border-radius: 20px;
             font-size: 11px;
             font-weight: 600;
@@ -366,6 +449,22 @@ app.get('/', (req, res) => {
             box-shadow: 0 0 16px rgba(0, 240, 255, 0.6);
             transform: translateY(-1px);
         }
+        .btn.active-preset {
+            background: var(--cyan);
+            color: #000;
+            box-shadow: 0 0 16px rgba(0, 240, 255, 0.8);
+            border-color: #fff;
+        }
+        .btn-green {
+            background: rgba(0, 255, 136, 0.15);
+            border-color: var(--green);
+            color: var(--green);
+        }
+        .btn-green:hover {
+            background: var(--green);
+            color: #000;
+            box-shadow: 0 0 16px rgba(0, 255, 136, 0.6);
+        }
         .btn-purple {
             background: rgba(168, 85, 247, 0.15);
             border-color: var(--purple);
@@ -375,6 +474,16 @@ app.get('/', (req, res) => {
             background: var(--purple);
             color: #fff;
             box-shadow: 0 0 16px rgba(168, 85, 247, 0.6);
+        }
+        .btn-red {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: var(--red);
+            color: var(--red);
+        }
+        .btn-red:hover {
+            background: var(--red);
+            color: #fff;
+            box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
         }
         .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
         .feed-container {
@@ -416,7 +525,7 @@ app.get('/', (req, res) => {
             max-height: 200px;
             overflow-y: auto;
         }
-        .input-text {
+        .input-text, .textarea-box {
             width: 100%;
             background: rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(0, 240, 255, 0.3);
@@ -426,6 +535,26 @@ app.get('/', (req, res) => {
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
             margin-bottom: 10px;
+        }
+        .textarea-box {
+            resize: vertical;
+            min-height: 110px;
+            line-height: 1.5;
+        }
+        .dropzone {
+            border: 2px dashed rgba(0, 240, 255, 0.4);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            background: rgba(0, 240, 255, 0.03);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+        }
+        .dropzone:hover, .dropzone.dragover {
+            background: rgba(0, 240, 255, 0.1);
+            border-color: var(--cyan);
+            box-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
         }
     </style>
 </head>
@@ -459,7 +588,67 @@ app.get('/', (req, res) => {
             </div>
         </div>
 
-        <!-- Multi-API Key Round-Robin Management -->
+        <!-- 📚 Custom Knowledgebase & PDF Rulebook Context Manager -->
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="card-title">
+                <span>📚 Custom Reference Context & PDF Rulebook Knowledgebase</span>
+                <span style="font-size: 11px; color: var(--cyan);" id="contextBadge">Context: Inactive</span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 12px;">
+                Upload rulebook PDFs or paste custom exam guidelines/framework rules. The AI will strictly study and obey these rules before answering any capture!
+            </p>
+
+            <!-- Drag and Drop Zone -->
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+                <input type="file" id="fileInput" accept=".pdf,.txt,.md,.doc,.docx" style="display:none;" onchange="handleFileSelect(event)">
+                <div style="font-size: 24px; margin-bottom: 6px;">📄</div>
+                <div style="font-size: 13px; font-weight: 600; color: var(--cyan);">Drop PDF or Guidelines File Here (or Click to Browse)</div>
+                <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Supports .pdf, .txt, .md (Auto-extracted in 1 second)</div>
+            </div>
+
+            <textarea class="textarea-box" id="contextTextArea" placeholder="Or paste custom rules, guidelines, code conventions, or exam reference instructions here directly..."></textarea>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div class="btn-group">
+                    <button class="btn btn-green" onclick="saveContext(true)">💾 Save & Enable Rules</button>
+                    <button class="btn" onclick="toggleContext()">⏸️ Toggle Enable/Disable</button>
+                    <button class="btn btn-red" onclick="clearContext()">🗑️ 1-Click Clear Context</button>
+                </div>
+                <span id="contextStats" style="font-size: 11px; font-family: 'JetBrains Mono'; color: var(--green);">0 Words Loaded</span>
+            </div>
+        </div>
+
+        <!-- ⌨️ Organic Human Typing Speed & Jitter Settings -->
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="card-title">
+                <span>⌨️ Organic Human Typing Speed & Jitter Engine</span>
+                <span style="font-size: 11px; color: var(--cyan);" id="activePresetTag">Preset: Normal Human</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 16px;">
+                <div>
+                    <label style="font-size: 12px; font-family: 'JetBrains Mono'; color: var(--cyan);">Min Delay: <span id="minVal">45</span>ms</label>
+                    <input type="range" id="minRange" min="2" max="500" value="45" style="width: 100%; accent-color: var(--cyan);" oninput="onSliderChange()">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-family: 'JetBrains Mono'; color: var(--cyan);">Max Delay: <span id="maxVal">90</span>ms</label>
+                    <input type="range" id="maxRange" min="5" max="900" value="90" style="width: 100%; accent-color: var(--cyan);" oninput="onSliderChange()">
+                </div>
+            </div>
+            <div class="btn-group" id="presetButtonGroup" style="margin-bottom: 12px;">
+                <button class="btn" id="btn-ultra" onclick="setSpeedPreset('ultra', 5, 15)">⚡ Ultra (5-15ms)</button>
+                <button class="btn" id="btn-fast" onclick="setSpeedPreset('fast', 20, 45)">🏃 Fast Human (20-45ms)</button>
+                <button class="btn" id="btn-normal" onclick="setSpeedPreset('normal', 45, 90)">🚶 Normal Human (45-90ms)</button>
+                <button class="btn" id="btn-relaxed" onclick="setSpeedPreset('relaxed', 90, 180)">🐢 Relaxed Human (90-180ms)</button>
+                <button class="btn btn-purple" id="btn-stealth" onclick="setSpeedPreset('stealth', 180, 350)">🦥 Ultra Stealth (180-350ms)</button>
+                <button class="btn btn-purple" id="btn-ninja" onclick="setSpeedPreset('ninja', 350, 700)">🕵️ Ghost Ninja (350-700ms)</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button class="btn btn-green" onclick="saveSpeedDefault()">💾 Save Speed as Default</button>
+                <span id="speedSaveMsg" style="font-size: 11px; color: var(--green);"></span>
+            </div>
+        </div>
+
+        <!-- 🔑 Multi-API Key Round-Robin Management -->
         <div class="card" style="margin-bottom: 24px;">
             <div class="card-title">
                 <span>🔑 Multi-API Key Round-Robin Manager</span>
@@ -476,26 +665,7 @@ app.get('/', (req, res) => {
             <div id="keysList" style="margin-top: 12px; font-family: 'JetBrains Mono'; font-size: 11px; color: var(--cyan);"></div>
         </div>
 
-        <div class="card" style="margin-bottom: 24px;">
-            <div class="card-title">⌨️ Organic Human Typing Speed & Jitter Settings</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 16px;">
-                <div>
-                    <label style="font-size: 12px; font-family: 'JetBrains Mono'; color: var(--cyan);">Min Delay: <span id="minVal">18</span>ms</label>
-                    <input type="range" id="minRange" min="2" max="200" value="18" style="width: 100%; accent-color: var(--cyan);" oninput="updateSpeedUI()">
-                </div>
-                <div>
-                    <label style="font-size: 12px; font-family: 'JetBrains Mono'; color: var(--cyan);">Max Delay: <span id="maxVal">50</span>ms</label>
-                    <input type="range" id="maxRange" min="5" max="400" value="50" style="width: 100%; accent-color: var(--cyan);" oninput="updateSpeedUI()">
-                </div>
-            </div>
-            <div class="btn-group">
-                <button class="btn" onclick="setPreset(5, 15)">⚡ Ultra (5-15ms)</button>
-                <button class="btn" onclick="setPreset(18, 45)">🏃 Fast Human (18-45ms)</button>
-                <button class="btn" onclick="setPreset(35, 85)">🚶 Realistic Human (35-85ms)</button>
-                <button class="btn btn-purple" onclick="setPreset(80, 180)">🐢 Ultra Stealth (80-180ms)</button>
-            </div>
-        </div>
-
+        <!-- ⚡ Live AI Answers & Activity Stream -->
         <div class="card">
             <div class="card-title">
                 <span>⚡ Live AI Answers & Activity Stream</span>
@@ -525,23 +695,223 @@ app.get('/', (req, res) => {
             }
         }
 
-        function updateSpeedUI() {
-            const min = document.getElementById('minRange').value;
-            const max = document.getElementById('maxRange').value;
+        // Speed Engine Logic
+        let currentPreset = 'normal';
+
+        const PRESETS = {
+            'ultra': { min: 5, max: 15, name: '⚡ Ultra (5-15ms)' },
+            'fast': { min: 20, max: 45, name: '🏃 Fast Human (20-45ms)' },
+            'normal': { min: 45, max: 90, name: '🚶 Normal Human (45-90ms)' },
+            'relaxed': { min: 90, max: 180, name: '🐢 Relaxed Human (90-180ms)' },
+            'stealth': { min: 180, max: 350, name: '🦥 Ultra Stealth (180-350ms)' },
+            'ninja': { min: 350, max: 700, name: '🕵️ Ghost Ninja (350-700ms)' }
+        };
+
+        function highlightPresetButton(presetKey) {
+            document.querySelectorAll('#presetButtonGroup .btn').forEach(b => b.classList.remove('active-preset'));
+            const btn = document.getElementById('btn-' + presetKey);
+            if (btn) btn.classList.add('active-preset');
+            const tagEl = document.getElementById('activePresetTag');
+            if (PRESETS[presetKey]) {
+                tagEl.innerText = 'Preset: ' + PRESETS[presetKey].name;
+            } else {
+                tagEl.innerText = 'Preset: Custom Range';
+            }
+        }
+
+        function setSpeedPreset(key, min, max) {
+            currentPreset = key;
+            document.getElementById('minRange').value = min;
+            document.getElementById('maxRange').value = max;
             document.getElementById('minVal').innerText = min;
             document.getElementById('maxVal').innerText = max;
-            fetch('http://127.0.0.1:5001/settings/speed', {
+            highlightPresetButton(key);
+
+            fetch('/settings/speed', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ min_delay_ms: parseInt(min), max_delay_ms: parseInt(max) })
+                body: JSON.stringify({ min_delay_ms: min, max_delay_ms: max, preset_name: key, save: true })
             }).catch(e => {});
         }
 
-        function setPreset(min, max) {
-            document.getElementById('minRange').value = min;
-            document.getElementById('maxRange').value = max;
-            updateSpeedUI();
+        function onSliderChange() {
+            const min = parseInt(document.getElementById('minRange').value);
+            const max = parseInt(document.getElementById('maxRange').value);
+            document.getElementById('minVal').innerText = min;
+            document.getElementById('maxVal').innerText = max;
+
+            let matchedPreset = 'custom';
+            for (const [key, p] of Object.entries(PRESETS)) {
+                if (p.min === min && p.max === max) {
+                    matchedPreset = key;
+                    break;
+                }
+            }
+            highlightPresetButton(matchedPreset);
+
+            fetch('/settings/speed', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ min_delay_ms: min, max_delay_ms: max, preset_name: matchedPreset, save: false })
+            }).catch(e => {});
         }
+
+        async function saveSpeedDefault() {
+            const min = parseInt(document.getElementById('minRange').value);
+            const max = parseInt(document.getElementById('maxRange').value);
+            const msgEl = document.getElementById('speedSaveMsg');
+            msgEl.innerText = 'Saving default speed...';
+            try {
+                await fetch('/settings/speed', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ min_delay_ms: min, max_delay_ms: max, preset_name: currentPreset, save: true })
+                });
+                msgEl.innerText = '✅ Speed saved as default across restarts!';
+                setTimeout(() => { msgEl.innerText = ''; }, 3000);
+            } catch (e) {
+                msgEl.innerText = 'Failed to save: ' + e.message;
+            }
+        }
+
+        async function loadSpeed() {
+            try {
+                const res = await fetch('/settings/speed');
+                const d = await res.json();
+                document.getElementById('minRange').value = d.min_delay_ms;
+                document.getElementById('maxRange').value = d.max_delay_ms;
+                document.getElementById('minVal').innerText = d.min_delay_ms;
+                document.getElementById('maxVal').innerText = d.max_delay_ms;
+                currentPreset = d.preset_name || 'normal';
+                highlightPresetButton(currentPreset);
+            } catch (e) {}
+        }
+
+        // Knowledge Context Logic
+        let contextEnabled = false;
+
+        async function loadContext() {
+            try {
+                const res = await fetch('/api/context');
+                const d = await res.json();
+                contextEnabled = d.enabled;
+                document.getElementById('contextTextArea').value = d.text || '';
+                updateContextUI(d);
+            } catch (e) {}
+        }
+
+        function updateContextUI(d) {
+            const badge = document.getElementById('contextBadge');
+            const stats = document.getElementById('contextStats');
+            if (d.enabled && d.word_count > 0) {
+                badge.innerText = '✅ Context Active: ' + (d.filename || 'Custom Rules');
+                badge.style.color = 'var(--green)';
+                stats.innerText = d.word_count + ' Words (~' + Math.round(d.word_count * 1.3) + ' Tokens) Active';
+                stats.style.color = 'var(--green)';
+            } else if (d.word_count > 0) {
+                badge.innerText = '⏸️ Context Paused: ' + (d.filename || 'Custom Rules');
+                badge.style.color = 'var(--amber)';
+                stats.innerText = d.word_count + ' Words (Disabled)';
+                stats.style.color = 'var(--amber)';
+            } else {
+                badge.innerText = 'Context: Empty';
+                badge.style.color = 'var(--text-dim)';
+                stats.innerText = '0 Words Loaded';
+                stats.style.color = 'var(--text-dim)';
+            }
+        }
+
+        async function saveContext(enable = true) {
+            const text = document.getElementById('contextTextArea').value.trim();
+            try {
+                const res = await fetch('/api/context', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, enabled: enable, filename: 'Manual Rules' })
+                });
+                const d = await res.json();
+                updateContextUI(d.context);
+                alert(enable ? 'Rules saved and activated!' : 'Rules saved!');
+            } catch (e) {
+                alert('Failed to save context: ' + e.message);
+            }
+        }
+
+        async function toggleContext() {
+            contextEnabled = !contextEnabled;
+            const text = document.getElementById('contextTextArea').value.trim();
+            try {
+                const res = await fetch('/api/context', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, enabled: contextEnabled })
+                });
+                const d = await res.json();
+                updateContextUI(d.context);
+            } catch (e) {}
+        }
+
+        async function clearContext() {
+            if (!confirm('Are you sure you want to clear the entire custom rulebook context?')) return;
+            try {
+                const res = await fetch('/api/context/clear', { method: 'POST' });
+                const d = await res.json();
+                document.getElementById('contextTextArea').value = '';
+                updateContextUI(d.context);
+                alert('Context cleared successfully!');
+            } catch (e) {
+                alert('Failed to clear: ' + e.message);
+            }
+        }
+
+        async function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            uploadContextFile(file);
+        }
+
+        async function uploadContextFile(file) {
+            const dropEl = document.getElementById('dropzone');
+            dropEl.innerText = '⏳ Extracting text from ' + file.name + '...';
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const res = await fetch('/api/context/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const d = await res.json();
+                if (d.success) {
+                    document.getElementById('contextTextArea').value = d.context.text;
+                    updateContextUI(d.context);
+                    alert('Successfully extracted ' + d.context.word_count + ' words from ' + file.name + '!');
+                } else {
+                    alert('Upload failed: ' + (d.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Failed to upload: ' + e.message);
+            } finally {
+                dropEl.innerHTML = \`
+                    <div style="font-size: 24px; margin-bottom: 6px;">📄</div>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--cyan);">Drop PDF or Guidelines File Here (or Click to Browse)</div>
+                    <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Supports .pdf, .txt, .md (Auto-extracted in 1 second)</div>
+                \`;
+            }
+        }
+
+        // Drag and Drop listeners
+        const dropzone = document.getElementById('dropzone');
+        ['dragenter', 'dragover'].forEach(name => {
+            dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); }, false);
+        });
+        ['dragleave', 'drop'].forEach(name => {
+            dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); }, false);
+        });
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) uploadContextFile(files[0]);
+        });
 
         async function testType() {
             const min = parseInt(document.getElementById('minRange').value);
@@ -612,7 +982,10 @@ app.get('/', (req, res) => {
                 container.innerHTML = items.map(item => \`
                     <div class="feed-item">
                         <div class="feed-header">
-                            <span class="feed-tag">\${item.tag}</span>
+                            <div>
+                                <span class="feed-tag">\${item.tag}</span>
+                                \${item.rules_active ? '<span style="background: rgba(0,255,136,0.2); color: var(--green); padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 6px;">📚 PDF RULES APPLIED</span>' : ''}
+                            </div>
                             <span style="color: var(--text-dim);">⏱️ \${item.duration} | 🕒 \${item.time} | 🤖 \${item.engine} \${item.key_used ? ' (' + item.key_used + ')' : ''}</span>
                         </div>
                         <div class="feed-code">\${escapeHtml(item.payload)}</div>
@@ -628,6 +1001,8 @@ app.get('/', (req, res) => {
         setInterval(updateFeed, 2000);
         updateFeed();
         loadApiKeys();
+        loadSpeed();
+        loadContext();
     </script>
 </body>
 </html>`);
