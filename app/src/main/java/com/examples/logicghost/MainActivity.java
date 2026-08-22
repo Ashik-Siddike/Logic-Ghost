@@ -362,11 +362,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void selectMultiSlotTab(String tabKey) {
-        tabSlotCode.setBackgroundResource(R.drawable.btn_pill_cyber);
+        tabSlotCode.setBackgroundResource(R.drawable.btn_pill_cute_glass);
         tabSlotCode.setTextColor(Color.parseColor("#94A3B8"));
-        tabSlotReason.setBackgroundResource(R.drawable.btn_pill_cyber);
+        tabSlotReason.setBackgroundResource(R.drawable.btn_pill_cute_glass);
         tabSlotReason.setTextColor(Color.parseColor("#94A3B8"));
-        tabSlotRating.setBackgroundResource(R.drawable.btn_pill_cyber);
+        tabSlotRating.setBackgroundResource(R.drawable.btn_pill_cute_glass);
         tabSlotRating.setTextColor(Color.parseColor("#94A3B8"));
 
         tvVoicePayload.setVisibility(View.GONE);
@@ -375,12 +375,12 @@ public class MainActivity extends AppCompatActivity {
         layoutTypeMode.setVisibility(View.GONE);
 
         if ("reason".equalsIgnoreCase(tabKey)) {
-            tabSlotReason.setBackgroundColor(Color.parseColor("#00FF88"));
-            tabSlotReason.setTextColor(Color.parseColor("#000000"));
+            tabSlotReason.setBackgroundResource(R.drawable.btn_pill_cute_primary);
+            tabSlotReason.setTextColor(Color.parseColor("#020B14"));
             tvVoicePayload.setVisibility(View.VISIBLE);
             tvVoicePayload.setText(currentSlotReason);
         } else if ("rating".equalsIgnoreCase(tabKey)) {
-            tabSlotRating.setBackgroundColor(Color.parseColor("#A855F7"));
+            tabSlotRating.setBackgroundResource(R.drawable.btn_pill_cute_purple);
             tabSlotRating.setTextColor(Color.parseColor("#FFFFFF"));
             tvVoicePayload.setVisibility(View.VISIBLE);
             String text = "⭐ VERDICT / RATING:\n" + currentSlotRating;
@@ -390,8 +390,8 @@ public class MainActivity extends AppCompatActivity {
             tvVoicePayload.setText(text);
         } else {
             // "code"
-            tabSlotCode.setBackgroundColor(Color.parseColor("#00FF88"));
-            tabSlotCode.setTextColor(Color.parseColor("#000000"));
+            tabSlotCode.setBackgroundResource(R.drawable.btn_pill_cute_primary);
+            tabSlotCode.setTextColor(Color.parseColor("#020B14"));
             layoutTypeMode.setVisibility(View.VISIBLE);
             tvCodePayload.setText(currentSlotCode.isEmpty() ? currentPayload : currentSlotCode);
         }
