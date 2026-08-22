@@ -26,6 +26,10 @@ const PYTHON_TYPE_STATUS_URL = 'http://127.0.0.1:5001/api/type/status';
 // In-memory feed of recent captures
 const activityFeed = [];
 
+app.get('/logo.png', (req, res) => {
+    res.sendFile(path.join(__dirname, '../app_logo.png'));
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -399,8 +403,9 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LogicGhost - Desktop AI Control HUD</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>LogicGhost - Stealth Automation HUD</title>
+    <link rel="icon" type="image/png" href="/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #07090e;
@@ -665,6 +670,7 @@ app.get('/', (req, res) => {
     <div class="container">
         <div class="header">
             <div class="brand">
+                <img src="/logo.png" style="width: 38px; height: 38px; border-radius: 10px; box-shadow: 0 0 16px rgba(0, 240, 255, 0.5); border: 1.5dp solid rgba(0, 240, 255, 0.4);" alt="Logo">
                 <div class="brand-title">LOGICGHOST HUD</div>
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
