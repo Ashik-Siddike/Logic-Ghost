@@ -773,8 +773,20 @@ def handle_type():
     min_delay = data.get('min_delay_ms')
     max_delay = data.get('max_delay_ms')
 
-    ok = inject_keystrokes_to_active_window(text, min_delay_ms=min_delay, max_delay_ms=max_delay)
-    return jsonify({"success": ok, "characters_typed": len(text), "min_delay_ms": min_delay, "max_delay_ms": max_delay})
+    # Launch keystroke injection in a daemon thread so HTTP response is returned immediately (<5ms)
+    # allowing /settings/speed and /api/type/stop to process concurrently without network blocking!
+    threading.Thread(
+        target=inject_keystrokes_to_active_window,
+        args=(text,),
+        kwargs={"min_delay_ms": min_delay, "max_delay_ms": max_delay},
+        daemon=True
+    ).start()
+
+    return jsonify({
+        "success": True,
+        "characters_typed": len(text),
+        "message": f"Keystroke injection active for {len(text)} characters"
+    })
 
 @app.route('/api/type/stop', methods=['POST'])
 def handle_stop_typing():
@@ -941,4 +953,4 @@ if __name__ == '__main__':
     worker.start()
     print(" [LogicGhost] Flask API running on http://127.0.0.1:5001")
     print("=======================================================")
-    app.run(host='127.0.0.1', port=5001, debug=False)
+    app.run(host='127.0.0.1', port=5001, debug=False, threaded=True)

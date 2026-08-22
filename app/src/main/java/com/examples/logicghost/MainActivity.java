@@ -775,7 +775,9 @@ public class MainActivity extends AppCompatActivity {
             public void onFailure(@NonNull Call call, @NonNull IOException e) {}
 
             @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) {}
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
+                response.close();
+            }
         });
     }
 
@@ -979,10 +981,14 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
-                handler.post(() -> {
-                    updateStatusText("🛑 TYPING ABORTED • READY FOR NEXT");
-                    Toast.makeText(MainActivity.this, "🛑 Typing aborted! Ready for next input.", Toast.LENGTH_SHORT).show();
-                });
+                try {
+                    handler.post(() -> {
+                        updateStatusText("🛑 TYPING ABORTED • READY FOR NEXT");
+                        Toast.makeText(MainActivity.this, "🛑 Typing aborted! Ready for next input.", Toast.LENGTH_SHORT).show();
+                    });
+                } finally {
+                    response.close();
+                }
             }
         });
     }
@@ -1024,14 +1030,18 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
-                handler.post(() -> {
-                    if (response.isSuccessful()) {
-                        updateStatusText("✅ AUTO-SEQUENCE INJECTED TO ACTIVE WINDOW");
-                        Toast.makeText(MainActivity.this, "🚀 Auto-filling Code & Reason with Tab transition!", Toast.LENGTH_SHORT).show();
-                    } else {
-                        updateStatusText("SEQUENCE ERROR (" + response.code() + ")");
-                    }
-                });
+                try {
+                    handler.post(() -> {
+                        if (response.isSuccessful()) {
+                            updateStatusText("✅ AUTO-SEQUENCE INJECTED TO ACTIVE WINDOW");
+                            Toast.makeText(MainActivity.this, "🚀 Auto-filling Code & Reason with Tab transition!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            updateStatusText("SEQUENCE ERROR (" + response.code() + ")");
+                        }
+                    });
+                } finally {
+                    response.close();
+                }
             }
         });
     }
@@ -1277,14 +1287,18 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
-                handler.post(() -> {
-                    if (response.isSuccessful()) {
-                        updateStatusText("✅ TYPED " + payloadToType.length() + " CHARACTERS TO PC");
-                        Toast.makeText(MainActivity.this, "Typed " + payloadToType.length() + " chars into active window!", Toast.LENGTH_SHORT).show();
-                    } else {
-                        updateStatusText("TYPE ERROR (" + response.code() + ")");
-                    }
-                });
+                try {
+                    handler.post(() -> {
+                        if (response.isSuccessful()) {
+                            updateStatusText("✅ TYPED " + payloadToType.length() + " CHARACTERS TO PC");
+                            Toast.makeText(MainActivity.this, "⚡ Typing " + payloadToType.length() + " chars into active window!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            updateStatusText("TYPE ERROR (" + response.code() + ")");
+                        }
+                    });
+                } finally {
+                    response.close();
+                }
             }
         });
     }
