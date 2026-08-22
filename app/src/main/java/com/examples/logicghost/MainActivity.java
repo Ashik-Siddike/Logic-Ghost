@@ -332,6 +332,18 @@ public class MainActivity extends AppCompatActivity {
             btnTypeAutoSequence.setOnClickListener(v -> triggerAutoSequenceTyping());
         }
 
+        // Emergency Stop Typing Buttons (Standard, Multi-Slot, Header)
+        View.OnClickListener stopClickListener = v -> triggerEmergencyStopTyping();
+
+        Button btnStopResponse = findViewById(R.id.btnStopResponse);
+        if (btnStopResponse != null) btnStopResponse.setOnClickListener(stopClickListener);
+
+        Button btnStopMultiSlot = findViewById(R.id.btnStopMultiSlot);
+        if (btnStopMultiSlot != null) btnStopMultiSlot.setOnClickListener(stopClickListener);
+
+        TextView btnHeaderStopTyping = findViewById(R.id.btnHeaderStopTyping);
+        if (btnHeaderStopTyping != null) btnHeaderStopTyping.setOnClickListener(stopClickListener);
+
         // Multi-Slot Tab Switching
         tabSlotCode.setOnClickListener(v -> selectMultiSlotTab("code"));
         tabSlotReason.setOnClickListener(v -> selectMultiSlotTab("reason"));
@@ -742,6 +754,47 @@ public class MainActivity extends AppCompatActivity {
                 tvCodePayload.setText(payload);
             }
         }
+    }
+
+    private void triggerEmergencyStopTyping() {
+        // Haptic double tick for confirmation
+        try {
+            android.os.Vibrator v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+            if (v != null && v.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    v.vibrate(android.os.VibrationEffect.createWaveform(new long[]{0, 90, 60, 90}, -1));
+                } else {
+                    v.vibrate(200);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        updateStatusText("🛑 ABORTING ACTIVE TYPING...");
+        String serverUrl = getResolvedServerUrl();
+        String stopEndpoint = serverUrl.replaceAll("/+$", "") + "/type/stop";
+
+        Request request = new Request.Builder()
+                .url(stopEndpoint)
+                .post(RequestBody.create("{}", MediaType.parse("application/json; charset=utf-8")))
+                .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                handler.post(() -> {
+                    updateStatusText("🛑 TYPING STOPPED (LOCAL)");
+                    Toast.makeText(MainActivity.this, "🛑 Typing aborted.", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
+                handler.post(() -> {
+                    updateStatusText("🛑 TYPING ABORTED • READY FOR NEXT");
+                    Toast.makeText(MainActivity.this, "🛑 Typing aborted! Ready for next input.", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
     private void triggerAutoSequenceTyping() {

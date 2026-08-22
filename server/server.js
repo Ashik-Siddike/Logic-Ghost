@@ -20,6 +20,8 @@ const PYTHON_CONTEXT_CLEAR = 'http://127.0.0.1:5001/api/context/clear';
 const PYTHON_CONTEXT_UPLOAD = 'http://127.0.0.1:5001/api/context/upload';
 const PYTHON_SPEED_URL = 'http://127.0.0.1:5001/settings/speed';
 const PYTHON_TYPE_SEQUENCE_URL = 'http://127.0.0.1:5001/api/type_sequence';
+const PYTHON_TYPE_STOP_URL = 'http://127.0.0.1:5001/api/type/stop';
+const PYTHON_TYPE_STATUS_URL = 'http://127.0.0.1:5001/api/type/status';
 
 // In-memory feed of recent captures
 const activityFeed = [];
@@ -194,6 +196,31 @@ app.post('/type_sequence', async (req, res) => {
     } catch (err) {
         console.error('[Express] Error forwarding sequence typing request:', err.message);
         return res.status(500).json({ error: 'Failed to inject sequence keystrokes', details: err.message });
+    }
+});
+
+/**
+ * POST /type/stop: Aborts active typing immediately
+ */
+app.post('/type/stop', async (req, res) => {
+    try {
+        const pythonResponse = await axios.post(PYTHON_TYPE_STOP_URL, {}, { timeout: 5000 });
+        return res.json(pythonResponse.data);
+    } catch (err) {
+        console.error('[Express] Error stopping typing:', err.message);
+        return res.status(500).json({ error: 'Failed to stop typing', details: err.message });
+    }
+});
+
+/**
+ * GET /type/status: Returns whether typing is active
+ */
+app.get('/type/status', async (req, res) => {
+    try {
+        const pythonResponse = await axios.get(PYTHON_TYPE_STATUS_URL, { timeout: 5000 });
+        return res.json(pythonResponse.data);
+    } catch (err) {
+        return res.json({ is_typing: false });
     }
 });
 
@@ -680,11 +707,12 @@ app.get('/', (req, res) => {
             </div>
 
             <div class="card">
-                <div class="card-title">👻 Stealth Window Controls</div>
+                <div class="card-title">👻 Stealth & Emergency Typing Controls</div>
                 <div class="btn-group">
                     <button class="btn" onclick="stealthAction('hide')">👻 Send Off-Screen</button>
                     <button class="btn btn-purple" onclick="stealthAction('show')">🖥️ Bring to Screen</button>
                     <button class="btn" onclick="testType()">⚡ Test Typing</button>
+                    <button class="btn btn-red" onclick="stopTypingEmergency()" style="font-weight: bold;">🛑 Stop Typing</button>
                 </div>
                 <p id="stealthMsg" style="font-size: 11px; color: var(--green); margin-top: 10px;"></p>
             </div>
@@ -802,9 +830,25 @@ app.get('/', (req, res) => {
             try {
                 const res = await fetch('/stealth/' + action, { method: 'POST' });
                 const d = await res.json();
+                msgEl.style.color = 'var(--green)';
                 msgEl.innerText = action === 'hide' ? 'Browser hidden from taskbar and placed off-screen!' : 'Browser restored to screen center!';
             } catch (e) {
                 msgEl.innerText = 'Action failed: ' + e.message;
+            }
+        }
+
+        async function stopTypingEmergency() {
+            const msgEl = document.getElementById('stealthMsg');
+            try {
+                const res = await fetch('/type/stop', { method: 'POST' });
+                const d = await res.json();
+                if (msgEl) {
+                    msgEl.style.color = '#ef4444';
+                    msgEl.innerText = '🛑 Active typing aborted immediately!';
+                    setTimeout(() => { msgEl.innerText = ''; }, 3500);
+                }
+            } catch (e) {
+                if (msgEl) msgEl.innerText = 'Stop failed: ' + e.message;
             }
         }
 

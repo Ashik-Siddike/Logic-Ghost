@@ -288,7 +288,22 @@
                 android:textStyle="bold"
                 android:gravity="center"
                 android:includeFontPadding="false"
+                android:layout_marginBottom="6dp"
                 android:elevation="4dp"/>
+
+            <!-- Emergency Stop Typing Button (Standard Mode) -->
+            <Button
+                android:id="@+id/btnStopResponse"
+                android:layout_width="128dp"
+                android:layout_height="38dp"
+                android:text="🛑 STOP TYPING"
+                android:background="@drawable/btn_pill_cyber"
+                android:textColor="#FF4D4D"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:elevation="5dp"/>
         </LinearLayout>
 
         <!-- MULTI-SLOT RLHF MODE BUTTONS -->
@@ -356,7 +371,22 @@
                 android:textStyle="bold"
                 android:gravity="center"
                 android:includeFontPadding="false"
+                android:layout_marginBottom="6dp"
                 android:elevation="4dp"/>
+
+            <!-- 5. Emergency Stop Button (Multi-Slot Mode) -->
+            <Button
+                android:id="@+id/btnStopMultiSlot"
+                android:layout_width="132dp"
+                android:layout_height="34dp"
+                android:text="🛑 STOP TYPING"
+                android:background="@drawable/btn_pill_cyber"
+                android:textColor="#FF4D4D"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:elevation="5dp"/>
         </LinearLayout>
 
     </LinearLayout>
@@ -396,7 +426,7 @@
         android:elevation="12dp"
         android:visibility="gone">
 
-        <!-- Result Header Bar: Tag, Duration, Maximize, Close -->
+        <!-- Result Header Bar: Tag, Duration, Stop, Maximize, Close -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="30dp"
@@ -427,6 +457,20 @@
                 android:includeFontPadding="false"
                 android:textSize="10sp"
                 android:layout_marginStart="8dp"/>
+
+            <!-- Emergency Stop Typing Header Icon Button -->
+            <TextView
+                android:id="@+id/btnHeaderStopTyping"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:text="🛑"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:background="@drawable/btn_pill_cyber"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginEnd="5dp"/>
 
             <!-- Copy Button -->
             <TextView

@@ -238,6 +238,33 @@ class TypingSpeedManager:
 
 speed_manager = TypingSpeedManager()
 
+# Thread-safe Emergency Typing Abort Controller
+class TypingAbortController:
+    def __init__(self):
+        self.stop_event = threading.Event()
+        self.is_typing = False
+        self.lock = threading.Lock()
+
+    def start_typing(self):
+        with self.lock:
+            self.stop_event.clear()
+            self.is_typing = True
+
+    def stop_typing(self):
+        with self.lock:
+            self.stop_event.set()
+            self.is_typing = False
+            print("[Typing Abort] EMERGENCY STOP SIGNAL TRIGGERED! Halting active typing.", flush=True)
+
+    def should_stop(self):
+        return self.stop_event.is_set()
+
+    def finish_typing(self):
+        with self.lock:
+            self.is_typing = False
+
+typing_controller = TypingAbortController()
+
 try:
     from google import genai
     HAS_GENAI = True
@@ -366,10 +393,13 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     """
     Types text character-by-character into active foreground window on Windows.
     Simulates real human physical typing with non-uniform keypress intervals and micro-pauses.
+    Allows instant emergency abort via typing_controller.
     """
     import random
     if sys.platform != "win32":
-        return
+        return False
+
+    typing_controller.start_typing()
 
     speed_info = speed_manager.get_info()
     min_ms = min_delay_ms if min_delay_ms is not None else speed_info["min_delay_ms"]
@@ -390,41 +420,49 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     except Exception:
         pass
 
-    for char in text:
-        if char == '\r':
-            continue
+    try:
+        for char in text:
+            if typing_controller.should_stop():
+                print(f"[Organic Human Typing] Instantly halted by user abort command.", flush=True)
+                return False
 
-        code = ord(char)
-        # Random physical key contact time
-        key_hold_time = random.uniform(0.010, 0.026) if min_ms < 150 else random.uniform(0.020, 0.055)
-        # Random inter-key delay
-        char_delay = random.uniform(min_ms, max_ms) / 1000.0
+            if char == '\r':
+                continue
 
-        # Organic human pauses on special characters, spaces, and brackets
-        if char in ['\n', ' ', '{', '}', '(', ')', ';', '=']:
-            extra = random.uniform(0.020, 0.060) if min_ms < 150 else random.uniform(0.080, 0.250)
-            char_delay += extra
+            code = ord(char)
+            # Random physical key contact time
+            key_hold_time = random.uniform(0.010, 0.026) if min_ms < 150 else random.uniform(0.020, 0.055)
+            # Random inter-key delay
+            char_delay = random.uniform(min_ms, max_ms) / 1000.0
 
-        if char == '\n':
-            user32.keybd_event(VK_RETURN, 0x1C, 0, 0)
+            # Organic human pauses on special characters, spaces, and brackets
+            if char in ['\n', ' ', '{', '}', '(', ')', ';', '=']:
+                extra = random.uniform(0.020, 0.060) if min_ms < 150 else random.uniform(0.080, 0.250)
+                char_delay += extra
+
+            if char == '\n':
+                user32.keybd_event(VK_RETURN, 0x1C, 0, 0)
+                time.sleep(key_hold_time)
+                user32.keybd_event(VK_RETURN, 0x1C, KEYEVENTF_KEYUP, 0)
+                time.sleep(char_delay)
+                continue
+
+            if char == '\t':
+                user32.keybd_event(VK_TAB, 0x0F, 0, 0)
+                time.sleep(key_hold_time)
+                user32.keybd_event(VK_TAB, 0x0F, KEYEVENTF_KEYUP, 0)
+                time.sleep(char_delay)
+                continue
+
+            user32.keybd_event(0, code, KEYEVENTF_UNICODE, 0)
             time.sleep(key_hold_time)
-            user32.keybd_event(VK_RETURN, 0x1C, KEYEVENTF_KEYUP, 0)
+            user32.keybd_event(0, code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0)
             time.sleep(char_delay)
-            continue
 
-        if char == '\t':
-            user32.keybd_event(VK_TAB, 0x0F, 0, 0)
-            time.sleep(key_hold_time)
-            user32.keybd_event(VK_TAB, 0x0F, KEYEVENTF_KEYUP, 0)
-            time.sleep(char_delay)
-            continue
-
-        user32.keybd_event(0, code, KEYEVENTF_UNICODE, 0)
-        time.sleep(key_hold_time)
-        user32.keybd_event(0, code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0)
-        time.sleep(char_delay)
-
-    print(f"[Organic Human Typing] Successfully finished typing {len(text)} characters.", flush=True)
+        print(f"[Organic Human Typing] Successfully finished typing {len(text)} characters.", flush=True)
+        return True
+    finally:
+        typing_controller.finish_typing()
 
 def clean_code_snippet(text):
     match = re.search(r'```(?:javascript|python|java|cpp|c|typescript|html|css|sql|bash|sh|json)?\n?(.*?)\n?```', text, re.DOTALL | re.IGNORECASE)
@@ -725,13 +763,23 @@ def handle_type():
     min_delay = data.get('min_delay_ms')
     max_delay = data.get('max_delay_ms')
 
-    inject_keystrokes_to_active_window(text, min_delay_ms=min_delay, max_delay_ms=max_delay)
-    return jsonify({"success": True, "characters_typed": len(text), "min_delay_ms": min_delay, "max_delay_ms": max_delay})
+    ok = inject_keystrokes_to_active_window(text, min_delay_ms=min_delay, max_delay_ms=max_delay)
+    return jsonify({"success": ok, "characters_typed": len(text), "min_delay_ms": min_delay, "max_delay_ms": max_delay})
+
+@app.route('/api/type/stop', methods=['POST'])
+def handle_stop_typing():
+    typing_controller.stop_typing()
+    return jsonify({"success": True, "message": "Typing aborted successfully", "is_typing": False})
+
+@app.route('/api/type/status', methods=['GET'])
+def handle_typing_status():
+    return jsonify({"is_typing": typing_controller.is_typing})
 
 @app.route('/api/type_sequence', methods=['POST'])
 def handle_type_sequence():
     """
     Types multiple slots in sequence with configurable inter-slot key transitions (e.g. TAB or ENTER) and pause.
+    Allows instant emergency abort at any time.
     """
     data = request.json or {}
     slots_list = data.get('slots', [])
@@ -750,17 +798,27 @@ def handle_type_sequence():
 
         print(f"[Auto-Sequence] Starting multi-slot injection for {len(slots_list)} slots...", flush=True)
         for i, text in enumerate(slots_list):
+            if typing_controller.should_stop():
+                print("[Auto-Sequence] Interrupted before slot execution.", flush=True)
+                break
+
             if text and text.strip():
-                inject_keystrokes_to_active_window(text.strip())
+                ok = inject_keystrokes_to_active_window(text.strip())
+                if not ok or typing_controller.should_stop():
+                    print("[Auto-Sequence] Aborted during keystroke injection.", flush=True)
+                    break
+
                 if i < len(slots_list) - 1:
                     time.sleep(0.3)
+                    if typing_controller.should_stop():
+                        break
                     # Send transition key (Tab or Enter)
                     vk = VK_TAB if inter_slot_key == "TAB" else VK_RETURN
                     user32.keybd_event(vk, 0, 0, 0)
                     time.sleep(0.04)
                     user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
                     time.sleep(delay_between_slots_sec)
-        print("[Auto-Sequence] Completed all slots.", flush=True)
+        print("[Auto-Sequence] Completed or aborted.", flush=True)
 
     threading.Thread(target=run_sequence, daemon=True).start()
     return jsonify({"success": True, "slots_queued": len(slots_list)})
