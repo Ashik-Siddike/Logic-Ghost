@@ -310,6 +310,12 @@ public class MainActivity extends AppCompatActivity {
             btnVoiceSettings.setOnClickListener(v -> showVoiceSelectionDialog());
         }
 
+        // 1-Click Typing Speed Controller Button
+        View btnSpeedSettings = findViewById(R.id.btnSpeedSettings);
+        if (btnSpeedSettings != null) {
+            btnSpeedSettings.setOnClickListener(v -> showSpeedSettingsDialog());
+        }
+
         // Capture Shutter Button
         btnCapture.setOnClickListener(v -> captureAndProcessScreen());
 
@@ -356,6 +362,15 @@ public class MainActivity extends AppCompatActivity {
         btnTypeCode.setOnClickListener(v -> triggerDirectServerTyping(currentSlotCode.isEmpty() ? currentPayload : currentSlotCode));
         btnTypeReason.setOnClickListener(v -> triggerDirectServerTyping(currentSlotReason));
         btnTypeRating.setOnClickListener(v -> triggerDirectServerTyping(currentSlotRating));
+
+        // Long click on Type buttons opens Typing Speed Controller
+        View.OnLongClickListener speedLongListener = v -> {
+            showSpeedSettingsDialog();
+            return true;
+        };
+        btnTypeDirect.setOnLongClickListener(speedLongListener);
+        btnTypeBluetooth.setOnLongClickListener(speedLongListener);
+        btnTypeCode.setOnLongClickListener(speedLongListener);
 
         Button btnTypeAutoSequence = findViewById(R.id.btnTypeAutoSequence);
         if (btnTypeAutoSequence != null) {
@@ -619,7 +634,22 @@ public class MainActivity extends AppCompatActivity {
         }, ContextCompat.getMainExecutor(this));
     }
 
+    private void triggerHapticShutterNotification() {
+        try {
+            android.os.Vibrator v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+            if (v != null && v.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    v.vibrate(android.os.VibrationEffect.createOneShot(40, android.os.VibrationEffect.DEFAULT_AMPLITUDE));
+                } else {
+                    v.vibrate(40);
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
     private void captureAndProcessScreen() {
+        triggerHapticShutterNotification();
+
         if (imageCapture == null) {
             Toast.makeText(this, "Camera not initialized", Toast.LENGTH_SHORT).show();
             return;
@@ -641,6 +671,83 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "Photo capture failed: " + exception.getMessage(), exception);
                 updateStatusText("CAPTURE FAILED: " + exception.getMessage());
             }
+        });
+    }
+
+    private void showSpeedSettingsDialog() {
+        final String[] presetKeys = {"ultra", "fast", "normal", "relaxed", "stealth", "ninja"};
+        final String[] presetNames = {
+                "⚡ Ultra Fast (5ms - 15ms)",
+                "🏃 Fast Human (20ms - 45ms)",
+                "🚶 Normal Human (45ms - 90ms) [Default]",
+                "🐢 Relaxed Human (90ms - 180ms)",
+                "🦥 Ultra Stealth (180ms - 350ms)",
+                "🕵️ Ghost Ninja (350ms - 700ms)"
+        };
+        final int[][] presetRanges = {
+                {5, 15},
+                {20, 45},
+                {45, 90},
+                {90, 180},
+                {180, 350},
+                {350, 700}
+        };
+
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String currentPreset = prefs.getString("typing_speed_preset", "normal");
+        int selectedIndex = 2; // normal by default
+        for (int i = 0; i < presetKeys.length; i++) {
+            if (presetKeys[i].equalsIgnoreCase(currentPreset)) {
+                selectedIndex = i;
+                break;
+            }
+        }
+
+        final int[] chosen = {selectedIndex};
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("⚡ Typing Speed & Jitter Control");
+        builder.setSingleChoiceItems(presetNames, selectedIndex, (dialog, which) -> {
+            chosen[0] = which;
+        });
+
+        builder.setPositiveButton("💾 Apply Speed", (dialog, which) -> {
+            int idx = chosen[0];
+            String selectedKey = presetKeys[idx];
+            int minMs = presetRanges[idx][0];
+            int maxMs = presetRanges[idx][1];
+
+            prefs.edit().putString("typing_speed_preset", selectedKey).apply();
+            applySpeedToServer(selectedKey, minMs, maxMs);
+            Toast.makeText(MainActivity.this, "✅ Speed set to: " + presetNames[idx], Toast.LENGTH_SHORT).show();
+        });
+
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+
+    private void applySpeedToServer(String presetName, int minMs, int maxMs) {
+        String serverUrl = getResolvedServerUrl();
+        String speedEndpoint = serverUrl.replaceAll("/+$", "") + "/settings/speed";
+
+        JsonObject json = new JsonObject();
+        json.addProperty("preset_name", presetName);
+        json.addProperty("min_delay_ms", minMs);
+        json.addProperty("max_delay_ms", maxMs);
+        json.addProperty("save", true);
+
+        RequestBody body = RequestBody.create(json.toString(), MediaType.parse("application/json; charset=utf-8"));
+        Request request = new Request.Builder()
+                .url(speedEndpoint)
+                .post(body)
+                .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {}
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) {}
         });
     }
 

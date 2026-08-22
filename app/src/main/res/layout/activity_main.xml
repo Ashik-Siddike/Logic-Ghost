@@ -124,6 +124,20 @@
                 android:focusable="true"
                 android:layout_marginEnd="5dp"/>
 
+            <!-- 1-Click Typing Speed Controller Button -->
+            <TextView
+                android:id="@+id/btnSpeedSettings"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:text="⚡"
+                android:textSize="13sp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:background="@drawable/btn_pill_cute_glass"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginEnd="5dp"/>
+
             <!-- 1-Click Collapse / Hide HUD Button -->
             <TextView
                 android:id="@+id/btnToggleHud"
