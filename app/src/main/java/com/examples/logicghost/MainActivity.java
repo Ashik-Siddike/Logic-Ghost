@@ -15,6 +15,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -72,6 +74,15 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "LogicGhostPrefs";
     private static final String KEY_SERVER_URL = "server_url";
     private static final String DEFAULT_SERVER_URL = "http://127.0.0.1:5000";
+    private static final int REQUEST_CODE_PERMISSIONS = 101;
+
+    private static final String[] REQUIRED_PERMISSIONS = new String[]{
+            Manifest.permission.CAMERA,
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.VIBRATE
+    };
 
     public static class HistoryItem {
         public String tag;
@@ -108,9 +119,14 @@ public class MainActivity extends AppCompatActivity {
     private ImageButton btnCapture;
 
     private View btnRestoreHud, btnQuickResult;
-    private LinearLayout layoutResponseContainer, layoutCheckMode, layoutCompareMode, layoutTypeMode;
+    private TextView btnQuickSpeak, btnSpeakResult;
+    private LinearLayout layoutResponseContainer, layoutCheckMode, layoutCompareMode, layoutTypeMode, layoutVoiceMode;
     private TextView tvTagHeader, tvResultDuration, tvVoicePayload, tvCheckSelected, tvCompareBest, tvCompareReason, tvCodePayload;
     private TextView btnMaximizeResult, btnCloseResult, btnCopyResult;
+
+    // Native Text-to-Speech Engine
+    private TextToSpeech tts;
+    private boolean isTtsSpeaking = false;
 
     // Standard Buttons
     private LinearLayout layoutStandardTypeButtons;
@@ -191,8 +207,10 @@ public class MainActivity extends AppCompatActivity {
 
         btnRestoreHud = findViewById(R.id.btnRestoreHud);
         btnQuickResult = findViewById(R.id.btnQuickResult);
+        btnQuickSpeak = findViewById(R.id.btnQuickSpeak);
 
         layoutResponseContainer = findViewById(R.id.layoutResponseContainer);
+        layoutVoiceMode = findViewById(R.id.layoutVoiceMode);
         layoutCheckMode = findViewById(R.id.layoutCheckMode);
         layoutCompareMode = findViewById(R.id.layoutCompareMode);
         layoutTypeMode = findViewById(R.id.layoutTypeMode);
@@ -208,6 +226,7 @@ public class MainActivity extends AppCompatActivity {
         btnMaximizeResult = findViewById(R.id.btnMaximizeResult);
         btnCloseResult = findViewById(R.id.btnCloseResult);
         btnCopyResult = findViewById(R.id.btnCopyResult);
+        btnSpeakResult = findViewById(R.id.btnSpeakResult);
 
         // Standard Buttons
         layoutStandardTypeButtons = findViewById(R.id.layoutStandardTypeButtons);
@@ -343,6 +362,13 @@ public class MainActivity extends AppCompatActivity {
 
         TextView btnHeaderStopTyping = findViewById(R.id.btnHeaderStopTyping);
         if (btnHeaderStopTyping != null) btnHeaderStopTyping.setOnClickListener(stopClickListener);
+
+        // Text-to-Speech Read Aloud / Listen Actions
+        View.OnClickListener ttsClickListener = v -> toggleSpeakCurrentResult();
+        if (btnSpeakResult != null) btnSpeakResult.setOnClickListener(ttsClickListener);
+        if (btnQuickSpeak != null) btnQuickSpeak.setOnClickListener(ttsClickListener);
+
+        initTextToSpeech();
 
         // Multi-Slot Tab Switching
         tabSlotCode.setOnClickListener(v -> selectMultiSlotTab("code"));
@@ -710,10 +736,16 @@ public class MainActivity extends AppCompatActivity {
         tvTagHeader.setText(tag);
         if (tvResultDuration != null) tvResultDuration.setText("⏱️ " + duration);
 
+        if (layoutVoiceMode != null) layoutVoiceMode.setVisibility(View.GONE);
         tvVoicePayload.setVisibility(View.GONE);
         layoutCheckMode.setVisibility(View.GONE);
         layoutCompareMode.setVisibility(View.GONE);
         layoutTypeMode.setVisibility(View.GONE);
+
+        if (btnQuickSpeak != null) {
+            btnQuickSpeak.setVisibility(View.VISIBLE);
+        }
+        updateTtsUiState(false);
 
         if (isMulti) {
             tvTagHeader.setText("[RLHF SLOTS]");
@@ -731,6 +763,7 @@ public class MainActivity extends AppCompatActivity {
 
             if ("[VOICE]".equalsIgnoreCase(tag)) {
                 tvTagHeader.setBackgroundColor(Color.parseColor("#3B82F6"));
+                if (layoutVoiceMode != null) layoutVoiceMode.setVisibility(View.VISIBLE);
                 tvVoicePayload.setVisibility(View.VISIBLE);
                 tvVoicePayload.setText(payload);
             } else if ("[CHECK]".equalsIgnoreCase(tag)) {
@@ -844,6 +877,102 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
+    }
+
+    private void initTextToSpeech() {
+        tts = new TextToSpeech(this, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                int result = tts.setLanguage(Locale.US);
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Log.w("LogicGhost", "US English TTS not supported, falling back to default locale");
+                    tts.setLanguage(Locale.getDefault());
+                }
+                tts.setSpeechRate(0.96f);
+                tts.setPitch(1.0f);
+                tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                    @Override
+                    public void onStart(String utteranceId) {
+                        handler.post(() -> updateTtsUiState(true));
+                    }
+
+                    @Override
+                    public void onDone(String utteranceId) {
+                        handler.post(() -> updateTtsUiState(false));
+                    }
+
+                    @Override
+                    public void onError(String utteranceId) {
+                        handler.post(() -> updateTtsUiState(false));
+                    }
+                });
+            } else {
+                Log.e("LogicGhost", "Failed to initialize TextToSpeech");
+            }
+        });
+    }
+
+    private void updateTtsUiState(boolean speaking) {
+        isTtsSpeaking = speaking;
+        if (btnSpeakResult != null) {
+            btnSpeakResult.setText(speaking ? "⏹️" : "🔊");
+            btnSpeakResult.setBackgroundResource(speaking ? R.drawable.btn_pill_cute_danger : R.drawable.btn_pill_cute_glass);
+        }
+        if (btnQuickSpeak != null) {
+            btnQuickSpeak.setText(speaking ? "⏹️ STOP VOICE" : "🔊 LISTEN (TTS)");
+            btnQuickSpeak.setTextColor(speaking ? Color.parseColor("#FF4D6D") : Color.parseColor("#38BDF8"));
+            btnQuickSpeak.setBackgroundResource(speaking ? R.drawable.btn_pill_cute_danger : R.drawable.btn_pill_cute_glass);
+        }
+    }
+
+    private void toggleSpeakCurrentResult() {
+        if (tts == null) {
+            Toast.makeText(this, "TTS Engine initializing...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (isTtsSpeaking) {
+            tts.stop();
+            updateTtsUiState(false);
+            Toast.makeText(this, "🔇 Speech stopped", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String textToSpeak = getActiveTextForSpeech();
+        if (textToSpeak == null || textToSpeak.trim().isEmpty()) {
+            Toast.makeText(this, "No answer to read aloud", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String cleaned = cleanTextForSpeech(textToSpeak);
+        Bundle params = new Bundle();
+        params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "LogicGhost_TTS_" + System.currentTimeMillis());
+        tts.speak(cleaned, TextToSpeech.QUEUE_FLUSH, params, params.getString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID));
+        updateTtsUiState(true);
+        Toast.makeText(this, "🔊 Reading answer into headphones...", Toast.LENGTH_SHORT).show();
+    }
+
+    private String getActiveTextForSpeech() {
+        if (isMultiSlot) {
+            if (!currentSlotReason.isEmpty()) return currentSlotReason;
+            if (!currentSlotRating.isEmpty()) return currentSlotRating;
+            return currentSlotCode;
+        }
+        return currentPayload;
+    }
+
+    private String cleanTextForSpeech(String raw) {
+        if (raw == null) return "";
+        return raw.replaceAll("(?i)\\[VOICE\\]", "")
+                .replaceAll("(?i)\\[CHECK\\]", "")
+                .replaceAll("(?i)\\[COMPARE\\]", "")
+                .replaceAll("(?i)\\[TYPE\\]", "")
+                .replaceAll("(?i)<<<SLOT:[A-Z]+>>>", "")
+                .replaceAll("```[a-zA-Z]*", "")
+                .replaceAll("`", "")
+                .replaceAll("[*#_~]", "")
+                .replaceAll("•", ", ")
+                .replaceAll("\\s+", " ")
+                .trim();
     }
 
     private void triggerDirectServerTyping(String payloadToType) {
@@ -1020,6 +1149,15 @@ public class MainActivity extends AppCompatActivity {
         } else {
             ledBluetooth.setBackgroundColor(Color.parseColor("#FF3333")); // Red
             tvBluetoothStatus.setText("BT: UNPAIRED");
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (tts != null) {
+            tts.stop();
+            tts.shutdown();
         }
     }
 }

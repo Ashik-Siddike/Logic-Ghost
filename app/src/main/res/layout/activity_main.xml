@@ -249,6 +249,24 @@
             android:gravity="center"
             android:includeFontPadding="false"
             android:paddingHorizontal="16dp"
+            android:layout_marginBottom="6dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone"/>
+
+        <!-- Quick Listen / TTS Floating Pill -->
+        <TextView
+            android:id="@+id/btnQuickSpeak"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="🔊 LISTEN (TTS)"
+            android:textColor="#38BDF8"
+            android:background="@drawable/btn_pill_cute_glass"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:paddingHorizontal="16dp"
             android:layout_marginBottom="8dp"
             android:clickable="true"
             android:focusable="true"
@@ -474,6 +492,20 @@
                 android:focusable="true"
                 android:layout_marginEnd="5dp"/>
 
+            <!-- Text-to-Speech Read Aloud / Listen Button -->
+            <TextView
+                android:id="@+id/btnSpeakResult"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:text="🔊"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:background="@drawable/btn_pill_cute_glass"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginEnd="5dp"/>
+
             <!-- Copy Button -->
             <TextView
                 android:id="@+id/btnCopyResult"
@@ -591,16 +623,41 @@
                 android:orientation="vertical">
 
                 <!-- 1. [VOICE] Mode -->
-                <TextView
-                    android:id="@+id/tvVoicePayload"
+                <LinearLayout
+                    android:id="@+id/layoutVoiceMode"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="#FFFFFF"
-                    android:textSize="14sp"
-                    android:lineSpacingExtra="3dp"
-                    android:includeFontPadding="false"
-                    android:textStyle="bold"
-                    android:visibility="gone"/>
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="22dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/btn_pill_cute_glass"
+                        android:paddingHorizontal="8dp"
+                        android:layout_marginBottom="6dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🎙️ FLUENT SPOKEN ANSWER"
+                            android:textColor="#38BDF8"
+                            android:textSize="9sp"
+                            android:textStyle="bold"
+                            android:includeFontPadding="false"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvVoicePayload"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:lineSpacingExtra="3dp"
+                        android:includeFontPadding="false"
+                        android:textStyle="bold"/>
+                </LinearLayout>
 
                 <!-- 2. [CHECK] Mode -->
                 <LinearLayout

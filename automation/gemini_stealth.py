@@ -309,8 +309,10 @@ BASE_MASTER_PROMPT = (
     "PROTOCOL 4: DIRECT COMPARISON / BEST OPTION QUESTIONS\n"
     "Prefix with [COMPARE]. Example:\n"
     "[COMPARE] BEST: Option C | WHY: More efficient time complexity.\n\n"
-    "PROTOCOL 5: GENERAL / SPOKEN / CONCEPTUAL QA\n"
-    "Prefix with [VOICE] followed by a direct 1-3 sentence answer."
+    "PROTOCOL 5: GENERAL / INTERVIEW / SPOKEN / CONCEPTUAL QA\n"
+    "When asked a conceptual, system design, architectural, or technical interview question:\n"
+    "Prefix with [VOICE]. Provide a natural, fluent, first-person answer structured in 3 to 4 concise sentences (maximum 45-60 words).\n"
+    "Craft it specifically to sound confident, articulate, and conversational when spoken aloud in an interview or video call, without filler words or preamble."
 )
 
 def build_effective_master_prompt():
