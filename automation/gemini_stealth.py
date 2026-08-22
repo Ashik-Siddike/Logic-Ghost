@@ -407,13 +407,7 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     if not text or not text.strip():
         return False
 
-    # Clean text
     text_to_type = text.replace('\r\n', '\n').replace('\r', '\n')
-
-    # If already typing, signal previous stream to halt
-    if typing_controller.is_typing:
-        typing_controller.stop_typing()
-        time.sleep(0.04)
 
     with typing_lock:
         typing_controller.start_typing()
@@ -434,25 +428,22 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
         try:
             for char in text_to_type:
                 if typing_controller.should_stop():
-                    print("[Organic Human Typing] Instantly halted by user abort command.", flush=True)
+                    print("[Organic Human Typing] Stopped by Emergency Abort command.", flush=True)
                     return False
 
-                # REAL-TIME ON-THE-FLY SPEED TUNING:
+                # Dynamic real-time speed
                 speed_info = speed_manager.get_info()
-                curr_min_ms = speed_info["min_delay_ms"]
-                curr_max_ms = speed_info["max_delay_ms"]
-                curr_min_ms = max(2, curr_min_ms)
-                curr_max_ms = max(curr_min_ms, curr_max_ms)
+                curr_min_ms = speed_info.get("min_delay_ms", 25)
+                curr_max_ms = speed_info.get("max_delay_ms", 55)
+                curr_min_ms = max(2, int(curr_min_ms))
+                curr_max_ms = max(curr_min_ms, int(curr_max_ms))
 
                 code = ord(char)
-                # Random physical key contact time
-                key_hold_time = random.uniform(0.005, 0.015) if curr_min_ms < 80 else random.uniform(0.015, 0.035)
-                # Random inter-key delay based on real-time current speed
+                key_hold_time = 0.005 if curr_min_ms < 80 else 0.018
                 char_delay = random.uniform(curr_min_ms, curr_max_ms) / 1000.0
 
-                # Organic human pauses on special characters, spaces, and brackets
                 if char in ['\n', ' ', '{', '}', '(', ')', ';', '=']:
-                    extra = random.uniform(0.010, 0.025) if curr_min_ms < 80 else random.uniform(0.030, 0.080)
+                    extra = random.uniform(0.008, 0.018) if curr_min_ms < 80 else random.uniform(0.025, 0.060)
                     char_delay += extra
 
                 if char == '\n':
