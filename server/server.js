@@ -116,6 +116,8 @@ app.post('/capture', upload.single('image'), async (req, res) => {
             imageFile: path.basename(imagePath),
             tag: data.tag || '[TYPE]',
             payload: data.payload || '',
+            is_multi_slot: data.is_multi_slot || false,
+            slots: data.slots || {},
             engine: data.engine || 'gemini-api',
             key_used: data.key_used || '',
             rules_active: data.rules_active || false
@@ -128,6 +130,8 @@ app.post('/capture', upload.single('image'), async (req, res) => {
             success: true,
             tag: data.tag || '[TYPE]',
             payload: data.payload || '',
+            is_multi_slot: data.is_multi_slot || false,
+            slots: data.slots || {},
             raw_answer: data.raw_answer || '',
             engine: data.engine,
             key_used: data.key_used,
@@ -1046,6 +1050,28 @@ app.get('/', (req, res) => {
             }
         }
 
+        async function triggerTypePayload(text) {
+            if (!text) return;
+            const min = parseInt(document.getElementById('minRange').value);
+            const max = parseInt(document.getElementById('maxRange').value);
+            const msgEl = document.getElementById('stealthMsg');
+            if (msgEl) msgEl.innerText = 'Click target window in 2s to inject slot...';
+            setTimeout(async () => {
+                try {
+                    await fetch('/type', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            text: text,
+                            min_delay_ms: min,
+                            max_delay_ms: max
+                        })
+                    });
+                    if (msgEl) msgEl.innerText = 'Slot typed successfully!';
+                } catch (e) {}
+            }, 2000);
+        }
+
         async function updateFeed() {
             try {
                 const res = await fetch('/feed');
@@ -1055,18 +1081,64 @@ app.get('/', (req, res) => {
 
                 if (items.length === 0) return;
 
-                container.innerHTML = items.map(item => \`
-                    <div class="feed-item">
-                        <div class="feed-header">
-                            <div>
-                                <span class="feed-tag">\${item.tag}</span>
-                                \${item.rules_active ? '<span style="background: rgba(0,255,136,0.2); color: var(--green); padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 6px;">📚 PDF RULES APPLIED</span>' : ''}
+                container.innerHTML = items.map(item => {
+                    let slotHtml = '';
+                    if (item.is_multi_slot && item.slots) {
+                        if (item.slots.rating) {
+                            slotHtml += \`
+                                <div style="background: rgba(168, 85, 247, 0.12); border: 1px solid var(--purple); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                        <span style="font-weight:bold; color:var(--purple); font-size:11px;">⭐ RATING / VERDICT:</span>
+                                        <button class="btn btn-purple" style="padding:2px 8px; font-size:10px;" onclick="triggerTypePayload('\${escapeHtml(item.slots.rating)}')">⚡ Type Rating</button>
+                                    </div>
+                                    <div style="font-size:12px; color:#fff; font-weight:600;">\${escapeHtml(item.slots.rating)}</div>
+                                </div>\`;
+                        }
+                        if (item.slots.code) {
+                            slotHtml += \`
+                                <div style="background: #000; border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                        <span style="font-weight:bold; color:var(--cyan); font-size:11px;">💻 CODE BOX:</span>
+                                        <button class="btn" style="padding:2px 8px; font-size:10px;" onclick="triggerTypePayload('\${escapeHtml(item.slots.code)}')">⚡ Type Code</button>
+                                    </div>
+                                    <div class="feed-code" style="max-height:160px;">\${escapeHtml(item.slots.code)}</div>
+                                </div>\`;
+                        }
+                        if (item.slots.explanation) {
+                            slotHtml += \`
+                                <div style="background: rgba(0, 255, 136, 0.08); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                        <span style="font-weight:bold; color:var(--green); font-size:11px;">📝 JUSTIFICATION / EXPLANATION:</span>
+                                        <button class="btn btn-green" style="padding:2px 8px; font-size:10px;" onclick="triggerTypePayload('\${escapeHtml(item.slots.explanation)}')">📝 Type Reason</button>
+                                    </div>
+                                    <div style="font-size:12px; color:#e0e6ed; white-space:pre-wrap; max-height:160px; overflow-y:auto; font-family:'Inter';">\${escapeHtml(item.slots.explanation)}</div>
+                                </div>\`;
+                        }
+                        if (item.slots.audit) {
+                            slotHtml += \`
+                                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid var(--amber); border-radius: 6px; padding: 8px 12px;">
+                                    <span style="font-weight:bold; color:var(--amber); font-size:11px;">🛡️ AUDIT:</span>
+                                    <div style="font-size:11px; color:#fde68a;">\${escapeHtml(item.slots.audit)}</div>
+                                </div>\`;
+                        }
+                    } else {
+                        slotHtml = \`<div class="feed-code">\${escapeHtml(item.payload)}</div>\`;
+                    }
+
+                    return \`
+                        <div class="feed-item">
+                            <div class="feed-header">
+                                <div>
+                                    <span class="feed-tag">\${item.tag}</span>
+                                    \${item.is_multi_slot ? '<span style="background: rgba(168,85,247,0.25); color: #c084fc; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 6px; font-weight:bold;">✨ MULTI-SLOT RLHF</span>' : ''}
+                                    \${item.rules_active ? '<span style="background: rgba(0,255,136,0.2); color: var(--green); padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 6px;">📚 PDF RULES</span>' : ''}
+                                </div>
+                                <span style="color: var(--text-dim);">⏱️ \${item.duration} | 🕒 \${item.time} | 🤖 \${item.engine} \${item.key_used ? ' (' + item.key_used + ')' : ''}</span>
                             </div>
-                            <span style="color: var(--text-dim);">⏱️ \${item.duration} | 🕒 \${item.time} | 🤖 \${item.engine} \${item.key_used ? ' (' + item.key_used + ')' : ''}</span>
+                            \${slotHtml}
                         </div>
-                        <div class="feed-code">\${escapeHtml(item.payload)}</div>
-                    </div>
-                \`).join('');
+                    \`;
+                }).join('');
             } catch (e) {}
         }
 

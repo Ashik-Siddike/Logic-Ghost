@@ -78,12 +78,23 @@ public class MainActivity extends AppCompatActivity {
         public String payload;
         public String duration;
         public String timeFormatted;
+        public boolean isMultiSlot;
+        public String slotCode;
+        public String slotReason;
+        public String slotRating;
+        public String slotAudit;
 
-        public HistoryItem(String tag, String payload, String duration, String timeFormatted) {
+        public HistoryItem(String tag, String payload, String duration, String timeFormatted,
+                           boolean isMultiSlot, String slotCode, String slotReason, String slotRating, String slotAudit) {
             this.tag = tag;
             this.payload = payload;
             this.duration = duration;
             this.timeFormatted = timeFormatted;
+            this.isMultiSlot = isMultiSlot;
+            this.slotCode = slotCode;
+            this.slotReason = slotReason;
+            this.slotRating = slotRating;
+            this.slotAudit = slotAudit;
         }
     }
 
@@ -100,7 +111,22 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout layoutResponseContainer, layoutCheckMode, layoutCompareMode, layoutTypeMode;
     private TextView tvTagHeader, tvResultDuration, tvVoicePayload, tvCheckSelected, tvCompareBest, tvCompareReason, tvCodePayload;
     private TextView btnMaximizeResult, btnCloseResult, btnCopyResult;
+
+    // Standard Buttons
+    private LinearLayout layoutStandardTypeButtons;
     private Button btnTypeDirect, btnTypeBluetooth;
+
+    // Multi-Slot RLHF Buttons & Tabs
+    private LinearLayout layoutMultiSlotTypeButtons;
+    private Button btnTypeCode, btnTypeReason, btnTypeRating;
+    private LinearLayout layoutMultiSlotTabs;
+    private TextView tabSlotCode, tabSlotReason, tabSlotRating;
+
+    private String currentSlotCode = "";
+    private String currentSlotReason = "";
+    private String currentSlotRating = "";
+    private String currentSlotAudit = "";
+    private boolean isMultiSlot = false;
 
     private boolean isResultMaximized = false;
     private ImageCapture imageCapture;
@@ -183,8 +209,21 @@ public class MainActivity extends AppCompatActivity {
         btnCloseResult = findViewById(R.id.btnCloseResult);
         btnCopyResult = findViewById(R.id.btnCopyResult);
 
+        // Standard Buttons
+        layoutStandardTypeButtons = findViewById(R.id.layoutStandardTypeButtons);
         btnTypeDirect = findViewById(R.id.btnTypeDirect);
         btnTypeBluetooth = findViewById(R.id.btnTypeBluetooth);
+
+        // Multi-Slot RLHF Buttons & Tabs
+        layoutMultiSlotTypeButtons = findViewById(R.id.layoutMultiSlotTypeButtons);
+        btnTypeCode = findViewById(R.id.btnTypeCode);
+        btnTypeReason = findViewById(R.id.btnTypeReason);
+        btnTypeRating = findViewById(R.id.btnTypeRating);
+
+        layoutMultiSlotTabs = findViewById(R.id.layoutMultiSlotTabs);
+        tabSlotCode = findViewById(R.id.tabSlotCode);
+        tabSlotReason = findViewById(R.id.tabSlotReason);
+        tabSlotRating = findViewById(R.id.tabSlotRating);
 
         // Always ensure a valid URL exists (Defaults to http://127.0.0.1:5000)
         String savedUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL);
@@ -279,9 +318,19 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Typing Actions
+        // Standard Typing Actions
         btnTypeDirect.setOnClickListener(v -> triggerDirectServerTyping(currentPayload));
         btnTypeBluetooth.setOnClickListener(v -> triggerBluetoothTyping(currentPayload));
+
+        // Multi-Slot RLHF Typing Actions
+        btnTypeCode.setOnClickListener(v -> triggerDirectServerTyping(currentSlotCode.isEmpty() ? currentPayload : currentSlotCode));
+        btnTypeReason.setOnClickListener(v -> triggerDirectServerTyping(currentSlotReason));
+        btnTypeRating.setOnClickListener(v -> triggerDirectServerTyping(currentSlotRating));
+
+        // Multi-Slot Tab Switching
+        tabSlotCode.setOnClickListener(v -> selectMultiSlotTab("code"));
+        tabSlotReason.setOnClickListener(v -> selectMultiSlotTab("reason"));
+        tabSlotRating.setOnClickListener(v -> selectMultiSlotTab("rating"));
 
         View.OnClickListener btReconnectListener = v -> showBluetoothDeviceSelectorDialog();
         ledBluetooth.setOnClickListener(btReconnectListener);
@@ -292,6 +341,42 @@ public class MainActivity extends AppCompatActivity {
         boolean setupDone = prefs.getBoolean("first_run_setup_done", false);
         if (!setupDone) {
             handler.postDelayed(() -> showSetupGuideDialog(true), 800);
+        }
+    }
+
+    private void selectMultiSlotTab(String tabKey) {
+        tabSlotCode.setBackgroundResource(R.drawable.btn_pill_cyber);
+        tabSlotCode.setTextColor(Color.parseColor("#94A3B8"));
+        tabSlotReason.setBackgroundResource(R.drawable.btn_pill_cyber);
+        tabSlotReason.setTextColor(Color.parseColor("#94A3B8"));
+        tabSlotRating.setBackgroundResource(R.drawable.btn_pill_cyber);
+        tabSlotRating.setTextColor(Color.parseColor("#94A3B8"));
+
+        tvVoicePayload.setVisibility(View.GONE);
+        layoutCheckMode.setVisibility(View.GONE);
+        layoutCompareMode.setVisibility(View.GONE);
+        layoutTypeMode.setVisibility(View.GONE);
+
+        if ("reason".equalsIgnoreCase(tabKey)) {
+            tabSlotReason.setBackgroundColor(Color.parseColor("#00FF88"));
+            tabSlotReason.setTextColor(Color.parseColor("#000000"));
+            tvVoicePayload.setVisibility(View.VISIBLE);
+            tvVoicePayload.setText(currentSlotReason);
+        } else if ("rating".equalsIgnoreCase(tabKey)) {
+            tabSlotRating.setBackgroundColor(Color.parseColor("#A855F7"));
+            tabSlotRating.setTextColor(Color.parseColor("#FFFFFF"));
+            tvVoicePayload.setVisibility(View.VISIBLE);
+            String text = "⭐ VERDICT / RATING:\n" + currentSlotRating;
+            if (!currentSlotAudit.isEmpty()) {
+                text += "\n\n🛡️ AUDIT:\n" + currentSlotAudit;
+            }
+            tvVoicePayload.setText(text);
+        } else {
+            // "code"
+            tabSlotCode.setBackgroundColor(Color.parseColor("#00FF88"));
+            tabSlotCode.setTextColor(Color.parseColor("#000000"));
+            layoutTypeMode.setVisibility(View.VISIBLE);
+            tvCodePayload.setText(currentSlotCode.isEmpty() ? currentPayload : currentSlotCode);
         }
     }
 
@@ -310,7 +395,7 @@ public class MainActivity extends AppCompatActivity {
             params.height = (int) (230 * density);
             params.bottomMargin = (int) (16 * density);
             params.topMargin = 0;
-            params.setMarginStart((int) (148 * density));
+            params.setMarginStart((int) (152 * density));
             params.setMarginEnd((int) (104 * density));
             btnMaximizeResult.setText("⛶");
         }
@@ -331,14 +416,15 @@ public class MainActivity extends AppCompatActivity {
             HistoryItem h = historyList.get(i);
             String snippet = h.payload.replace("\n", " ").trim();
             if (snippet.length() > 36) snippet = snippet.substring(0, 36) + "...";
-            items[i] = (i + 1) + ". " + h.tag + " (" + h.timeFormatted + ")\n   " + snippet;
+            items[i] = (i + 1) + ". " + h.tag + (h.isMultiSlot ? " [RLHF]" : "") + " (" + h.timeFormatted + ")\n   " + snippet;
         }
 
         new AlertDialog.Builder(this)
                 .setTitle("⏱️ RECENT CAPTURES HISTORY (LAST 10)")
                 .setItems(items, (dialog, which) -> {
                     HistoryItem selected = historyList.get(which);
-                    renderResponseUI(selected.tag, selected.payload, selected.duration);
+                    renderResponseUI(selected.tag, selected.payload, selected.duration,
+                            selected.isMultiSlot, selected.slotCode, selected.slotReason, selected.slotRating, selected.slotAudit);
                     Toast.makeText(MainActivity.this, "Loaded " + selected.tag + " into view. Tap TYPE to type!", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Close", null)
@@ -541,14 +627,33 @@ public class MainActivity extends AppCompatActivity {
                     String tag = json.has("tag") ? json.get("tag").getAsString() : "[TYPE]";
                     String payload = json.has("payload") ? json.get("payload").getAsString() : "";
                     String duration = json.has("duration") ? json.get("duration").getAsString() : "0.8s";
+                    boolean isMulti = json.has("is_multi_slot") && json.get("is_multi_slot").getAsBoolean();
+
+                    String code = "";
+                    String reason = "";
+                    String rating = "";
+                    String audit = "";
+
+                    if (json.has("slots") && json.get("slots").isJsonObject()) {
+                        JsonObject slotsObj = json.getAsJsonObject("slots");
+                        if (slotsObj.has("code")) code = slotsObj.get("code").getAsString();
+                        if (slotsObj.has("explanation")) reason = slotsObj.get("explanation").getAsString();
+                        if (slotsObj.has("rating")) rating = slotsObj.get("rating").getAsString();
+                        if (slotsObj.has("audit")) audit = slotsObj.get("audit").getAsString();
+                    }
+
+                    final String finalCode = code;
+                    final String finalReason = reason;
+                    final String finalRating = rating;
+                    final String finalAudit = audit;
 
                     handler.post(() -> {
                         updateStatusText("✅ SOLVED (" + duration + ")");
-                        renderResponseUI(tag, payload, duration);
+                        renderResponseUI(tag, payload, duration, isMulti, finalCode, finalReason, finalRating, finalAudit);
 
                         // Save to history
                         String timeNow = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
-                        historyList.add(0, new HistoryItem(tag, payload, duration, timeNow));
+                        historyList.add(0, new HistoryItem(tag, payload, duration, timeNow, isMulti, finalCode, finalReason, finalRating, finalAudit));
                         if (historyList.size() > 10) historyList.remove(historyList.size() - 1);
                     });
                 } catch (Exception e) {
@@ -558,8 +663,14 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void renderResponseUI(String tag, String payload, String duration) {
+    private void renderResponseUI(String tag, String payload, String duration,
+                                  boolean isMulti, String code, String reason, String rating, String audit) {
         this.currentPayload = payload;
+        this.isMultiSlot = isMulti;
+        this.currentSlotCode = code != null ? code : "";
+        this.currentSlotReason = reason != null ? reason : "";
+        this.currentSlotRating = rating != null ? rating : "";
+        this.currentSlotAudit = audit != null ? audit : "";
 
         layoutResponseContainer.setVisibility(View.VISIBLE);
         if (btnQuickResult != null) btnQuickResult.setVisibility(View.GONE);
@@ -572,35 +683,50 @@ public class MainActivity extends AppCompatActivity {
         layoutCompareMode.setVisibility(View.GONE);
         layoutTypeMode.setVisibility(View.GONE);
 
-        if ("[VOICE]".equalsIgnoreCase(tag)) {
-            tvTagHeader.setBackgroundColor(Color.parseColor("#3B82F6"));
-            tvVoicePayload.setVisibility(View.VISIBLE);
-            tvVoicePayload.setText(payload);
-        } else if ("[CHECK]".equalsIgnoreCase(tag)) {
-            tvTagHeader.setBackgroundColor(Color.parseColor("#10B981"));
-            layoutCheckMode.setVisibility(View.VISIBLE);
-            tvCheckSelected.setText(payload);
-        } else if ("[COMPARE]".equalsIgnoreCase(tag)) {
-            tvTagHeader.setBackgroundColor(Color.parseColor("#8B5CF6"));
-            layoutCompareMode.setVisibility(View.VISIBLE);
-            String[] parts = payload.split("\\|", 2);
-            tvCompareBest.setText(parts[0].trim());
-            if (parts.length > 1) {
-                tvCompareReason.setText(parts[1].trim());
-            } else {
-                tvCompareReason.setText("");
-            }
+        if (isMulti) {
+            tvTagHeader.setText("[RLHF SLOTS]");
+            tvTagHeader.setBackgroundColor(Color.parseColor("#A855F7"));
+            layoutMultiSlotTabs.setVisibility(View.VISIBLE);
+            layoutStandardTypeButtons.setVisibility(View.GONE);
+            layoutMultiSlotTypeButtons.setVisibility(View.VISIBLE);
+
+            // Select Code tab by default
+            selectMultiSlotTab("code");
         } else {
-            // [TYPE] Default Code Mode
-            tvTagHeader.setBackgroundColor(Color.parseColor("#00FF88"));
-            layoutTypeMode.setVisibility(View.VISIBLE);
-            tvCodePayload.setText(payload);
+            layoutMultiSlotTabs.setVisibility(View.GONE);
+            layoutStandardTypeButtons.setVisibility(View.VISIBLE);
+            layoutMultiSlotTypeButtons.setVisibility(View.GONE);
+
+            if ("[VOICE]".equalsIgnoreCase(tag)) {
+                tvTagHeader.setBackgroundColor(Color.parseColor("#3B82F6"));
+                tvVoicePayload.setVisibility(View.VISIBLE);
+                tvVoicePayload.setText(payload);
+            } else if ("[CHECK]".equalsIgnoreCase(tag)) {
+                tvTagHeader.setBackgroundColor(Color.parseColor("#10B981"));
+                layoutCheckMode.setVisibility(View.VISIBLE);
+                tvCheckSelected.setText(payload);
+            } else if ("[COMPARE]".equalsIgnoreCase(tag)) {
+                tvTagHeader.setBackgroundColor(Color.parseColor("#8B5CF6"));
+                layoutCompareMode.setVisibility(View.VISIBLE);
+                String[] parts = payload.split("\\|", 2);
+                tvCompareBest.setText(parts[0].trim());
+                if (parts.length > 1) {
+                    tvCompareReason.setText(parts[1].trim());
+                } else {
+                    tvCompareReason.setText("");
+                }
+            } else {
+                // [TYPE] Default Code Mode
+                tvTagHeader.setBackgroundColor(Color.parseColor("#00FF88"));
+                layoutTypeMode.setVisibility(View.VISIBLE);
+                tvCodePayload.setText(payload);
+            }
         }
     }
 
     private void triggerDirectServerTyping(String payloadToType) {
         if (payloadToType == null || payloadToType.trim().isEmpty()) {
-            Toast.makeText(this, "No text/code available to type. Capture a question first.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No text/code in this slot to type.", Toast.LENGTH_SHORT).show();
             return;
         }
 

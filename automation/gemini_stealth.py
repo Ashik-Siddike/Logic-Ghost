@@ -250,22 +250,40 @@ app = Flask(__name__)
 GEMINI_URL = "https://gemini.google.com/app"
 USER_DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "user_data"))
 
-# Elite Problem-Solving Master Prompt
+# Elite Problem-Solving & AI Evaluation Master Prompt
 BASE_MASTER_PROMPT = (
-    "You are an elite coding expert, exam solver, and technical assistant. "
-    "Your task is to SOLVE the coding problem, technical question, or multiple choice question shown in the image completely. "
-    "DO NOT repeat the question. DO NOT summarize the question. DO NOT include introductory or conversational filler. "
-    "Strict output formatting rules:\n"
-    "1. Coding / Programming Problems: Write ONLY the complete, working implementation code. Prefix with [TYPE]. Example:\n"
+    "You are an elite coding expert, AI benchmark evaluator, RLHF specialist, and technical assistant.\n"
+    "Your task is to analyze and SOLVE the coding problem, side-by-side model comparison, bug fixing/refactoring task, database schema/query, API integration, or multi-turn RLHF conversation shown in the image completely.\n"
+    "DO NOT repeat the question. DO NOT summarize the question unnecessarily.\n\n"
+    "STRICT OUTPUT PROTOCOLS:\n\n"
+    "PROTOCOL 1: EVALUATION / BUG FIXING / CODE COMPARISON / MULTI-PART TASKS\n"
+    "When a task requires writing code AND providing an explanation/justification or rating:\n"
+    "You MUST structure your output with these exact tags:\n"
+    "<<<SLOT:RATING>>>\n"
+    "Your concise verdict/rating (e.g. 'Model A is significantly better (5/5 vs 2/5)' or 'Verdict: Root Cause Identified')\n"
+    "<<<SLOT:CODE>>>\n"
+    "Only the clean, 100% production-ready bugfix or solution code (ready to paste in code editor)\n"
+    "<<<SLOT:EXPLANATION>>>\n"
+    "Detailed Markdown explanation covering:\n"
+    "• Root Cause / Critique: Why original code failed or comparison breakdown.\n"
+    "• The Fix / Justification: What was changed and architectural rationale.\n"
+    "• Complexity / Optimization: Time and Space complexity improvements.\n"
+    "<<<SLOT:AUDIT>>>\n"
+    "(If applicable: Hallucination status, fake libraries/methods detected, official docs link with valid replacement)\n\n"
+    "PROTOCOL 2: STANDARD CODING / PURE PROGRAMMING PROBLEM (Single Code Box)\n"
+    "Write ONLY the complete, working implementation code. Prefix with [TYPE]. Example:\n"
     "[TYPE]\n"
     "function solve(input) {\n"
     "  // code here\n"
-    "}\n"
-    "2. Multiple Choice Questions: Prefix with [CHECK] followed by the option letter and correct answer. Example:\n"
-    "[CHECK] Option B: O(n log n)\n"
-    "3. Comparison / Best Option Questions: Prefix with [COMPARE]. Example:\n"
-    "[COMPARE] BEST: Option C | WHY: More efficient time complexity.\n"
-    "4. General / Spoken Questions: Prefix with [VOICE] followed by a 1-2 sentence direct answer."
+    "}\n\n"
+    "PROTOCOL 3: MULTIPLE CHOICE / CHECKBOX QUESTIONS\n"
+    "Prefix with [CHECK] followed by option letter and answer. Example:\n"
+    "[CHECK] Option B: O(n log n)\n\n"
+    "PROTOCOL 4: DIRECT COMPARISON / BEST OPTION QUESTIONS\n"
+    "Prefix with [COMPARE]. Example:\n"
+    "[COMPARE] BEST: Option C | WHY: More efficient time complexity.\n\n"
+    "PROTOCOL 5: GENERAL / SPOKEN / CONCEPTUAL QA\n"
+    "Prefix with [VOICE] followed by a direct 1-3 sentence answer."
 )
 
 def build_effective_master_prompt():
@@ -415,6 +433,33 @@ def clean_code_snippet(text):
     return text
 
 def parse_ai_response(raw_text):
+    raw_text = (raw_text or "").strip()
+    
+    # Check for Multi-Slot tags
+    has_slot = bool(re.search(r'<<<SLOT:(RATING|CODE|EXPLANATION|AUDIT)>>>', raw_text, re.IGNORECASE))
+    if has_slot:
+        rating_match = re.search(r'<<<SLOT:RATING>>>(.*?)(?=<<<SLOT:|$)', raw_text, re.DOTALL | re.IGNORECASE)
+        code_match = re.search(r'<<<SLOT:CODE>>>(.*?)(?=<<<SLOT:|$)', raw_text, re.DOTALL | re.IGNORECASE)
+        explanation_match = re.search(r'<<<SLOT:EXPLANATION>>>(.*?)(?=<<<SLOT:|$)', raw_text, re.DOTALL | re.IGNORECASE)
+        audit_match = re.search(r'<<<SLOT:AUDIT>>>(.*?)(?=<<<SLOT:|$)', raw_text, re.DOTALL | re.IGNORECASE)
+        
+        rating = rating_match.group(1).strip() if rating_match else ""
+        code = clean_code_snippet(code_match.group(1).strip()) if code_match else ""
+        explanation = explanation_match.group(1).strip() if explanation_match else ""
+        audit = audit_match.group(1).strip() if audit_match else ""
+        
+        # Primary payload priority: code -> explanation -> raw
+        primary_payload = code if code else (explanation if explanation else raw_text)
+        
+        slots = {
+            "rating": rating,
+            "code": code,
+            "explanation": explanation,
+            "audit": audit
+        }
+        
+        return "[MULTI-SLOT]", primary_payload, True, slots
+    
     tag = "[TYPE]"
     payload = raw_text
 
@@ -434,7 +479,7 @@ def parse_ai_response(raw_text):
     if tag == "[TYPE]":
         payload = clean_code_snippet(payload)
 
-    return tag, payload
+    return tag, payload, False, {}
 
 def analyze_with_rotated_gemini_api(image_path):
     """
@@ -466,11 +511,13 @@ def analyze_with_rotated_gemini_api(image_path):
             raw_text = (response.text or "").strip()
             print(f"[API Rotator] Success with key {masked_key} ({len(raw_text)} chars).", flush=True)
 
-            tag, payload = parse_ai_response(raw_text)
+            tag, payload, is_multi_slot, slots = parse_ai_response(raw_text)
             return {
                 "raw_answer": raw_text,
                 "tag": tag,
                 "payload": payload,
+                "is_multi_slot": is_multi_slot,
+                "slots": slots,
                 "engine": "gemini-2.5-flash-api",
                 "key_used": masked_key,
                 "rules_active": ctx_info["enabled"]
@@ -588,12 +635,14 @@ class GeminiAutomationEngine:
                 last_text = current_text
 
         raw_text = last_text.strip()
-        tag, payload = parse_ai_response(raw_text)
+        tag, payload, is_multi_slot, slots = parse_ai_response(raw_text)
 
         return {
             "raw_answer": raw_text,
             "tag": tag,
             "payload": payload,
+            "is_multi_slot": is_multi_slot,
+            "slots": slots,
             "engine": "playwright-stealth-browser"
         }
 

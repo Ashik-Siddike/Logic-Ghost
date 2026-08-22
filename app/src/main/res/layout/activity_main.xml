@@ -254,34 +254,96 @@
             android:focusable="true"
             android:visibility="gone"/>
 
-        <!-- USB Typing Button (Glowing Emerald/Cyan Pill) -->
-        <Button
-            android:id="@+id/btnTypeDirect"
-            android:layout_width="128dp"
-            android:layout_height="48dp"
-            android:text="⚡ TYPE (USB)"
-            android:background="@drawable/btn_direct_type"
-            android:textColor="#051522"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:layout_marginBottom="8dp"
-            android:elevation="6dp"/>
+        <!-- STANDARD MODE BUTTONS -->
+        <LinearLayout
+            android:id="@+id/layoutStandardTypeButtons"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-        <!-- Bluetooth HID Typing Button (Cyber Glass Pill) -->
-        <Button
-            android:id="@+id/btnTypeBluetooth"
-            android:layout_width="128dp"
-            android:layout_height="42dp"
-            android:text="📶 TYPE (BT)"
-            android:background="@drawable/hud_panel_bg"
-            android:textColor="#00FF88"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:elevation="4dp"/>
+            <!-- USB Typing Button (Glowing Emerald/Cyan Pill) -->
+            <Button
+                android:id="@+id/btnTypeDirect"
+                android:layout_width="128dp"
+                android:layout_height="48dp"
+                android:text="⚡ TYPE (USB)"
+                android:background="@drawable/btn_direct_type"
+                android:textColor="#051522"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:layout_marginBottom="8dp"
+                android:elevation="6dp"/>
+
+            <!-- Bluetooth HID Typing Button (Cyber Glass Pill) -->
+            <Button
+                android:id="@+id/btnTypeBluetooth"
+                android:layout_width="128dp"
+                android:layout_height="42dp"
+                android:text="📶 TYPE (BT)"
+                android:background="@drawable/hud_panel_bg"
+                android:textColor="#00FF88"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:elevation="4dp"/>
+        </LinearLayout>
+
+        <!-- MULTI-SLOT RLHF MODE BUTTONS -->
+        <LinearLayout
+            android:id="@+id/layoutMultiSlotTypeButtons"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- 1. Type Code Slot -->
+            <Button
+                android:id="@+id/btnTypeCode"
+                android:layout_width="132dp"
+                android:layout_height="44dp"
+                android:text="💻 TYPE CODE"
+                android:background="@drawable/btn_direct_type"
+                android:textColor="#051522"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:layout_marginBottom="6dp"
+                android:elevation="6dp"/>
+
+            <!-- 2. Type Explanation Slot -->
+            <Button
+                android:id="@+id/btnTypeReason"
+                android:layout_width="132dp"
+                android:layout_height="40dp"
+                android:text="📝 TYPE REASON"
+                android:background="@drawable/hud_panel_bg"
+                android:textColor="#00FF88"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:layout_marginBottom="6dp"
+                android:elevation="4dp"/>
+
+            <!-- 3. Type Rating Slot -->
+            <Button
+                android:id="@+id/btnTypeRating"
+                android:layout_width="132dp"
+                android:layout_height="36dp"
+                android:text="⭐ TYPE RATING"
+                android:background="@drawable/hud_panel_bg"
+                android:textColor="#C084FC"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:elevation="4dp"/>
+        </LinearLayout>
+
     </LinearLayout>
 
     <!-- RIGHT SIDE: Aesthetic Glowing Camera Shutter Button (Vertically Centered for Right Thumb) -->
@@ -311,34 +373,34 @@
         android:layout_height="230dp"
         android:layout_gravity="bottom"
         android:layout_marginBottom="16dp"
-        android:layout_marginStart="148dp"
+        android:layout_marginStart="152dp"
         android:layout_marginEnd="104dp"
         android:orientation="vertical"
         android:background="@drawable/hud_glass_card"
-        android:padding="14dp"
+        android:padding="12dp"
         android:elevation="12dp"
         android:visibility="gone">
 
         <!-- Result Header Bar: Tag, Duration, Maximize, Close -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="32dp"
+            android:layout_height="30dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="6dp">
 
             <TextView
                 android:id="@+id/tvTagHeader"
                 android:layout_width="wrap_content"
-                android:layout_height="26dp"
+                android:layout_height="24dp"
                 android:text="[TYPE]"
                 android:textColor="#000000"
                 android:textStyle="bold"
                 android:background="#00FF88"
                 android:gravity="center"
                 android:includeFontPadding="false"
-                android:paddingHorizontal="10dp"
-                android:textSize="11sp"/>
+                android:paddingHorizontal="8dp"
+                android:textSize="10sp"/>
 
             <TextView
                 android:id="@+id/tvResultDuration"
@@ -348,51 +410,108 @@
                 android:text="⏱️ 0.8s"
                 android:textColor="#94A3B8"
                 android:includeFontPadding="false"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:layout_marginStart="8dp"/>
 
             <!-- Copy Button -->
             <TextView
                 android:id="@+id/btnCopyResult"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:text="📋"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:gravity="center"
                 android:includeFontPadding="false"
                 android:background="@drawable/btn_pill_cyber"
                 android:clickable="true"
                 android:focusable="true"
-                android:layout_marginEnd="6dp"/>
+                android:layout_marginEnd="5dp"/>
 
             <!-- Maximize / Restore Toggle Button -->
             <TextView
                 android:id="@+id/btnMaximizeResult"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:text="⛶"
                 android:textColor="#00F0FF"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:includeFontPadding="false"
                 android:background="@drawable/btn_pill_cyber"
                 android:clickable="true"
                 android:focusable="true"
-                android:layout_marginEnd="6dp"/>
+                android:layout_marginEnd="5dp"/>
 
             <!-- Close / Minimize Button -->
             <TextView
                 android:id="@+id/btnCloseResult"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:text="✕"
                 android:textColor="#FF5555"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:includeFontPadding="false"
                 android:background="@drawable/btn_pill_cyber"
+                android:clickable="true"
+                android:focusable="true"/>
+        </LinearLayout>
+
+        <!-- Multi-Slot Tab Bar (Visible when is_multi_slot is true) -->
+        <LinearLayout
+            android:id="@+id/layoutMultiSlotTabs"
+            android:layout_width="match_parent"
+            android:layout_height="26dp"
+            android:orientation="horizontal"
+            android:layout_marginBottom="6dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tabSlotCode"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="💻 CODE"
+                android:textColor="#000000"
+                android:background="#00FF88"
+                android:gravity="center"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:includeFontPadding="false"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <TextView
+                android:id="@+id/tabSlotReason"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="📝 REASON"
+                android:textColor="#94A3B8"
+                android:background="@drawable/btn_pill_cyber"
+                android:gravity="center"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:includeFontPadding="false"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <TextView
+                android:id="@+id/tabSlotRating"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="⭐ RATING"
+                android:textColor="#94A3B8"
+                android:background="@drawable/btn_pill_cyber"
+                android:gravity="center"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:includeFontPadding="false"
                 android:clickable="true"
                 android:focusable="true"/>
         </LinearLayout>
@@ -410,14 +529,14 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- 1. [VOICE] Mode: Large high-contrast typography for reading aloud -->
+                <!-- 1. [VOICE] Mode -->
                 <TextView
                     android:id="@+id/tvVoicePayload"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textColor="#FFFFFF"
-                    android:textSize="16sp"
-                    android:lineSpacingExtra="4dp"
+                    android:textSize="15sp"
+                    android:lineSpacingExtra="3dp"
                     android:includeFontPadding="false"
                     android:textStyle="bold"
                     android:visibility="gone"/>
@@ -435,7 +554,7 @@
                         android:layout_height="wrap_content"
                         android:text="Selected: Option"
                         android:textColor="#00FF88"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:includeFontPadding="false"
                         android:textStyle="bold"/>
                 </LinearLayout>
@@ -452,7 +571,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textColor="#00FF88"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:includeFontPadding="false"
                         android:textStyle="bold"/>
                     <TextView
@@ -460,12 +579,12 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textColor="#94A3B8"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:includeFontPadding="false"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
-                <!-- 4. [TYPE] Mode -->
+                <!-- 4. [TYPE] / Single Code Mode -->
                 <LinearLayout
                     android:id="@+id/layoutTypeMode"
                     android:layout_width="match_parent"
@@ -478,9 +597,9 @@
                         android:layout_height="wrap_content"
                         android:textColor="#38BDF8"
                         android:fontFamily="monospace"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:includeFontPadding="false"
-                        android:lineSpacingExtra="3dp"/>
+                        android:lineSpacingExtra="2dp"/>
                 </LinearLayout>
             </LinearLayout>
         </ScrollView>
