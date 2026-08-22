@@ -19,6 +19,7 @@ const PYTHON_CONTEXT_URL = 'http://127.0.0.1:5001/api/context';
 const PYTHON_CONTEXT_CLEAR = 'http://127.0.0.1:5001/api/context/clear';
 const PYTHON_CONTEXT_UPLOAD = 'http://127.0.0.1:5001/api/context/upload';
 const PYTHON_SPEED_URL = 'http://127.0.0.1:5001/settings/speed';
+const PYTHON_TYPE_SEQUENCE_URL = 'http://127.0.0.1:5001/api/type_sequence';
 
 // In-memory feed of recent captures
 const activityFeed = [];
@@ -172,6 +173,51 @@ app.post('/type', async (req, res) => {
         console.error('[Express] Error forwarding typing request:', err.message);
         return res.status(500).json({ error: 'Failed to inject keystrokes', details: err.message });
     }
+});
+
+/**
+ * POST /type_sequence: Injects multiple slots with Tab transitions
+ */
+app.post('/type_sequence', async (req, res) => {
+    try {
+        const slots = req.body.slots || [];
+        const inter_key = req.body.inter_key || 'TAB';
+        const inter_delay_sec = req.body.inter_delay_sec || 1.2;
+
+        const pythonResponse = await axios.post(PYTHON_TYPE_SEQUENCE_URL, {
+            slots,
+            inter_key,
+            inter_delay_sec
+        }, { timeout: 120000 });
+
+        return res.json(pythonResponse.data);
+    } catch (err) {
+        console.error('[Express] Error forwarding sequence typing request:', err.message);
+        return res.status(500).json({ error: 'Failed to inject sequence keystrokes', details: err.message });
+    }
+});
+
+/**
+ * GET /export/report: Downloads all solved captures as clean Markdown report
+ */
+app.get('/export/report', (req, res) => {
+    let md = `# 👻 LogicGhost Session Evaluation Report\nGenerated: ${new Date().toLocaleString()}\nTotal Captures: ${activityFeed.length}\n\n---\n\n`;
+    activityFeed.forEach((item, index) => {
+        md += `## Task #${activityFeed.length - index} [${item.tag}] - ${item.time} (⏱️ ${item.duration})\n`;
+        md += `* **Engine**: \`${item.engine}\` ${item.key_used ? '(' + item.key_used + ')' : ''}\n`;
+        if (item.is_multi_slot && item.slots) {
+            if (item.slots.rating) md += `* **Rating/Verdict**: ${item.slots.rating}\n\n`;
+            if (item.slots.code) md += `### 💻 Code Solution:\n\`\`\`javascript\n${item.slots.code}\n\`\`\`\n\n`;
+            if (item.slots.explanation) md += `### 📝 Justification / Breakdown:\n${item.slots.explanation}\n\n`;
+            if (item.slots.audit) md += `### 🛡️ Audit:\n${item.slots.audit}\n\n`;
+        } else {
+            md += `### Payload:\n\`\`\`\n${item.payload}\n\`\`\`\n\n`;
+        }
+        md += `---\n\n`;
+    });
+    res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="LogicGhost_Session_Report.md"');
+    res.send(md);
 });
 
 /**
@@ -594,7 +640,12 @@ app.get('/', (req, res) => {
             <div class="brand">
                 <div class="brand-title">LOGICGHOST HUD</div>
             </div>
-            <div class="badge" id="statusBadge">Active & Online</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <a href="/export/report" class="btn btn-green" style="padding: 6px 14px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: bold;">
+                    📥 Export Session (.md)
+                </a>
+                <div class="badge" id="statusBadge">Active & Online</div>
+            </div>
         </div>
 
         <div class="grid">

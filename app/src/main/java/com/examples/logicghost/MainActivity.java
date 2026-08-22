@@ -327,6 +327,11 @@ public class MainActivity extends AppCompatActivity {
         btnTypeReason.setOnClickListener(v -> triggerDirectServerTyping(currentSlotReason));
         btnTypeRating.setOnClickListener(v -> triggerDirectServerTyping(currentSlotRating));
 
+        Button btnTypeAutoSequence = findViewById(R.id.btnTypeAutoSequence);
+        if (btnTypeAutoSequence != null) {
+            btnTypeAutoSequence.setOnClickListener(v -> triggerAutoSequenceTyping());
+        }
+
         // Multi-Slot Tab Switching
         tabSlotCode.setOnClickListener(v -> selectMultiSlotTab("code"));
         tabSlotReason.setOnClickListener(v -> selectMultiSlotTab("reason"));
@@ -663,6 +668,19 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void triggerHapticSolveNotification() {
+        try {
+            android.os.Vibrator v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+            if (v != null && v.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    v.vibrate(android.os.VibrationEffect.createOneShot(80, android.os.VibrationEffect.DEFAULT_AMPLITUDE));
+                } else {
+                    v.vibrate(80);
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
     private void renderResponseUI(String tag, String payload, String duration,
                                   boolean isMulti, String code, String reason, String rating, String audit) {
         this.currentPayload = payload;
@@ -671,6 +689,8 @@ public class MainActivity extends AppCompatActivity {
         this.currentSlotReason = reason != null ? reason : "";
         this.currentSlotRating = rating != null ? rating : "";
         this.currentSlotAudit = audit != null ? audit : "";
+
+        triggerHapticSolveNotification();
 
         layoutResponseContainer.setVisibility(View.VISIBLE);
         if (btnQuickResult != null) btnQuickResult.setVisibility(View.GONE);
@@ -722,6 +742,55 @@ public class MainActivity extends AppCompatActivity {
                 tvCodePayload.setText(payload);
             }
         }
+    }
+
+    private void triggerAutoSequenceTyping() {
+        List<String> list = new ArrayList<>();
+        if (!currentSlotCode.isEmpty()) list.add(currentSlotCode);
+        if (!currentSlotReason.isEmpty()) list.add(currentSlotReason);
+        if (list.isEmpty()) {
+            Toast.makeText(this, "No multi-slot content to auto-fill", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        updateStatusText("🚀 INJECTING AUTO-SEQUENCE (CODE -> TAB -> REASON)...");
+        String serverUrl = getResolvedServerUrl();
+        String seqEndpoint = serverUrl.replaceAll("/+$", "") + "/type_sequence";
+
+        JsonObject json = new JsonObject();
+        com.google.gson.JsonArray arr = new com.google.gson.JsonArray();
+        for (String s : list) arr.add(s);
+        json.add("slots", arr);
+        json.addProperty("inter_key", "TAB");
+        json.addProperty("inter_delay_sec", 1.2);
+
+        RequestBody body = RequestBody.create(json.toString(), MediaType.parse("application/json; charset=utf-8"));
+        Request request = new Request.Builder()
+                .url(seqEndpoint)
+                .post(body)
+                .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                handler.post(() -> {
+                    updateStatusText("SEQUENCE ERROR: " + e.getMessage());
+                    Toast.makeText(MainActivity.this, "Auto-sequence failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
+                handler.post(() -> {
+                    if (response.isSuccessful()) {
+                        updateStatusText("✅ AUTO-SEQUENCE INJECTED TO ACTIVE WINDOW");
+                        Toast.makeText(MainActivity.this, "🚀 Auto-filling Code & Reason with Tab transition!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        updateStatusText("SEQUENCE ERROR (" + response.code() + ")");
+                    }
+                });
+            }
+        });
     }
 
     private void triggerDirectServerTyping(String payloadToType) {

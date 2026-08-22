@@ -341,6 +341,21 @@
                 android:textStyle="bold"
                 android:gravity="center"
                 android:includeFontPadding="false"
+                android:layout_marginBottom="6dp"
+                android:elevation="4dp"/>
+
+            <!-- 4. Smart Auto-Sequence (Code -> Tab -> Reason) -->
+            <Button
+                android:id="@+id/btnTypeAutoSequence"
+                android:layout_width="132dp"
+                android:layout_height="34dp"
+                android:text="🚀 AUTO-FILL (TAB)"
+                android:background="@drawable/btn_pill_cyber"
+                android:textColor="#38BDF8"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
                 android:elevation="4dp"/>
         </LinearLayout>
 

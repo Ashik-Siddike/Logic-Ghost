@@ -728,6 +728,43 @@ def handle_type():
     inject_keystrokes_to_active_window(text, min_delay_ms=min_delay, max_delay_ms=max_delay)
     return jsonify({"success": True, "characters_typed": len(text), "min_delay_ms": min_delay, "max_delay_ms": max_delay})
 
+@app.route('/api/type_sequence', methods=['POST'])
+def handle_type_sequence():
+    """
+    Types multiple slots in sequence with configurable inter-slot key transitions (e.g. TAB or ENTER) and pause.
+    """
+    data = request.json or {}
+    slots_list = data.get('slots', [])
+    inter_slot_key = data.get('inter_key', 'TAB').upper()
+    delay_between_slots_sec = float(data.get('inter_delay_sec', 1.0))
+
+    if not slots_list:
+        return jsonify({"error": "No slots provided"}), 400
+
+    def run_sequence():
+        import ctypes
+        user32 = ctypes.windll.user32
+        VK_TAB = 0x09
+        VK_RETURN = 0x0D
+        KEYEVENTF_KEYUP = 0x0002
+
+        print(f"[Auto-Sequence] Starting multi-slot injection for {len(slots_list)} slots...", flush=True)
+        for i, text in enumerate(slots_list):
+            if text and text.strip():
+                inject_keystrokes_to_active_window(text.strip())
+                if i < len(slots_list) - 1:
+                    time.sleep(0.3)
+                    # Send transition key (Tab or Enter)
+                    vk = VK_TAB if inter_slot_key == "TAB" else VK_RETURN
+                    user32.keybd_event(vk, 0, 0, 0)
+                    time.sleep(0.04)
+                    user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
+                    time.sleep(delay_between_slots_sec)
+        print("[Auto-Sequence] Completed all slots.", flush=True)
+
+    threading.Thread(target=run_sequence, daemon=True).start()
+    return jsonify({"success": True, "slots_queued": len(slots_list)})
+
 @app.route('/settings/speed', methods=['POST'])
 def handle_set_speed():
     data = request.json or {}
