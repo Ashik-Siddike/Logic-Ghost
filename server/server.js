@@ -805,8 +805,14 @@ app.get('/', (req, res) => {
                 Add multiple Gemini API keys separated by commas. The system will rotate through them circularly to balance requests, give rate limits time to rest, and ensure 100% uptime!
             </p>
             <input type="text" class="input-text" id="apiKeysInput" placeholder="Paste Gemini API Keys (comma-separated): AIzaSy..., AQ.Ab8..." />
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <button class="btn" onclick="saveApiKeys()">💾 Save & Update Keys</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <button class="btn" onclick="saveApiKeys()">💾 Save & Update Keys</button>
+                    <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer" class="btn btn-purple" style="text-decoration: none;">
+                        <span>✨ Get Gemini API Key</span>
+                        <span style="font-size: 11px; opacity: 0.85;">↗</span>
+                    </a>
+                </div>
                 <span id="keysMsg" style="font-size: 11px; color: var(--green);"></span>
             </div>
             <div id="keysList" style="margin-top: 12px; font-family: 'JetBrains Mono'; font-size: 11px; color: var(--cyan);"></div>
