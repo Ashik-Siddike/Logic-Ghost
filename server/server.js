@@ -34,6 +34,7 @@ app.get('/logo.png', (req, res) => {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Configure Multer Storage for Screen Captures and Documents
@@ -403,540 +404,518 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LogicGhost - Next-Gen AI Stealth Cockpit</title>
+    <title>LOGICGHOST // TACTICAL AI HACKER HUD</title>
     <link rel="icon" type="image/png" href="/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #07090e;
-            --surface: rgba(14, 18, 27, 0.72);
-            --surface-hover: rgba(22, 28, 42, 0.85);
-            --surface-card: rgba(13, 17, 26, 0.68);
-            --border: rgba(255, 255, 255, 0.08);
-            --border-glow: rgba(0, 240, 255, 0.35);
+            --bg-void: #020408;
+            --surface-hud: rgba(6, 12, 24, 0.86);
+            --surface-panel: rgba(8, 16, 32, 0.92);
             --cyan: #00f0ff;
-            --cyan-glow: rgba(0, 240, 255, 0.25);
+            --cyan-glow: rgba(0, 240, 255, 0.45);
             --green: #00ff88;
-            --green-glow: rgba(0, 255, 136, 0.25);
-            --purple: #a855f7;
-            --purple-glow: rgba(168, 85, 247, 0.25);
-            --indigo: #6366f1;
-            --amber: #fbbf24;
-            --red: #f43f5e;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --text-dim: #64748b;
+            --green-glow: rgba(0, 255, 136, 0.45);
+            --pink: #ff0055;
+            --pink-glow: rgba(255, 0, 85, 0.45);
+            --purple: #b026ff;
+            --amber: #ffb800;
+            --border-cyan: rgba(0, 240, 255, 0.35);
+            --text-main: #e6faff;
+            --text-dim: #7da5b8;
+            --text-mono: 'JetBrains Mono', 'Share Tech Mono', monospace;
+            --text-hud: 'Orbitron', sans-serif;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            background-color: var(--bg);
-            background-image: 
-                radial-gradient(1200px circle at var(--mouse-x, 50%) var(--mouse-y, 25%), rgba(0, 240, 255, 0.07) 0%, transparent 45%),
-                radial-gradient(900px circle at 85% 15%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
-            background-attachment: fixed;
+            background: 
+                linear-gradient(180deg, rgba(2, 4, 8, 0.88) 0%, rgba(2, 4, 8, 0.94) 45%, rgba(2, 4, 8, 0.98) 100%),
+                url('/cyber_city.jpg') no-repeat center top fixed;
+            background-size: cover;
             color: var(--text-main);
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: var(--text-mono);
             min-height: 100vh;
-            padding: 32px 20px 60px;
-            -webkit-font-smoothing: antialiased;
+            padding: 24px 18px 60px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ⚡ Cyberpunk Scanline & CRT Effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 999;
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+            opacity: 0.75;
         }
 
         .container {
-            max-width: 1180px;
+            max-width: 1200px;
             margin: 0 auto;
+            position: relative;
+            z-index: 10;
         }
 
-        /* 🔮 Obsidian Header Bar */
-        .header {
+        /* 🥷 Tactical HUD Top Banner */
+        .hud-header {
+            background: rgba(4, 10, 20, 0.9);
+            border: 1px solid var(--border-cyan);
+            border-left: 4px solid var(--pink);
+            border-right: 4px solid var(--cyan);
+            padding: 18px 24px;
+            margin-bottom: 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 16px 22px;
-            background: rgba(14, 18, 27, 0.75);
-            backdrop-filter: blur(24px) saturate(180%);
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            margin-bottom: 28px;
-            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .brand-logo-wrap {
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.05);
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
         }
 
-        .brand-logo-wrap::after {
-            content: '';
+        .hud-header::before {
+            content: "SYS_VER // 2.0.4 [MIL-SPEC]";
             position: absolute;
-            inset: -4px;
-            background: linear-gradient(135deg, var(--cyan), var(--indigo));
-            border-radius: 14px;
-            filter: blur(8px);
-            opacity: 0.5;
-            z-index: -1;
+            top: -9px;
+            left: 20px;
+            background: #020408;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            font-size: 9px;
+            font-weight: 800;
+            padding: 1px 8px;
+            letter-spacing: 1.5px;
+        }
+
+        .brand-cluster {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-logo-frame {
+            position: relative;
+            padding: 2px;
+            background: linear-gradient(135deg, var(--pink), var(--cyan));
+            border-radius: 6px;
+            box-shadow: 0 0 20px var(--cyan-glow);
         }
 
         .brand-logo {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            border: 1.5px solid rgba(255, 255, 255, 0.15);
+            width: 44px;
+            height: 44px;
+            border-radius: 4px;
             display: block;
         }
 
-        .brand-text {
-            display: flex;
-            flex-direction: column;
-        }
-
         .brand-title {
-            font-size: 19px;
-            font-weight: 800;
-            letter-spacing: 0.8px;
-            background: linear-gradient(135deg, #FFFFFF 20%, #A5F3FC 70%, var(--cyan) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .brand-subtitle {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            color: var(--text-dim);
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .badge-live {
-            background: rgba(0, 255, 136, 0.1);
-            border: 1px solid rgba(0, 255, 136, 0.3);
-            color: var(--green);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+            font-family: var(--text-hud);
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: #ffffff;
+            text-shadow: 0 0 14px var(--cyan), 0 0 25px var(--cyan-glow);
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .pulse-dot {
-            width: 7px;
-            height: 7px;
+        .brand-subtitle {
+            font-size: 11px;
+            color: var(--pink);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hud-status-cluster {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .status-beacon {
+            background: rgba(0, 255, 136, 0.12);
+            border: 1px solid var(--green);
+            color: var(--green);
+            padding: 6px 14px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 15px var(--green-glow);
+            text-transform: uppercase;
+        }
+
+        .pulsing-led {
+            width: 8px;
+            height: 8px;
             background: var(--green);
             border-radius: 50%;
             box-shadow: 0 0 10px var(--green);
-            animation: pulse-animation 2s infinite;
+            animation: tactical-pulse 1.4s infinite;
         }
 
-        @keyframes pulse-animation {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
-            70% { transform: scale(1.15); box-shadow: 0 0 0 6px rgba(0, 255, 136, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+        @keyframes tactical-pulse {
+            0% { transform: scale(0.9); opacity: 0.7; box-shadow: 0 0 4px var(--green); }
+            50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 14px var(--green); }
+            100% { transform: scale(0.9); opacity: 0.7; box-shadow: 0 0 4px var(--green); }
         }
 
-        /* 🎛️ Grid Layout */
-        .grid {
+        /* 🎛️ Tactical HUD Cards */
+        .hud-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            margin-bottom: 24px;
+            gap: 20px;
+            margin-bottom: 20px;
         }
 
         @media (max-width: 860px) {
-            .grid { grid-template-columns: 1fr; }
+            .hud-grid { grid-template-columns: 1fr; }
         }
 
-        /* 💎 Cyber-Glass Card */
-        .card {
-            background: var(--surface-card);
-            backdrop-filter: blur(24px) saturate(180%);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 24px;
-            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
-            transition: all 0.25s ease;
+        .cyber-card {
+            background: var(--surface-hud);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-cyan);
+            padding: 22px;
             position: relative;
-            overflow: hidden;
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.07), inset 0 0 15px rgba(0, 240, 255, 0.02);
+            clip-path: polygon(0 12px, 12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px));
+            transition: all 0.25s ease;
         }
 
-        .card::before {
+        .cyber-card:hover {
+            border-color: var(--cyan);
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.2), inset 0 0 25px rgba(0, 240, 255, 0.06);
+            transform: translateY(-2px);
+        }
+
+        /* Sci-Fi Corner Brackets */
+        .cyber-card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+            top: 0; left: 0; width: 14px; height: 14px;
+            border-top: 2px solid var(--cyan);
+            border-left: 2px solid var(--cyan);
         }
 
-        .card:hover {
-            border-color: rgba(0, 240, 255, 0.22);
-            box-shadow: 0 24px 48px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(0, 240, 255, 0.2);
-            transform: translateY(-1.5px);
+        .cyber-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; right: 0; width: 14px; height: 14px;
+            border-bottom: 2px solid var(--pink);
+            border-right: 2px solid var(--pink);
         }
 
-        .card-header {
+        .card-header-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed rgba(0, 240, 255, 0.25);
         }
 
-        .card-title {
-            font-size: 14px;
-            font-weight: 700;
+        .card-title-tactical {
+            font-family: var(--text-hud);
+            font-size: 13.5px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
             color: #ffffff;
             display: flex;
             align-items: center;
-            gap: 9px;
-            letter-spacing: 0.3px;
+            gap: 10px;
+            text-transform: uppercase;
         }
 
-        .card-title-icon {
-            font-size: 16px;
-        }
-
-        .card-tag {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 10px;
-            border-radius: 12px;
-            background: rgba(0, 240, 255, 0.08);
-            border: 1px solid rgba(0, 240, 255, 0.25);
+        .tag-pill {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 8px;
+            background: rgba(0, 240, 255, 0.12);
+            border: 1px solid var(--cyan);
             color: var(--cyan);
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
-        .card-desc {
-            font-size: 12.5px;
-            color: var(--text-muted);
-            line-height: 1.55;
-            margin-bottom: 18px;
+        .tag-pill-pink {
+            background: rgba(255, 0, 85, 0.15);
+            border-color: var(--pink);
+            color: var(--pink);
         }
 
-        /* 📱 URL Box Cyber-Pill */
-        .url-box {
-            background: rgba(8, 11, 18, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
+        .tag-pill-green {
+            background: rgba(0, 255, 136, 0.15);
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        /* 📱 Cyber URL Boxes */
+        .cyber-url-box {
+            background: rgba(2, 6, 12, 0.95);
+            border: 1px solid rgba(0, 240, 255, 0.3);
             padding: 12px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
             margin-bottom: 12px;
-            transition: all 0.2s;
+            position: relative;
         }
 
-        .url-box:hover {
-            border-color: rgba(0, 240, 255, 0.3);
-            background: rgba(10, 14, 24, 0.95);
+        .cyber-url-box::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0; width: 3px;
+            background: var(--cyan);
+            box-shadow: 0 0 8px var(--cyan);
         }
 
-        .url-box-highlight {
-            border: 1px solid rgba(0, 255, 136, 0.35);
-            background: rgba(0, 255, 136, 0.03);
+        .cyber-url-box-highlight {
+            border-color: rgba(0, 255, 136, 0.5);
+        }
+        .cyber-url-box-highlight::before {
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green);
         }
 
-        .url-text {
-            font-family: 'JetBrains Mono', monospace;
+        .url-val {
             font-size: 13.5px;
-            font-weight: 600;
-            color: var(--text-main);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.5px;
         }
 
-        /* 🔘 Buttons */
-        .btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: var(--text-main);
+        /* 🔘 Cyberpunk Buttons */
+        .btn-cyber {
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
             padding: 9px 16px;
-            border-radius: 12px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 12px;
-            font-weight: 600;
+            font-family: var(--text-mono);
+            font-size: 11.5px;
+            font-weight: 800;
+            letter-spacing: 1px;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            text-transform: uppercase;
+            transition: all 0.2s;
             display: inline-flex;
             align-items: center;
             gap: 8px;
             text-decoration: none;
-            user-select: none;
+            position: relative;
+            clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
         }
 
-        .btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.25);
+        .btn-cyber:hover {
+            background: var(--cyan);
+            color: #020408;
+            box-shadow: 0 0 20px var(--cyan), inset 0 0 10px #ffffff;
             transform: translateY(-1px);
         }
 
-        .btn:active {
-            transform: translateY(0.5px) scale(0.98);
+        .btn-cyber:active {
+            transform: scale(0.97);
         }
 
-        .btn-cyan {
-            background: rgba(0, 240, 255, 0.1);
-            border-color: rgba(0, 240, 255, 0.35);
-            color: var(--cyan);
+        .btn-cyber-pink {
+            background: rgba(255, 0, 85, 0.12);
+            border-color: var(--pink);
+            color: var(--pink);
+        }
+        .btn-cyber-pink:hover {
+            background: var(--pink);
+            color: #ffffff;
+            box-shadow: 0 0 20px var(--pink), inset 0 0 10px #ffffff;
         }
 
-        .btn-cyan:hover {
-            background: var(--cyan);
-            color: #030712;
-            box-shadow: 0 0 20px var(--cyan-glow);
-        }
-
-        .btn-green {
-            background: rgba(0, 255, 136, 0.1);
-            border-color: rgba(0, 255, 136, 0.35);
+        .btn-cyber-green {
+            background: rgba(0, 255, 136, 0.12);
+            border-color: var(--green);
             color: var(--green);
         }
-
-        .btn-green:hover {
+        .btn-cyber-green:hover {
             background: var(--green);
-            color: #030712;
-            box-shadow: 0 0 20px var(--green-glow);
+            color: #020408;
+            box-shadow: 0 0 20px var(--green), inset 0 0 10px #ffffff;
         }
 
-        .btn-purple {
-            background: rgba(168, 85, 247, 0.1);
-            border-color: rgba(168, 85, 247, 0.35);
-            color: #c084fc;
+        .btn-cyber-amber {
+            background: rgba(255, 184, 0, 0.12);
+            border-color: var(--amber);
+            color: var(--amber);
+        }
+        .btn-cyber-amber:hover {
+            background: var(--amber);
+            color: #020408;
+            box-shadow: 0 0 20px var(--amber), inset 0 0 10px #ffffff;
         }
 
-        .btn-purple:hover {
-            background: var(--purple);
-            color: #ffffff;
-            box-shadow: 0 0 20px var(--purple-glow);
-        }
-
-        .btn-red {
-            background: rgba(244, 63, 94, 0.1);
-            border-color: rgba(244, 63, 94, 0.35);
-            color: var(--red);
-        }
-
-        .btn-red:hover {
-            background: var(--red);
-            color: #ffffff;
-            box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        /* 🎛️ Speed Preset Buttons */
-        .preset-grid {
+        /* 🎛️ Speed Preset Tactical Matrix */
+        .speed-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
             gap: 10px;
             margin-bottom: 18px;
         }
 
-        .preset-btn {
-            background: rgba(10, 14, 22, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: var(--text-muted);
-            padding: 11px 14px;
-            border-radius: 12px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11.5px;
-            font-weight: 600;
+        .speed-btn {
+            background: rgba(4, 8, 16, 0.85);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            color: var(--text-dim);
+            padding: 10px 14px;
+            font-family: var(--text-mono);
+            font-size: 11px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            display: inline-flex;
+            transition: all 0.2s;
+            display: flex;
             align-items: center;
             gap: 8px;
             text-align: left;
+            clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
         }
 
-        .preset-btn:hover {
-            border-color: rgba(0, 240, 255, 0.3);
+        .speed-btn:hover {
+            border-color: var(--cyan);
             color: #ffffff;
-            background: rgba(0, 240, 255, 0.06);
-            transform: translateY(-1px);
+            background: rgba(0, 240, 255, 0.08);
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
         }
 
-        .preset-btn.active {
-            background: linear-gradient(135deg, #00F0FF, #00B8D9) !important;
-            color: #020817 !important;
+        .speed-btn.active {
+            background: var(--cyan) !important;
+            color: #020408 !important;
             border-color: #ffffff !important;
-            box-shadow: 0 0 24px rgba(0, 240, 255, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
-            font-weight: 800 !important;
+            box-shadow: 0 0 24px var(--cyan), inset 0 0 8px rgba(255, 255, 255, 0.8) !important;
+            font-weight: 900 !important;
             transform: scale(1.02);
         }
 
-        /* 🎚️ Range Sliders */
-        .slider-wrap {
+        /* 🎚️ Cyber Sliders */
+        .slider-matrix {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
-            margin-bottom: 18px;
-            background: rgba(8, 11, 18, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 14px;
+            margin-bottom: 16px;
+            background: rgba(2, 6, 14, 0.85);
+            border: 1px solid rgba(0, 240, 255, 0.25);
             padding: 16px;
         }
 
         @media (max-width: 600px) {
-            .slider-wrap { grid-template-columns: 1fr; }
+            .slider-matrix { grid-template-columns: 1fr; }
         }
 
-        .slider-label-row {
+        .slider-header {
             display: flex;
             justify-content: space-between;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11.5px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-
-        .slider-val {
+            font-size: 11px;
             color: var(--cyan);
             font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
         }
 
         input[type="range"] {
             width: 100%;
             height: 6px;
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            outline: none;
+            background: #020408;
+            border: 1px solid rgba(0, 240, 255, 0.4);
             accent-color: var(--cyan);
             cursor: pointer;
         }
 
-        /* 📝 Text & Textarea Inputs */
-        .input-text, .textarea-box {
+        /* 📝 Cyber Inputs & Textareas */
+        .cyber-input, .cyber-textarea {
             width: 100%;
-            background: rgba(8, 11, 18, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 14px;
-            padding: 13px 16px;
+            background: rgba(2, 6, 14, 0.95);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            padding: 12px 16px;
             color: #ffffff;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12.5px;
+            font-family: var(--text-mono);
+            font-size: 12px;
             margin-bottom: 14px;
+            outline: none;
             transition: all 0.2s;
         }
 
-        .input-text:focus, .textarea-box:focus {
-            outline: none;
+        .cyber-input:focus, .cyber-textarea:focus {
             border-color: var(--cyan);
             box-shadow: 0 0 16px var(--cyan-glow);
-            background: rgba(10, 14, 24, 0.95);
+            background: rgba(4, 10, 22, 0.98);
         }
 
-        .textarea-box {
+        .cyber-textarea {
             resize: vertical;
-            min-height: 110px;
+            min-height: 100px;
             line-height: 1.6;
         }
 
-        /* 📦 Animated Dropzone */
-        .dropzone {
-            border: 2px dashed rgba(0, 240, 255, 0.35);
-            border-radius: 16px;
-            padding: 24px;
+        /* 📦 Holographic Dropzone */
+        .cyber-dropzone {
+            border: 2px dashed rgba(0, 240, 255, 0.45);
+            background: rgba(0, 240, 255, 0.03);
+            padding: 22px;
             text-align: center;
-            background: rgba(0, 240, 255, 0.02);
             cursor: pointer;
-            transition: all 0.25s ease;
             margin-bottom: 14px;
+            transition: all 0.25s;
+            position: relative;
         }
 
-        .dropzone:hover, .dropzone.dragover {
-            background: rgba(0, 240, 255, 0.08);
+        .cyber-dropzone:hover, .cyber-dropzone.dragover {
+            background: rgba(0, 240, 255, 0.1);
             border-color: var(--cyan);
-            box-shadow: 0 0 24px var(--cyan-glow);
-            transform: scale(1.005);
+            box-shadow: 0 0 25px var(--cyan-glow);
         }
 
         /* ⚡ Live Feed Stream */
-        .feed-container {
-            margin-top: 18px;
+        .feed-box {
+            margin-top: 16px;
             max-height: 520px;
             overflow-y: auto;
-            padding-right: 4px;
+            padding-right: 6px;
         }
 
-        .feed-container::-webkit-scrollbar {
-            width: 6px;
-        }
+        .feed-box::-webkit-scrollbar { width: 5px; }
+        .feed-box::-webkit-scrollbar-thumb { background: var(--cyan); }
 
-        .feed-container::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 6px;
-        }
-
-        .feed-item {
-            background: rgba(8, 11, 18, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            border-left: 3.5px solid var(--cyan);
-            border-radius: 14px;
+        .feed-tactical-item {
+            background: rgba(4, 10, 20, 0.92);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            border-left: 4px solid var(--cyan);
             padding: 16px;
             margin-bottom: 14px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-            transition: all 0.2s;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+            position: relative;
         }
 
-        .feed-item:hover {
-            border-color: rgba(255, 255, 255, 0.15);
-            border-left-color: var(--cyan);
-            transform: translateY(-1px);
+        .feed-tactical-item:hover {
+            border-color: var(--cyan);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.25);
         }
 
-        .feed-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 11.5px;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .feed-tag {
-            background: linear-gradient(135deg, var(--cyan), #00B8D9);
-            color: #020817;
-            padding: 3px 9px;
-            border-radius: 6px;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-        }
-
-        .feed-code {
-            background: #020408;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
+        .feed-code-block {
+            background: #010204;
+            border: 1px solid rgba(0, 240, 255, 0.25);
             padding: 14px;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: var(--text-mono);
             font-size: 12.5px;
             color: #38bdf8;
             white-space: pre-wrap;
@@ -945,239 +924,257 @@ app.get('/', (req, res) => {
             overflow-y: auto;
             line-height: 1.5;
         }
+
+        /* Tactical HUD Card Art Banner */
+        .card-art-banner {
+            width: 100%;
+            height: 110px;
+            border-radius: 2px;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            margin-bottom: 14px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-art-banner::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 40%, rgba(2, 4, 8, 0.9) 100%);
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- 🔮 Header Bar -->
-        <header class="header">
-            <div class="brand">
-                <div class="brand-logo-wrap">
-                    <img src="/logo.png" class="brand-logo" alt="LogicGhost Logo">
+        <!-- 🥷 Tactical HUD Top Banner -->
+        <header class="hud-header">
+            <div class="brand-cluster">
+                <div class="brand-logo-frame">
+                    <img src="/logo.png" class="brand-logo" alt="Logo">
                 </div>
-                <div class="brand-text">
-                    <div class="brand-title">LOGICGHOST HUD</div>
-                    <div class="brand-subtitle">AI Stealth Operations Center</div>
+                <div>
+                    <div class="brand-title">LOGICGHOST // HUD</div>
+                    <div class="brand-subtitle">⚡ TACTICAL AI OPERATIONS MAINFRAME</div>
                 </div>
             </div>
-            <div class="header-actions">
-                <a href="/export/report" class="btn btn-green">
-                    <span>📥</span> Export Session (.md)
+
+            <div class="hud-status-cluster">
+                <a href="/export/report" class="btn-cyber btn-cyber-green">
+                    <span>📥</span> EXPORT SESSION (.MD)
                 </a>
-                <div class="badge-live" id="statusBadge">
-                    <span class="pulse-dot"></span>
-                    <span>ACTIVE & ONLINE</span>
+                <div class="status-beacon">
+                    <span class="pulsing-led"></span>
+                    <span id="statusBadge">MAINFRAME ONLINE</span>
                 </div>
             </div>
         </header>
 
         <!-- 📱 Grid Row 1: Mobile URLs & Stealth Actions -->
-        <div class="grid">
+        <div class="hud-grid">
             <!-- Card 1: Connect URLs -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <span class="card-title-icon">📱</span> Mobile Connect URLs
+            <div class="cyber-card">
+                <div class="card-header-bar">
+                    <div class="card-title-tactical">
+                        <span>📱</span> SECURE LINK CHANNELS
                     </div>
-                    <span class="card-tag">DUAL CHANNEL</span>
+                    <span class="tag-pill">DUAL_PORT</span>
                 </div>
-                
+
                 <!-- Option 1: USB Zero-Config Mode (Default & Recommended) -->
                 <div style="margin-bottom: 14px;">
-                    <div style="font-size: 11px; font-weight: 700; color: var(--green); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                        <span>⚡ 1. USB ZERO-CONFIG (RECOMMENDED)</span>
-                        <span style="background: rgba(0,255,136,0.15); border: 1px solid rgba(0,255,136,0.3); padding: 1px 7px; border-radius: 6px; font-size: 9.5px; font-weight: 800;">NO IP NEEDED</span>
+                    <div style="font-size: 11px; font-weight: 800; color: var(--green); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span>⚡ [CHANNEL 01] USB ZERO-CONFIG (RECOMMENDED)</span>
+                        <span class="tag-pill tag-pill-green" style="font-size: 9px;">NO IP NEEDED</span>
                     </div>
-                    <div class="url-box url-box-highlight">
-                        <span id="usbUrlText" class="url-text" style="color: var(--green);">http://127.0.0.1:5000</span>
-                        <button class="btn btn-green" onclick="copyText('http://127.0.0.1:5000', 'USB URL copied to clipboard!')">📋 Copy USB</button>
+                    <div class="cyber-url-box cyber-url-box-highlight">
+                        <span id="usbUrlText" class="url-val" style="color: var(--green);">http://127.0.0.1:5000</span>
+                        <button class="btn-cyber btn-cyber-green" onclick="copyText('http://127.0.0.1:5000', 'USB Link Copied!')">📋 COPY USB</button>
                     </div>
                 </div>
 
                 <!-- Option 2: Wi-Fi / Local LAN Mode -->
                 <div>
-                    <div style="font-size: 11px; font-weight: 700; color: var(--cyan); margin-bottom: 6px;">📶 2. LOCAL WI-FI / LAN MODE</div>
-                    <div class="url-box">
-                        <span id="wifiUrlText" class="url-text" style="color: #94A3B8;">${serverUrl}</span>
-                        <button class="btn btn-cyan" onclick="copyText('${serverUrl}', 'Wi-Fi URL copied to clipboard!')">📋 Copy Wi-Fi</button>
+                    <div style="font-size: 11px; font-weight: 800; color: var(--cyan); margin-bottom: 6px;">📶 [CHANNEL 02] WIRELESS LAN MODE</div>
+                    <div class="cyber-url-box">
+                        <span id="wifiUrlText" class="url-val" style="color: #94A3B8;">${serverUrl}</span>
+                        <button class="btn-cyber" onclick="copyText('${serverUrl}', 'Wi-Fi Link Copied!')">📋 COPY WI-FI</button>
                     </div>
                 </div>
 
-                <div style="font-size: 11px; color: var(--text-dim); margin-top: 12px; line-height: 1.5;">
-                    🔌 <b>USB Cable:</b> Set phone to <b>http://127.0.0.1:5000</b> (Instant connection).<br>
-                    📶 <b>Same Wi-Fi:</b> Set phone to <b>${serverUrl}</b>.
+                <div style="font-size: 11px; color: var(--text-dim); margin-top: 14px; line-height: 1.5;">
+                    🔌 <b>USB Hardware Link:</b> Target <b>http://127.0.0.1:5000</b> (Instant Zero-Latency).<br>
+                    📶 <b>Local Cyber Grid:</b> Target <b>${serverUrl}</b>.
                 </div>
             </div>
 
             <!-- Card 2: Stealth & Emergency Controls -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <span class="card-title-icon">👻</span> Stealth & Emergency Controls
+            <div class="cyber-card">
+                <div class="card-header-bar">
+                    <div class="card-title-tactical">
+                        <span>👻</span> STEALTH & EMERGENCY HOOKS
                     </div>
-                    <span class="card-tag" style="color: var(--purple); border-color: rgba(168,85,247,0.3);">DESKTOP HOOK</span>
+                    <span class="tag-pill tag-pill-pink">PROCTOR_SHIELD</span>
                 </div>
-                <p class="card-desc">
-                    Control the desktop HUD position for maximum privacy during screen sharing, and trigger test keystroke injections.
-                </p>
-                <div class="btn-group">
-                    <button class="btn" onclick="stealthAction('hide')">👻 Send Off-Screen</button>
-                    <button class="btn btn-purple" onclick="stealthAction('show')">🖥️ Bring to Screen</button>
-                    <button class="btn btn-cyan" onclick="testType()">⚡ Test Typing</button>
-                    <button class="btn btn-red" onclick="stopTypingEmergency()" style="font-weight: bold;">🛑 Stop Typing</button>
+
+                <!-- Card Art Illustration -->
+                <div class="card-art-banner" style="background-image: url('/cyber_hud.jpg');"></div>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+                    <button class="btn-cyber" onclick="stealthAction('hide')">👻 SEND OFF-SCREEN</button>
+                    <button class="btn-cyber btn-cyber-pink" onclick="stealthAction('show')">🖥️ RESTORE HUD</button>
+                    <button class="btn-cyber btn-cyber-green" onclick="testType()">⚡ TEST INJECTION</button>
+                    <button class="btn-cyber btn-cyber-pink" onclick="stopTypingEmergency()" style="border-width: 2px;">🛑 ABORT TYPING</button>
                 </div>
-                <p id="stealthMsg" style="font-size: 11.5px; font-family: 'JetBrains Mono', monospace; color: var(--green); margin-top: 14px; min-height: 18px;"></p>
+                <p id="stealthMsg" style="font-size: 11px; color: var(--green); font-weight: 700; min-height: 18px;"></p>
             </div>
         </div>
 
         <!-- 📚 Card 3: Custom Reference Context & PDF Rulebook Context Manager -->
-        <div class="card" style="margin-bottom: 24px;">
-            <div class="card-header">
-                <div class="card-title">
-                    <span class="card-title-icon">📚</span> Custom Reference Context & PDF Rulebook Knowledgebase
+        <div class="cyber-card" style="margin-bottom: 20px;">
+            <div class="card-header-bar">
+                <div class="card-title-tactical">
+                    <span>📚</span> KNOWLEDGEBASE & PDF RULEBOOK MATRIX
                 </div>
-                <span class="card-tag" id="contextBadge">Context: Inactive</span>
+                <span class="tag-pill" id="contextBadge">CONTEXT: INACTIVE</span>
             </div>
-            <p class="card-desc">
-                Upload rulebook PDFs or paste custom exam guidelines/framework rules. The AI will strictly study and obey these rules before answering any capture!
+            <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 14px;">
+                Inject framework guidelines, API references, or exam rulebooks. The AI neural engine will strictly enforce these rules on every capture!
             </p>
 
-            <!-- Drag and Drop Zone -->
-            <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+            <!-- Holographic Dropzone -->
+            <div class="cyber-dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
                 <input type="file" id="fileInput" accept=".pdf,.txt,.md,.doc,.docx" style="display:none;" onchange="handleFileSelect(event)">
-                <div style="font-size: 28px; margin-bottom: 8px;">📄</div>
-                <div style="font-size: 13.5px; font-weight: 700; color: var(--cyan);">Drop PDF or Guidelines File Here (or Click to Browse)</div>
-                <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 4px;">Supports .pdf, .txt, .md (Auto-extracted in 1 second)</div>
+                <div style="font-size: 28px; margin-bottom: 6px;">📄</div>
+                <div style="font-size: 13px; font-weight: 800; color: var(--cyan); letter-spacing: 1px;">DROP RULEBOOK / PDF FILE (OR CLICK TO UPLOAD)</div>
+                <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Supports .pdf, .txt, .md // High-Speed Extraction</div>
             </div>
 
-            <textarea class="textarea-box" id="contextTextArea" placeholder="Or paste custom rules, guidelines, code conventions, or exam reference instructions here directly..."></textarea>
+            <textarea class="cyber-textarea" id="contextTextArea" placeholder="// Enter custom rules, constraints, coding guidelines, or prompt extensions here..."></textarea>
 
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                <div class="btn-group">
-                    <button class="btn btn-green" onclick="saveContext(true)">💾 Save & Enable Rules</button>
-                    <button class="btn" onclick="toggleContext()">⏸️ Toggle Enable/Disable</button>
-                    <button class="btn btn-red" onclick="clearContext()">🗑️ 1-Click Clear Context</button>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-cyber btn-cyber-green" onclick="saveContext(true)">💾 SAVE & ACTIVATE</button>
+                    <button class="btn-cyber" onclick="toggleContext()">⏸️ PAUSE / RESUME</button>
+                    <button class="btn-cyber btn-cyber-pink" onclick="clearContext()">🗑️ WIPE CONTEXT</button>
                 </div>
-                <span id="contextStats" style="font-size: 11.5px; font-family: 'JetBrains Mono', monospace; color: var(--green); font-weight: 600;">0 Words Loaded</span>
+                <span id="contextStats" style="font-size: 11.5px; color: var(--green); font-weight: 800;">0 WORDS LOADED</span>
             </div>
         </div>
 
         <!-- ⌨️ Card 4: Organic Human Typing Speed & Jitter Settings -->
-        <div class="card" style="margin-bottom: 24px;">
-            <div class="card-header">
-                <div class="card-title">
-                    <span class="card-title-icon">⌨️</span> Organic Human Typing Speed & Jitter Engine
+        <div class="cyber-card" style="margin-bottom: 20px;">
+            <div class="card-header-bar">
+                <div class="card-title-tactical">
+                    <span>⌨️</span> QUANTUM TYPING OVERCLOCK & JITTER ENGINE
                 </div>
-                <span class="card-tag" id="activePresetTag">Preset: Normal Human</span>
+                <span class="tag-pill" id="activePresetTag">PRESET: NORMAL HUMAN</span>
             </div>
 
-            <!-- Real-Time Active Speed Banner -->
-            <div style="background: rgba(8, 11, 18, 0.85); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 14px; padding: 14px 18px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-                <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--cyan);">
-                    ⚡ <b>ACTIVE REAL-TIME SPEED:</b> <span id="currentSpeedDisplay" style="color: var(--green); font-weight: bold;">Normal Human (25ms - 55ms)</span>
+            <!-- Active Speed Telemetry Banner -->
+            <div style="background: rgba(2, 6, 14, 0.95); border: 1px solid var(--cyan); padding: 14px 18px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <span style="font-size: 13px; color: var(--cyan); font-weight: 800; letter-spacing: 1px;">
+                    ⚡ CURRENT INJECTION VELOCITY: <span id="currentSpeedDisplay" style="color: var(--green);">Normal Human (25ms - 55ms)</span>
                 </span>
-                <span id="speedEstimatedChars" style="font-size: 12px; color: var(--green); font-family: 'JetBrains Mono', monospace; font-weight: bold; background: rgba(0,255,136,0.1); padding: 3px 10px; border-radius: 8px; border: 1px solid rgba(0,255,136,0.25);">~25-40 chars/sec</span>
+                <span id="speedEstimatedChars" style="font-size: 12px; color: #020408; background: var(--green); padding: 3px 10px; font-weight: 900; box-shadow: 0 0 10px var(--green);">~25-40 CHARS/SEC</span>
             </div>
 
-            <!-- Range Sliders -->
-            <div class="slider-wrap">
+            <!-- Precision Delay Sliders -->
+            <div class="slider-matrix">
                 <div>
-                    <div class="slider-label-row">
-                        <span>Min Delay</span>
-                        <span class="slider-val"><span id="minVal">25</span> ms</span>
+                    <div class="slider-header">
+                        <span>MINIMUM FLIGHT DELAY</span>
+                        <span style="color: var(--green); font-weight: 900;"><span id="minVal">25</span> MS</span>
                     </div>
                     <input type="range" id="minRange" min="2" max="500" value="25" oninput="onSliderChange()">
                 </div>
                 <div>
-                    <div class="slider-label-row">
-                        <span>Max Delay</span>
-                        <span class="slider-val"><span id="maxVal">55</span> ms</span>
+                    <div class="slider-header">
+                        <span>MAXIMUM FLIGHT DELAY</span>
+                        <span style="color: var(--green); font-weight: 900;"><span id="maxVal">55</span> MS</span>
                     </div>
                     <input type="range" id="maxRange" min="5" max="900" value="55" oninput="onSliderChange()">
                 </div>
             </div>
 
-            <!-- Speed Preset Grid -->
-            <div class="preset-grid" id="presetButtonGroup">
-                <button class="preset-btn" id="btn-ultra" onclick="setSpeedPreset('ultra', 3, 8)">⚡ Ultra Fast (3-8ms)</button>
-                <button class="preset-btn" id="btn-fast" onclick="setSpeedPreset('fast', 12, 28)">🏃 Fast Human (12-28ms)</button>
-                <button class="preset-btn" id="btn-normal" onclick="setSpeedPreset('normal', 25, 55)">🚶 Normal Human (25-55ms)</button>
-                <button class="preset-btn" id="btn-relaxed" onclick="setSpeedPreset('relaxed', 60, 110)">🐢 Relaxed (60-110ms)</button>
-                <button class="preset-btn" id="btn-stealth" onclick="setSpeedPreset('stealth', 110, 180)">🦥 Stealth (110-180ms)</button>
-                <button class="preset-btn" id="btn-ninja" onclick="setSpeedPreset('ninja', 180, 280)">🕵️ Ghost Ninja (180-280ms)</button>
+            <!-- Preset Buttons Matrix -->
+            <div class="speed-grid" id="presetButtonGroup">
+                <button class="speed-btn" id="btn-ultra" onclick="setSpeedPreset('ultra', 3, 8)">⚡ [01] ULTRA (3-8MS)</button>
+                <button class="speed-btn" id="btn-fast" onclick="setSpeedPreset('fast', 12, 28)">🏃 [02] FAST (12-28MS)</button>
+                <button class="speed-btn" id="btn-normal" onclick="setSpeedPreset('normal', 25, 55)">🚶 [03] NORMAL (25-55MS)</button>
+                <button class="speed-btn" id="btn-relaxed" onclick="setSpeedPreset('relaxed', 60, 110)">🐢 [04] RELAXED (60-110MS)</button>
+                <button class="speed-btn" id="btn-stealth" onclick="setSpeedPreset('stealth', 110, 180)">🦥 [05] STEALTH (110-180MS)</button>
+                <button class="speed-btn" id="btn-ninja" onclick="setSpeedPreset('ninja', 180, 280)">🕵️ [06] NINJA (180-280MS)</button>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <button class="btn btn-green" onclick="saveSpeedDefault()">💾 Save Speed as Default</button>
-                <span id="speedSaveMsg" style="font-size: 11.5px; font-family: 'JetBrains Mono', monospace; color: var(--green); font-weight: bold;"></span>
+                <button class="btn-cyber btn-cyber-green" onclick="saveSpeedDefault()">💾 COMMIT AS DEFAULT BOOT VELOCITY</button>
+                <span id="speedSaveMsg" style="font-size: 11.5px; color: var(--green); font-weight: 800;"></span>
             </div>
         </div>
 
         <!-- 🔑 Card 5: Multi-API Key Round-Robin Management -->
-        <div class="card" style="margin-bottom: 24px;">
-            <div class="card-header">
-                <div class="card-title">
-                    <span class="card-title-icon">🔑</span> Multi-API Key Round-Robin Manager
+        <div class="cyber-card" style="margin-bottom: 20px;">
+            <div class="card-header-bar">
+                <div class="card-title-tactical">
+                    <span>🔑</span> MULTI-API KEY ROUND-ROBIN VAULT
                 </div>
-                <span class="card-tag" style="color: var(--green); border-color: rgba(0,255,136,0.3);" id="activeKeysCount">0 Active Keys</span>
-            </div>
-            <p class="card-desc">
-                Add multiple Gemini API keys separated by commas. The system will rotate through them circularly to balance requests, give rate limits time to rest, and ensure 100% uptime!
-            </p>
-            <input type="text" class="input-text" id="apiKeysInput" placeholder="Paste Gemini API Keys (comma-separated): AIzaSy..., AQ.Ab8..." />
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div class="btn-group">
-                    <button class="btn btn-cyan" onclick="saveApiKeys()">💾 Save & Update Keys</button>
-                    <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer" class="btn btn-purple">
-                        <span>✨ Get Gemini API Key</span>
-                        <span style="font-size: 11px; opacity: 0.85;">↗</span>
-                    </a>
-                </div>
-                <span id="keysMsg" style="font-size: 11.5px; font-family: 'JetBrains Mono', monospace; color: var(--green); font-weight: 600;"></span>
+                <span class="tag-pill tag-pill-green" id="activeKeysCount">0 ACTIVE KEYS</span>
             </div>
 
-            <div id="keysList" style="margin-top: 16px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--cyan); line-height: 1.7;"></div>
+            <!-- Card Art Illustration -->
+            <div class="card-art-banner" style="background-image: url('/cyber_keys.jpg'); height: 100px;"></div>
+
+            <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 14px;">
+                Rotate unlimited Gemini API keys automatically to bypass rate limits and guarantee uninterrupted 24/7 vision intelligence.
+            </p>
+            <input type="text" class="cyber-input" id="apiKeysInput" placeholder="Paste Gemini API Keys (comma-separated): AIzaSy..., AQ.Ab8..." />
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-cyber" onclick="saveApiKeys()">💾 SAVE & ROTATE KEYS</button>
+                    <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer" class="btn-cyber btn-cyber-pink">
+                        <span>✨ GET GEMINI API KEY</span>
+                        <span style="font-size: 11px; opacity: 0.9;">↗</span>
+                    </a>
+                </div>
+                <span id="keysMsg" style="font-size: 11.5px; color: var(--green); font-weight: 800;"></span>
+            </div>
+
+            <div id="keysList" style="margin-top: 16px; font-size: 11.5px; color: var(--cyan); line-height: 1.8;"></div>
         </div>
 
         <!-- ⚡ Card 6: Live AI Answers & Activity Stream -->
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">
-                    <span class="card-title-icon">⚡</span> Live AI Answers & Activity Stream
+        <div class="cyber-card">
+            <div class="card-header-bar">
+                <div class="card-title-tactical">
+                    <span>⚡</span> LIVE AI TELEMETRY & CAPTURE FEED
                 </div>
-                <span class="card-tag" id="feedCount">0 Captures</span>
+                <span class="tag-pill" id="feedCount">0 CAPTURES</span>
             </div>
-            <div class="feed-container" id="feedContainer">
-                <p style="color: var(--text-dim); text-align: center; padding: 30px; font-size: 13px;">No captures yet. Take a picture on your phone to see instant results!</p>
+            <div class="feed-box" id="feedContainer">
+                <p style="color: var(--text-dim); text-align: center; padding: 30px; font-size: 13px;">[NO TELEMETRY RECORDED] SNAP A PHOTO FROM YOUR MOBILE TO INITIATE STREAM.</p>
             </div>
         </div>
     </div>
 
     <script>
-        // Track mouse position for dynamic ambient spotlight
-        document.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth) * 100;
-            const y = (e.clientY / window.innerHeight) * 100;
-            document.body.style.setProperty('--mouse-x', x + '%');
-            document.body.style.setProperty('--mouse-y', y + '%');
-        });
-
         function copyText(text, msg) {
             navigator.clipboard.writeText(text);
-            alert(msg || 'Copied to clipboard: ' + text);
+            alert(msg || 'Copied: ' + text);
         }
 
         async function stealthAction(action) {
             const msgEl = document.getElementById('stealthMsg');
-            msgEl.innerText = 'Applying window action...';
+            msgEl.innerText = '[PROCESSING SYSTEM HOOK...]';
             try {
                 const res = await fetch('/stealth/' + action, { method: 'POST' });
                 const d = await res.json();
                 msgEl.style.color = 'var(--green)';
-                msgEl.innerText = action === 'hide' ? 'Browser hidden from taskbar and placed off-screen!' : 'Browser restored to screen center!';
+                msgEl.innerText = action === 'hide' ? '✅ HUD DISPLACED OFF-SCREEN (HIDDEN)' : '✅ HUD ANCHORED TO DESKTOP SCREEN';
             } catch (e) {
-                msgEl.innerText = 'Action failed: ' + e.message;
+                msgEl.innerText = '❌ ACTION FAILED: ' + e.message;
             }
         }
 
@@ -1187,12 +1184,12 @@ app.get('/', (req, res) => {
                 const res = await fetch('/type/stop', { method: 'POST' });
                 const d = await res.json();
                 if (msgEl) {
-                    msgEl.style.color = '#ef4444';
-                    msgEl.innerText = '🛑 Active typing aborted immediately!';
+                    msgEl.style.color = 'var(--pink)';
+                    msgEl.innerText = '🛑 EMERGENCY OVERRIDE: ACTIVE INJECTION ABORTED!';
                     setTimeout(() => { msgEl.innerText = ''; }, 3500);
                 }
             } catch (e) {
-                if (msgEl) msgEl.innerText = 'Stop failed: ' + e.message;
+                if (msgEl) msgEl.innerText = 'OVERRIDE ERROR: ' + e.message;
             }
         }
 
@@ -1200,16 +1197,16 @@ app.get('/', (req, res) => {
         let currentPreset = 'normal';
 
         const PRESETS = {
-            'ultra': { min: 3, max: 8, name: '⚡ Ultra Fast (3-8ms)', cps: '~150+ chars/sec' },
-            'fast': { min: 12, max: 28, name: '🏃 Fast Human (12-28ms)', cps: '~50-80 chars/sec' },
-            'normal': { min: 25, max: 55, name: '🚶 Normal Human (25-55ms)', cps: '~25-40 chars/sec' },
-            'relaxed': { min: 60, max: 110, name: '🐢 Relaxed (60-110ms)', cps: '~10-15 chars/sec' },
-            'stealth': { min: 110, max: 180, name: '🦥 Stealth (110-180ms)', cps: '~6-9 chars/sec' },
-            'ninja': { min: 180, max: 280, name: '🕵️ Ghost Ninja (180-280ms)', cps: '~4-6 chars/sec' }
+            'ultra': { min: 3, max: 8, name: '⚡ [01] ULTRA (3-8MS)', cps: '~150+ CHARS/SEC' },
+            'fast': { min: 12, max: 28, name: '🏃 [02] FAST (12-28MS)', cps: '~50-80 CHARS/SEC' },
+            'normal': { min: 25, max: 55, name: '🚶 [03] NORMAL (25-55MS)', cps: '~25-40 CHARS/SEC' },
+            'relaxed': { min: 60, max: 110, name: '🐢 [04] RELAXED (60-110MS)', cps: '~10-15 CHARS/SEC' },
+            'stealth': { min: 110, max: 180, name: '🦥 [05] STEALTH (110-180MS)', cps: '~6-9 CHARS/SEC' },
+            'ninja': { min: 180, max: 280, name: '🕵️ [06] NINJA (180-280MS)', cps: '~4-6 CHARS/SEC' }
         };
 
         function highlightPresetButton(presetKey, minMs, maxMs) {
-            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
             
             const btn = document.getElementById('btn-' + presetKey);
             if (btn) {
@@ -1221,15 +1218,15 @@ app.get('/', (req, res) => {
             const cpsEl = document.getElementById('speedEstimatedChars');
 
             if (PRESETS[presetKey]) {
-                tagEl.innerText = 'Preset: ' + PRESETS[presetKey].name;
+                tagEl.innerText = 'PRESET: ' + PRESETS[presetKey].name;
                 displayEl.innerText = PRESETS[presetKey].name + ' (' + PRESETS[presetKey].min + 'ms - ' + PRESETS[presetKey].max + 'ms)';
                 cpsEl.innerText = PRESETS[presetKey].cps;
             } else {
-                tagEl.innerText = 'Preset: Custom Range';
-                displayEl.innerText = 'Custom Range (' + minMs + 'ms - ' + maxMs + 'ms)';
+                tagEl.innerText = 'PRESET: CUSTOM MATRIX';
+                displayEl.innerText = 'CUSTOM MATRIX (' + minMs + 'ms - ' + maxMs + 'ms)';
                 const avg = (minMs + maxMs) / 2;
                 const est = (1000 / Math.max(5, avg)).toFixed(1);
-                cpsEl.innerText = '~' + est + ' chars/sec';
+                cpsEl.innerText = '~' + est + ' CHARS/SEC';
             }
         }
 
@@ -1276,17 +1273,17 @@ app.get('/', (req, res) => {
             const min = parseInt(document.getElementById('minRange').value);
             const max = parseInt(document.getElementById('maxRange').value);
             const msgEl = document.getElementById('speedSaveMsg');
-            msgEl.innerText = 'Saving default speed...';
+            msgEl.innerText = '[COMMITTING TO HARD DISK...]';
             try {
                 await fetch('/settings/speed', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ min_delay_ms: min, max_delay_ms: max, preset_name: currentPreset, save: true })
                 });
-                msgEl.innerText = '✅ Saved permanently! LogicGhost will boot with this speed.';
+                msgEl.innerText = '✅ DEFAULT VELOCITY COMMITTED PERMANENTLY!';
                 setTimeout(() => { msgEl.innerText = ''; }, 4000);
             } catch (e) {
-                msgEl.innerText = 'Failed to save: ' + e.message;
+                msgEl.innerText = 'FAILED: ' + e.message;
             }
         }
 
@@ -1320,22 +1317,19 @@ app.get('/', (req, res) => {
             const badge = document.getElementById('contextBadge');
             const stats = document.getElementById('contextStats');
             if (d.enabled && d.word_count > 0) {
-                badge.innerText = '✅ Context Active: ' + (d.filename || 'Custom Rules');
-                badge.style.color = 'var(--green)';
-                badge.style.borderColor = 'rgba(0,255,136,0.3)';
-                stats.innerText = d.word_count + ' Words (~' + Math.round(d.word_count * 1.3) + ' Tokens) Active';
+                badge.innerText = '✅ ACTIVE: ' + (d.filename || 'CUSTOM RULES');
+                badge.className = 'tag-pill tag-pill-green';
+                stats.innerText = d.word_count + ' WORDS (~' + Math.round(d.word_count * 1.3) + ' TOKENS) ACTIVE';
                 stats.style.color = 'var(--green)';
             } else if (d.word_count > 0) {
-                badge.innerText = '⏸️ Context Paused: ' + (d.filename || 'Custom Rules');
-                badge.style.color = 'var(--amber)';
-                badge.style.borderColor = 'rgba(251,191,36,0.3)';
-                stats.innerText = d.word_count + ' Words (Disabled)';
+                badge.innerText = '⏸️ PAUSED: ' + (d.filename || 'CUSTOM RULES');
+                badge.className = 'tag-pill tag-pill-pink';
+                stats.innerText = d.word_count + ' WORDS (STANDBY)';
                 stats.style.color = 'var(--amber)';
             } else {
-                badge.innerText = 'Context: Empty';
-                badge.style.color = 'var(--text-dim)';
-                badge.style.borderColor = 'rgba(255,255,255,0.08)';
-                stats.innerText = '0 Words Loaded';
+                badge.innerText = 'CONTEXT: EMPTY';
+                badge.className = 'tag-pill';
+                stats.innerText = '0 WORDS LOADED';
                 stats.style.color = 'var(--text-dim)';
             }
         }
@@ -1350,9 +1344,9 @@ app.get('/', (req, res) => {
                 });
                 const d = await res.json();
                 updateContextUI(d.context);
-                alert(enable ? 'Rules saved and activated!' : 'Rules saved!');
+                alert(enable ? 'Context rules committed & activated!' : 'Rules saved!');
             } catch (e) {
-                alert('Failed to save context: ' + e.message);
+                alert('Failed: ' + e.message);
             }
         }
 
@@ -1371,15 +1365,15 @@ app.get('/', (req, res) => {
         }
 
         async function clearContext() {
-            if (!confirm('Are you sure you want to clear the entire custom rulebook context?')) return;
+            if (!confirm('Wipe complete rulebook context matrix?')) return;
             try {
                 const res = await fetch('/api/context/clear', { method: 'POST' });
                 const d = await res.json();
                 document.getElementById('contextTextArea').value = '';
                 updateContextUI(d.context);
-                alert('Context cleared successfully!');
+                alert('Context matrix cleared!');
             } catch (e) {
-                alert('Failed to clear: ' + e.message);
+                alert('Clear error: ' + e.message);
             }
         }
 
@@ -1391,7 +1385,7 @@ app.get('/', (req, res) => {
 
         async function uploadContextFile(file) {
             const dropEl = document.getElementById('dropzone');
-            dropEl.innerText = '⏳ Extracting text from ' + file.name + '...';
+            dropEl.innerText = '⏳ SCANNING & EXTRACTING ' + file.name + '...';
             const formData = new FormData();
             formData.append('file', file);
             try {
@@ -1403,17 +1397,17 @@ app.get('/', (req, res) => {
                 if (d.success) {
                     document.getElementById('contextTextArea').value = d.context.text;
                     updateContextUI(d.context);
-                    alert('Successfully extracted ' + d.context.word_count + ' words from ' + file.name + '!');
+                    alert('EXTRACTED ' + d.context.word_count + ' WORDS FROM ' + file.name + '!');
                 } else {
                     alert('Upload failed: ' + (d.error || 'Unknown error'));
                 }
             } catch (e) {
-                alert('Failed to upload: ' + e.message);
+                alert('Upload error: ' + e.message);
             } finally {
                 dropEl.innerHTML = \`
-                    <div style="font-size: 28px; margin-bottom: 8px;">📄</div>
-                    <div style="font-size: 13.5px; font-weight: 700; color: var(--cyan);">Drop PDF or Guidelines File Here (or Click to Browse)</div>
-                    <div style="font-size: 11.5px; color: var(--text-dim); margin-top: 4px;">Supports .pdf, .txt, .md (Auto-extracted in 1 second)</div>
+                    <div style="font-size: 28px; margin-bottom: 6px;">📄</div>
+                    <div style="font-size: 13px; font-weight: 800; color: var(--cyan); letter-spacing: 1px;">DROP RULEBOOK / PDF FILE (OR CLICK TO UPLOAD)</div>
+                    <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Supports .pdf, .txt, .md // High-Speed Extraction</div>
                 \`;
             }
         }
@@ -1436,18 +1430,18 @@ app.get('/', (req, res) => {
             const min = parseInt(document.getElementById('minRange').value);
             const max = parseInt(document.getElementById('maxRange').value);
             const msgEl = document.getElementById('stealthMsg');
-            msgEl.innerText = 'Click inside any text editor in 2 seconds to test typing...';
+            msgEl.innerText = '🎯 CLICK TARGET EDITOR IN 2 SECONDS...';
             setTimeout(async () => {
                 await fetch('/type', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        text: '// [LogicGhost] Organic Human Typing Verified Successfully!\\n',
+                        text: '// [LOGICGHOST] Cyberpunk Neural Injection Verified Successfully!\\n',
                         min_delay_ms: min,
                         max_delay_ms: max
                     })
                 });
-                msgEl.innerText = 'Typing completed!';
+                msgEl.innerText = '✅ INJECTION COMPLETED!';
             }, 2000);
         }
 
@@ -1455,13 +1449,13 @@ app.get('/', (req, res) => {
             try {
                 const res = await fetch('/api/keys');
                 const data = await res.json();
-                document.getElementById('activeKeysCount').innerText = data.total + ' Active Key(s) in Rotation';
+                document.getElementById('activeKeysCount').innerText = data.total + ' ACTIVE KEYS';
                 
                 const listEl = document.getElementById('keysList');
                 if (data.keys && data.keys.length > 0) {
-                    listEl.innerHTML = '<b style="color: #ffffff;">Active Rotation Queue:</b> ' + data.keys.map(k => \`<span style="background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.2); padding: 4px 10px; border-radius: 8px; margin-right: 6px; display: inline-block; margin-bottom: 6px;">Key #\${k.index}: <span style="color:#ffffff;">\${k.masked}</span></span>\`).join(' ➔ ');
+                    listEl.innerHTML = '<b style="color: #ffffff;">VAULT ROTATION QUEUE:</b> ' + data.keys.map(k => \`<span style="background: rgba(0,240,255,0.12); border: 1px solid var(--cyan); padding: 4px 10px; margin-right: 6px; display: inline-block; margin-bottom: 6px; font-weight:700;">KEY #\${k.index}: <span style="color:#ffffff;">\${k.masked}</span></span>\`).join(' ➔ ');
                 } else {
-                    listEl.innerHTML = '<span style="color: #fbbf24;">No API keys saved yet. Paste keys above to enable AI Vision.</span>';
+                    listEl.innerHTML = '<span style="color: var(--amber);">[VAULT EMPTY] Paste API keys above to enable neural vision stream.</span>';
                 }
             } catch (e) {}
         }
@@ -1469,11 +1463,11 @@ app.get('/', (req, res) => {
         async function saveApiKeys() {
             const val = document.getElementById('apiKeysInput').value.trim();
             if (!val) {
-                alert('Please enter at least one Gemini API Key!');
+                alert('Enter at least one Gemini API Key!');
                 return;
             }
             const msgEl = document.getElementById('keysMsg');
-            msgEl.innerText = 'Saving keys...';
+            msgEl.innerText = '[ENCRYPTING & SAVING KEYS...]';
             try {
                 const res = await fetch('/api/keys', {
                     method: 'POST',
@@ -1481,11 +1475,11 @@ app.get('/', (req, res) => {
                     body: JSON.stringify({ keys: val })
                 });
                 const d = await res.json();
-                msgEl.innerText = 'Successfully saved ' + d.total + ' keys!';
+                msgEl.innerText = '✅ ' + d.total + ' KEYS LOADED INTO VAULT!';
                 document.getElementById('apiKeysInput').value = '';
                 loadApiKeys();
             } catch (e) {
-                msgEl.innerText = 'Failed to save keys: ' + e.message;
+                msgEl.innerText = 'ERROR: ' + e.message;
             }
         }
 
@@ -1494,7 +1488,7 @@ app.get('/', (req, res) => {
             const min = parseInt(document.getElementById('minRange').value);
             const max = parseInt(document.getElementById('maxRange').value);
             const msgEl = document.getElementById('stealthMsg');
-            if (msgEl) msgEl.innerText = 'Click target window in 2s to inject slot...';
+            if (msgEl) msgEl.innerText = '🎯 CLICK TARGET WINDOW IN 2s TO INJECT SLOT...';
             setTimeout(async () => {
                 try {
                     await fetch('/type', {
@@ -1506,7 +1500,7 @@ app.get('/', (req, res) => {
                             max_delay_ms: max
                         })
                     });
-                    if (msgEl) msgEl.innerText = 'Slot typed successfully!';
+                    if (msgEl) msgEl.innerText = '✅ SLOT INJECTED SUCCESSFULLY!';
                 } catch (e) {}
             }, 2000);
         }
@@ -1516,7 +1510,7 @@ app.get('/', (req, res) => {
                 const res = await fetch('/feed');
                 const items = await res.json();
                 const container = document.getElementById('feedContainer');
-                document.getElementById('feedCount').innerText = items.length + ' Captures';
+                document.getElementById('feedCount').innerText = items.length + ' CAPTURES';
 
                 if (items.length === 0) return;
 
@@ -1525,52 +1519,52 @@ app.get('/', (req, res) => {
                     if (item.is_multi_slot && item.slots) {
                         if (item.slots.rating) {
                             slotHtml += \`
-                                <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 10px 14px; margin-bottom: 10px;">
+                                <div style="background: rgba(255, 0, 85, 0.08); border: 1px solid var(--pink); padding: 10px 14px; margin-bottom: 10px;">
                                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                                        <span style="font-weight:700; color:#c084fc; font-size:11.5px; font-family:'JetBrains Mono';">⭐ RATING / VERDICT:</span>
-                                        <button class="btn btn-purple" style="padding:3px 10px; font-size:10.5px;" onclick="triggerTypePayload('\${escapeHtml(item.slots.rating)}')">⚡ Type Rating</button>
+                                        <span style="font-weight:800; color:var(--pink); font-size:11.5px;">⭐ [SLOT 01] RATING // VERDICT:</span>
+                                        <button class="btn-cyber btn-cyber-pink" style="padding:3px 10px; font-size:10px;" onclick="triggerTypePayload('\${escapeHtml(item.slots.rating)}')">⚡ TYPE RATING</button>
                                     </div>
-                                    <div style="font-size:12.5px; color:#ffffff; font-weight:600;">\${escapeHtml(item.slots.rating)}</div>
+                                    <div style="font-size:13px; color:#ffffff; font-weight:700;">\${escapeHtml(item.slots.rating)}</div>
                                 </div>\`;
                         }
                         if (item.slots.code) {
                             slotHtml += \`
-                                <div style="background: #020408; border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 10px; padding: 10px 14px; margin-bottom: 10px;">
+                                <div style="background: #010204; border: 1px solid var(--cyan); padding: 10px 14px; margin-bottom: 10px;">
                                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                                        <span style="font-weight:700; color:var(--cyan); font-size:11.5px; font-family:'JetBrains Mono';">💻 CODE BOX:</span>
-                                        <button class="btn btn-cyan" style="padding:3px 10px; font-size:10.5px;" onclick="triggerTypePayload('\${escapeHtml(item.slots.code)}')">⚡ Type Code</button>
+                                        <span style="font-weight:800; color:var(--cyan); font-size:11.5px;">💻 [SLOT 02] CODE PAYLOAD:</span>
+                                        <button class="btn-cyber" style="padding:3px 10px; font-size:10px;" onclick="triggerTypePayload('\${escapeHtml(item.slots.code)}')">⚡ INJECT CODE</button>
                                     </div>
-                                    <div class="feed-code" style="max-height:160px;">\${escapeHtml(item.slots.code)}</div>
+                                    <div class="feed-code-block" style="max-height:160px;">\${escapeHtml(item.slots.code)}</div>
                                 </div>\`;
                         }
                         if (item.slots.explanation) {
                             slotHtml += \`
-                                <div style="background: rgba(0, 255, 136, 0.06); border: 1px solid rgba(0, 255, 136, 0.25); border-radius: 10px; padding: 10px 14px; margin-bottom: 10px;">
+                                <div style="background: rgba(0, 255, 136, 0.06); border: 1px solid var(--green); padding: 10px 14px; margin-bottom: 10px;">
                                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                                        <span style="font-weight:700; color:var(--green); font-size:11.5px; font-family:'JetBrains Mono';">📝 JUSTIFICATION / EXPLANATION:</span>
-                                        <button class="btn btn-green" style="padding:3px 10px; font-size:10.5px;" onclick="triggerTypePayload('\${escapeHtml(item.slots.explanation)}')">📝 Type Reason</button>
+                                        <span style="font-weight:800; color:var(--green); font-size:11.5px;">📝 [SLOT 03] EXPLANATION // RATIONALE:</span>
+                                        <button class="btn-cyber btn-cyber-green" style="padding:3px 10px; font-size:10px;" onclick="triggerTypePayload('\${escapeHtml(item.slots.explanation)}')">📝 TYPE REASON</button>
                                     </div>
-                                    <div style="font-size:12.5px; color:#e2e8f0; white-space:pre-wrap; max-height:160px; overflow-y:auto; font-family:'Plus Jakarta Sans'; line-height:1.55;">\${escapeHtml(item.slots.explanation)}</div>
+                                    <div style="font-size:12.5px; color:#e6faff; white-space:pre-wrap; max-height:160px; overflow-y:auto; line-height:1.6;">\${escapeHtml(item.slots.explanation)}</div>
                                 </div>\`;
                         }
                         if (item.slots.audit) {
                             slotHtml += \`
-                                <div style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 10px; padding: 10px 14px;">
-                                    <span style="font-weight:700; color:var(--amber); font-size:11.5px; font-family:'JetBrains Mono';">🛡️ AUDIT:</span>
+                                <div style="background: rgba(255, 184, 0, 0.08); border: 1px solid var(--amber); padding: 10px 14px;">
+                                    <span style="font-weight:800; color:var(--amber); font-size:11.5px;">🛡️ [SLOT 04] SECURITY & AUDIT:</span>
                                     <div style="font-size:12px; color:#fde68a; margin-top:3px;">\${escapeHtml(item.slots.audit)}</div>
                                 </div>\`;
                         }
                     } else {
-                        slotHtml = \`<div class="feed-code">\${escapeHtml(item.payload)}</div>\`;
+                        slotHtml = \`<div class="feed-code-block">\${escapeHtml(item.payload)}</div>\`;
                     }
 
                     return \`
-                        <div class="feed-item">
-                            <div class="feed-header">
+                        <div class="feed-tactical-item">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:11px;">
                                 <div>
-                                    <span class="feed-tag">\${item.tag}</span>
-                                    \${item.is_multi_slot ? '<span style="background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); color: #c084fc; padding: 2px 7px; border-radius: 6px; font-size: 10px; margin-left: 6px; font-weight:bold;">✨ MULTI-SLOT RLHF</span>' : ''}
-                                    \${item.rules_active ? '<span style="background: rgba(0,255,136,0.15); border: 1px solid rgba(0,255,136,0.3); color: var(--green); padding: 2px 7px; border-radius: 6px; font-size: 10px; margin-left: 6px; font-weight:bold;">📚 PDF RULES</span>' : ''}
+                                    <span class="tag-pill">\${item.tag}</span>
+                                    \${item.is_multi_slot ? '<span class="tag-pill tag-pill-pink" style="margin-left:6px;">✨ MULTI-SLOT RLHF</span>' : ''}
+                                    \${item.rules_active ? '<span class="tag-pill tag-pill-green" style="margin-left:6px;">📚 PDF ENFORCED</span>' : ''}
                                 </div>
                                 <span style="color: var(--text-dim);">⏱️ \${item.duration} | 🕒 \${item.time} | 🤖 \${item.engine} \${item.key_used ? ' (' + item.key_used + ')' : ''}</span>
                             </div>
