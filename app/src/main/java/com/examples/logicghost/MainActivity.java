@@ -316,7 +316,14 @@ public class MainActivity extends AppCompatActivity {
             btnSpeedSettings.setOnClickListener(v -> showSpeedSettingsDialog());
         }
 
-        // Capture Shutter Button
+        // Capture Shutter Button (Instant Touch Down Haptic Click)
+        btnCapture.setHapticFeedbackEnabled(true);
+        btnCapture.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+                triggerHapticShutterNotification(v);
+            }
+            return false;
+        });
         btnCapture.setOnClickListener(v -> captureAndProcessScreen());
 
         // Quick View Result Floating Pill
@@ -634,21 +641,42 @@ public class MainActivity extends AppCompatActivity {
         }, ContextCompat.getMainExecutor(this));
     }
 
-    private void triggerHapticShutterNotification() {
+    private void triggerHapticShutterNotification(View view) {
+        // 1. Hardware View Haptic Tap (Bypasses system quiet mode)
         try {
-            android.os.Vibrator v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
-            if (v != null && v.hasVibrator()) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    v.vibrate(android.os.VibrationEffect.createOneShot(40, android.os.VibrationEffect.DEFAULT_AMPLITUDE));
-                } else {
-                    v.vibrate(40);
+            if (view != null) {
+                view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP,
+                        android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                view.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY,
+                        android.view.HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+            }
+        } catch (Exception ignored) {}
+
+        // 2. Direct Vibrator Hardware Pulse (100% Guaranteed on all Android / Samsung)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                android.os.VibratorManager vm = (android.os.VibratorManager) getSystemService(VIBRATOR_MANAGER_SERVICE);
+                if (vm != null) {
+                    android.os.Vibrator v = vm.getDefaultVibrator();
+                    if (v != null && v.hasVibrator()) {
+                        v.vibrate(android.os.VibrationEffect.createOneShot(75, 255));
+                    }
+                }
+            } else {
+                android.os.Vibrator v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+                if (v != null && v.hasVibrator()) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        v.vibrate(android.os.VibrationEffect.createOneShot(75, 255));
+                    } else {
+                        v.vibrate(75);
+                    }
                 }
             }
         } catch (Exception ignored) {}
     }
 
     private void captureAndProcessScreen() {
-        triggerHapticShutterNotification();
+        triggerHapticShutterNotification(btnCapture);
 
         if (imageCapture == null) {
             Toast.makeText(this, "Camera not initialized", Toast.LENGTH_SHORT).show();

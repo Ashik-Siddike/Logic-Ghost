@@ -415,7 +415,7 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     VK_RETURN = 0x0D
     VK_TAB = 0x09
 
-    print(f"[Organic Human Typing] Typing {len(text)} characters (Random Range: {min_ms}ms - {max_ms}ms)...", flush=True)
+    print(f"[Organic Human Typing] Starting dynamic keystroke injection for {len(text)} characters...", flush=True)
 
     try:
         pyperclip.copy(text)
@@ -425,21 +425,29 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     try:
         for char in text:
             if typing_controller.should_stop():
-                print(f"[Organic Human Typing] Instantly halted by user abort command.", flush=True)
+                print("[Organic Human Typing] Instantly halted by user abort command.", flush=True)
                 return False
 
             if char == '\r':
                 continue
 
+            # REAL-TIME ON-THE-FLY SPEED TUNING:
+            # Re-read speed manager on every single character so speed changes from phone take effect in <1ms mid-sentence!
+            speed_info = speed_manager.get_info()
+            curr_min_ms = speed_info["min_delay_ms"]
+            curr_max_ms = speed_info["max_delay_ms"]
+            curr_min_ms = max(2, curr_min_ms)
+            curr_max_ms = max(curr_min_ms, curr_max_ms)
+
             code = ord(char)
             # Random physical key contact time
-            key_hold_time = random.uniform(0.010, 0.026) if min_ms < 150 else random.uniform(0.020, 0.055)
-            # Random inter-key delay
-            char_delay = random.uniform(min_ms, max_ms) / 1000.0
+            key_hold_time = random.uniform(0.008, 0.022) if curr_min_ms < 100 else random.uniform(0.020, 0.055)
+            # Random inter-key delay based on real-time current speed
+            char_delay = random.uniform(curr_min_ms, curr_max_ms) / 1000.0
 
             # Organic human pauses on special characters, spaces, and brackets
             if char in ['\n', ' ', '{', '}', '(', ')', ';', '=']:
-                extra = random.uniform(0.020, 0.060) if min_ms < 150 else random.uniform(0.080, 0.250)
+                extra = random.uniform(0.015, 0.045) if curr_min_ms < 100 else random.uniform(0.060, 0.200)
                 char_delay += extra
 
             if char == '\n':
