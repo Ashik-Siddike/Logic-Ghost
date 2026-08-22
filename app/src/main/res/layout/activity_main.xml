@@ -548,15 +548,90 @@
     </LinearLayout>
 
     <!-- ======================================================== -->
-    <!-- 4. VERTICALLY CENTERED SHUTTER BUTTON (LEFT SIDE)        -->
+    <!-- 4. VERTICALLY CENTERED LEFT CONTROLS (SHUTTER + ZOOM)    -->
     <!-- ======================================================== -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical|start"
-        android:paddingStart="16dp"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:paddingStart="14dp"
         android:paddingEnd="8dp">
 
+        <!-- Quick Zoom Pill Selector (1x, 1.5x, 2x, 3x) -->
+        <LinearLayout
+            android:id="@+id/layoutZoomPills"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/btn_pill_cute_glass"
+            android:paddingHorizontal="4dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:id="@+id/btnZoom1x"
+                android:layout_width="wrap_content"
+                android:layout_height="22dp"
+                android:text="1x"
+                android:textColor="#020B14"
+                android:background="@drawable/btn_pill_cute_primary"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:paddingHorizontal="6dp"
+                android:layout_marginEnd="2dp"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <TextView
+                android:id="@+id/btnZoom15x"
+                android:layout_width="wrap_content"
+                android:layout_height="22dp"
+                android:text="1.5x"
+                android:textColor="#94A3B8"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:paddingHorizontal="6dp"
+                android:layout_marginEnd="2dp"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <TextView
+                android:id="@+id/btnZoom2x"
+                android:layout_width="wrap_content"
+                android:layout_height="22dp"
+                android:text="2x"
+                android:textColor="#94A3B8"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:paddingHorizontal="6dp"
+                android:layout_marginEnd="2dp"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <TextView
+                android:id="@+id/btnZoom3x"
+                android:layout_width="wrap_content"
+                android:layout_height="22dp"
+                android:text="3x"
+                android:textColor="#94A3B8"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:paddingHorizontal="6dp"
+                android:clickable="true"
+                android:focusable="true"/>
+        </LinearLayout>
+
+        <!-- 📸 Aesthetic Camera Shutter Jewel -->
         <ImageButton
             android:id="@+id/btnCapture"
             android:layout_width="74dp"

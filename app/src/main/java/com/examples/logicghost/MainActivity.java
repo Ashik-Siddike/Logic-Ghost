@@ -15,12 +15,16 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
+import android.hardware.SensorManager;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.speech.tts.Voice;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.OrientationEventListener;
+import android.view.ScaleGestureDetector;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
@@ -36,6 +40,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
@@ -153,6 +158,16 @@ public class MainActivity extends AppCompatActivity {
     private ImageCapture imageCapture;
     private BluetoothHidManager hidManager;
 
+    // Camera & Zoom Control
+    private Camera camera;
+    private ScaleGestureDetector scaleGestureDetector;
+    private TextView btnZoom1x, btnZoom15x, btnZoom2x, btnZoom3x;
+    private float currentZoomLevel = 1.0f;
+
+    // Professional Camera Orientation Sensor & In-Place Rotation
+    private OrientationEventListener orientationEventListener;
+    private int currentDeviceRotationDegrees = 0;
+
     private final OkHttpClient httpClient = new OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(120, TimeUnit.SECONDS)
@@ -269,6 +284,37 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {}
         });
+
+        // Quick Zoom Pills Binding
+        btnZoom1x = findViewById(R.id.btnZoom1x);
+        btnZoom15x = findViewById(R.id.btnZoom15x);
+        btnZoom2x = findViewById(R.id.btnZoom2x);
+        btnZoom3x = findViewById(R.id.btnZoom3x);
+
+        if (btnZoom1x != null) btnZoom1x.setOnClickListener(v -> setCameraZoom(1.0f));
+        if (btnZoom15x != null) btnZoom15x.setOnClickListener(v -> setCameraZoom(1.5f));
+        if (btnZoom2x != null) btnZoom2x.setOnClickListener(v -> setCameraZoom(2.0f));
+        if (btnZoom3x != null) btnZoom3x.setOnClickListener(v -> setCameraZoom(3.0f));
+
+        // Pinch-to-Zoom Gesture Recognition
+        scaleGestureDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            @Override
+            public boolean onScale(@NonNull ScaleGestureDetector detector) {
+                if (camera != null) {
+                    androidx.camera.core.ZoomState zoomState = camera.getCameraInfo().getZoomState().getValue();
+                    float current = zoomState != null ? zoomState.getZoomRatio() : 1.0f;
+                    setCameraZoom(current * detector.getScaleFactor());
+                }
+                return true;
+            }
+        });
+
+        previewView.setOnTouchListener((v, event) -> {
+            scaleGestureDetector.onTouchEvent(event);
+            return true;
+        });
+
+        initOrientationSensor();
 
         // Toggle Top HUD Collapse/Show
         View btnToggleHud = findViewById(R.id.btnToggleHud);
@@ -627,18 +673,131 @@ public class MainActivity extends AppCompatActivity {
 
                 imageCapture = new ImageCapture.Builder()
                         .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                        .setTargetRotation(Surface.ROTATION_90)
                         .build();
 
                 CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
                 cameraProvider.unbindAll();
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
+                camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
 
-                updateStatusText("CAMERA READY");
+                updateStatusText("CAMERA READY • PINCH TO ZOOM");
             } catch (ExecutionException | InterruptedException e) {
                 Log.e(TAG, "Use case binding failed", e);
                 updateStatusText("CAMERA ERROR: " + e.getMessage());
             }
         }, ContextCompat.getMainExecutor(this));
+    }
+
+    private void setCameraZoom(float targetRatio) {
+        if (camera == null) return;
+        androidx.camera.core.ZoomState zoomState = camera.getCameraInfo().getZoomState().getValue();
+        float minRatio = zoomState != null ? zoomState.getMinZoomRatio() : 1.0f;
+        float maxRatio = zoomState != null ? zoomState.getMaxZoomRatio() : 8.0f;
+        float clamped = Math.max(minRatio, Math.min(targetRatio, maxRatio));
+
+        camera.getCameraControl().setZoomRatio(clamped);
+        currentZoomLevel = clamped;
+        updateZoomPillsUI(clamped);
+    }
+
+    private void updateZoomPillsUI(float zoom) {
+        if (btnZoom1x == null) return;
+        resetZoomPill(btnZoom1x);
+        resetZoomPill(btnZoom15x);
+        resetZoomPill(btnZoom2x);
+        resetZoomPill(btnZoom3x);
+
+        if (Math.abs(zoom - 1.0f) < 0.2f) {
+            highlightZoomPill(btnZoom1x);
+        } else if (Math.abs(zoom - 1.5f) < 0.2f) {
+            highlightZoomPill(btnZoom15x);
+        } else if (Math.abs(zoom - 2.0f) < 0.2f) {
+            highlightZoomPill(btnZoom2x);
+        } else if (Math.abs(zoom - 3.0f) < 0.35f) {
+            highlightZoomPill(btnZoom3x);
+        }
+    }
+
+    private void highlightZoomPill(TextView tv) {
+        if (tv == null) return;
+        tv.setBackgroundResource(R.drawable.btn_pill_cute_primary);
+        tv.setTextColor(Color.parseColor("#020B14"));
+    }
+
+    private void resetZoomPill(TextView tv) {
+        if (tv == null) return;
+        tv.setBackgroundColor(Color.TRANSPARENT);
+        tv.setTextColor(Color.parseColor("#94A3B8"));
+    }
+
+    private void initOrientationSensor() {
+        orientationEventListener = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_UI) {
+            @Override
+            public void onOrientationChanged(int orientation) {
+                if (orientation == ORIENTATION_UNKNOWN) return;
+                int surfaceRotation;
+                int targetDegrees;
+
+                if (orientation >= 315 || orientation < 45) {
+                    surfaceRotation = Surface.ROTATION_0;
+                    targetDegrees = 270;
+                } else if (orientation >= 45 && orientation < 135) {
+                    surfaceRotation = Surface.ROTATION_270;
+                    targetDegrees = 180;
+                } else if (orientation >= 135 && orientation < 225) {
+                    surfaceRotation = Surface.ROTATION_180;
+                    targetDegrees = 90;
+                } else {
+                    surfaceRotation = Surface.ROTATION_90;
+                    targetDegrees = 0;
+                }
+
+                if (imageCapture != null) {
+                    imageCapture.setTargetRotation(surfaceRotation);
+                }
+
+                if (targetDegrees != currentDeviceRotationDegrees) {
+                    currentDeviceRotationDegrees = targetDegrees;
+                    animateUIElementsRotation(targetDegrees);
+                }
+            }
+        };
+
+        if (orientationEventListener.canDetectOrientation()) {
+            orientationEventListener.enable();
+        }
+    }
+
+    private void animateUIElementsRotation(int targetDegrees) {
+        View[] rotatableViews = new View[]{
+                btnCapture,
+                btnZoom1x, btnZoom15x, btnZoom2x, btnZoom3x,
+                findViewById(R.id.btnHistory),
+                findViewById(R.id.btnUsbTether),
+                findViewById(R.id.btnGuide),
+                findViewById(R.id.btnVoiceSettings),
+                findViewById(R.id.btnSpeedSettings),
+                findViewById(R.id.btnToggleHud),
+                btnQuickResult,
+                btnQuickSpeak,
+                btnTypeDirect,
+                btnTypeBluetooth,
+                findViewById(R.id.btnStopResponse),
+                btnTypeCode,
+                btnTypeReason,
+                btnTypeRating,
+                findViewById(R.id.btnTypeAutoSequence),
+                findViewById(R.id.btnStopMultiSlot)
+        };
+
+        for (View v : rotatableViews) {
+            if (v != null) {
+                v.animate()
+                        .rotation(targetDegrees)
+                        .setDuration(250)
+                        .start();
+            }
+        }
     }
 
     private void triggerHapticShutterNotification(View view) {
@@ -1441,6 +1600,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (orientationEventListener != null) {
+            orientationEventListener.disable();
+        }
         if (tts != null) {
             tts.stop();
             tts.shutdown();
