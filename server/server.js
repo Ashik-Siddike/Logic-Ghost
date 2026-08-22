@@ -431,6 +431,99 @@ app.get('/', (req, res) => {
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* 🎯 Cyberpunk Tactical Custom Cursor */
+        @media (pointer: fine) {
+            body, button, a, input, textarea, select, .cyber-dropzone, .speed-btn, .btn-cyber {
+                cursor: none !important;
+            }
+        }
+
+        .cyber-cursor-dot {
+            position: fixed;
+            top: -100px; left: -100px;
+            width: 6px;
+            height: 6px;
+            background: var(--cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 99999;
+            box-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan);
+            transform: translate(-50%, -50%);
+            transition: width 0.15s, height 0.15s, background-color 0.2s;
+        }
+
+        .cyber-cursor-ring {
+            position: fixed;
+            top: -100px; left: -100px;
+            width: 30px;
+            height: 30px;
+            border: 1.5px solid rgba(0, 240, 255, 0.7);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 99998;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), height 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3), inset 0 0 8px rgba(0, 240, 255, 0.15);
+        }
+
+        .cyber-cursor-ring::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: -4px; right: -4px; height: 1px;
+            background: var(--cyan);
+            transform: translateY(-50%);
+            opacity: 0.6;
+        }
+
+        .cyber-cursor-ring::after {
+            content: '';
+            position: absolute;
+            left: 50%; top: -4px; bottom: -4px; width: 1px;
+            background: var(--cyan);
+            transform: translateX(-50%);
+            opacity: 0.6;
+        }
+
+        /* Hover Lock-on Target Mode */
+        .cyber-cursor-ring.cursor-hover {
+            width: 48px;
+            height: 48px;
+            border-color: var(--pink);
+            border-radius: 6px;
+            box-shadow: 0 0 25px var(--pink-glow), inset 0 0 12px rgba(255, 0, 85, 0.3);
+            animation: cursor-spin 4s linear infinite;
+        }
+
+        .cyber-cursor-dot.cursor-hover {
+            background: var(--pink);
+            box-shadow: 0 0 12px var(--pink), 0 0 20px var(--pink);
+            width: 8px;
+            height: 8px;
+        }
+
+        /* Click Shockwave */
+        .cursor-click-wave {
+            position: fixed;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--green);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 99997;
+            transform: translate(-50%, -50%) scale(1);
+            animation: click-wave-anim 0.38s ease-out forwards;
+        }
+
+        @keyframes click-wave-anim {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 1; border-color: var(--cyan); }
+            100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; border-color: var(--pink); }
+        }
+
+        @keyframes cursor-spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
         body {
             background: 
                 linear-gradient(180deg, rgba(2, 4, 8, 0.88) 0%, rgba(2, 4, 8, 0.94) 45%, rgba(2, 4, 8, 0.98) 100%),
@@ -1579,11 +1672,74 @@ app.get('/', (req, res) => {
             return (text || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
+        // 🎯 Cyberpunk Tactical Crosshair Cursor Tracker
+        const cursorDot = document.createElement('div');
+        cursorDot.className = 'cyber-cursor-dot';
+        document.body.appendChild(cursorDot);
+
+        const cursorRing = document.createElement('div');
+        cursorRing.className = 'cyber-cursor-ring';
+        document.body.appendChild(cursorRing);
+
+        let mouseX = -100;
+        let mouseY = -100;
+        let ringX = -100;
+        let ringY = -100;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursorDot.style.left = mouseX + 'px';
+            cursorDot.style.top = mouseY + 'px';
+            if (ringX === -100) {
+                ringX = mouseX;
+                ringY = mouseY;
+            }
+        });
+
+        // Smooth Lerp tracking for HUD reticle ring
+        function animateCursor() {
+            if (mouseX !== -100) {
+                ringX += (mouseX - ringX) * 0.25;
+                ringY += (mouseY - ringY) * 0.25;
+                cursorRing.style.left = ringX + 'px';
+                cursorRing.style.top = ringY + 'px';
+            }
+            requestAnimationFrame(animateCursor);
+        }
+        requestAnimationFrame(animateCursor);
+
+        // Hover detection on interactable components
+        function attachCursorHover() {
+            const interactables = document.querySelectorAll('button, a, input, textarea, select, .cyber-dropzone, .speed-btn, .btn-cyber, .cyber-url-box');
+            interactables.forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    cursorRing.classList.add('cursor-hover');
+                    cursorDot.classList.add('cursor-hover');
+                });
+                el.addEventListener('mouseleave', () => {
+                    cursorRing.classList.remove('cursor-hover');
+                    cursorDot.classList.remove('cursor-hover');
+                });
+            });
+        }
+
+        // Click Laser Shockwave
+        window.addEventListener('mousedown', (e) => {
+            const wave = document.createElement('div');
+            wave.className = 'cursor-click-wave';
+            wave.style.left = e.clientX + 'px';
+            wave.style.top = e.clientY + 'px';
+            document.body.appendChild(wave);
+            setTimeout(() => wave.remove(), 400);
+        });
+
         setInterval(updateFeed, 2000);
-        updateFeed();
-        loadApiKeys();
-        loadSpeed();
-        loadContext();
+        updateFeed().then(() => attachCursorHover());
+        loadApiKeys().then(() => attachCursorHover());
+        loadSpeed().then(() => attachCursorHover());
+        loadContext().then(() => attachCursorHover());
+        setTimeout(attachCursorHover, 500);
     </script>
 </body>
 </html>`);
