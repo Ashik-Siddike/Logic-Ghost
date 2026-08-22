@@ -24,8 +24,8 @@
         android:orientation="vertical"
         android:background="@android:color/transparent"
         android:paddingHorizontal="14dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="6dp">
+        android:paddingTop="10dp"
+        android:paddingBottom="4dp">
 
         <!-- Top Bar Row 1: Brand, Status, and Action Icons -->
         <LinearLayout
@@ -145,7 +145,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginTop="5dp">
+            android:layout_marginTop="4dp">
 
             <TextView
                 android:id="@+id/tvStatus"
@@ -224,7 +224,7 @@
         android:layout_width="wrap_content"
         android:layout_height="32dp"
         android:layout_gravity="top|end"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="10dp"
         android:layout_marginEnd="12dp"
         android:text="✨ HUD"
         android:textColor="#00F0FF"
@@ -239,228 +239,23 @@
         android:visibility="gone"/>
 
     <!-- ======================================================== -->
-    <!-- 3. BOTTOM FLOATING DUAL CONTROL BARS                     -->
-    <!-- ======================================================== -->
-
-    <!-- LEFT SIDE: Typing & Quick Actions (Left Thumb) -->
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|start"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <!-- Quick View Result Floating Pill -->
-        <TextView
-            android:id="@+id/btnQuickResult"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:text="📄 VIEW RESULT"
-            android:textColor="#00F0FF"
-            android:background="@drawable/btn_pill_cute_glass"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:paddingHorizontal="16dp"
-            android:layout_marginBottom="6dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:visibility="gone"/>
-
-        <!-- Quick Listen / TTS Floating Pill -->
-        <TextView
-            android:id="@+id/btnQuickSpeak"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:text="🔊 LISTEN (TTS)"
-            android:textColor="#38BDF8"
-            android:background="@drawable/btn_pill_cute_glass"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:paddingHorizontal="16dp"
-            android:layout_marginBottom="8dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:visibility="gone"/>
-
-        <!-- STANDARD MODE BUTTONS -->
-        <LinearLayout
-            android:id="@+id/layoutStandardTypeButtons"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <!-- USB Typing Button (Glowing Cute Emerald/Cyan Pill) -->
-            <Button
-                android:id="@+id/btnTypeDirect"
-                android:layout_width="134dp"
-                android:layout_height="46dp"
-                android:text="⚡ TYPE (USB)"
-                android:background="@drawable/btn_pill_cute_primary"
-                android:textColor="#020B14"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:letterSpacing="0.04"
-                android:layout_marginBottom="6dp"
-                android:elevation="6dp"/>
-
-            <!-- Bluetooth HID Typing Button (Cute Glass Pill) -->
-            <Button
-                android:id="@+id/btnTypeBluetooth"
-                android:layout_width="134dp"
-                android:layout_height="38dp"
-                android:text="📶 TYPE (BT)"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:textColor="#00FF88"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:layout_marginBottom="6dp"
-                android:elevation="4dp"/>
-
-            <!-- Emergency Stop Typing Button (Cute Danger Pill) -->
-            <Button
-                android:id="@+id/btnStopResponse"
-                android:layout_width="134dp"
-                android:layout_height="36dp"
-                android:text="🛑 STOP TYPING"
-                android:background="@drawable/btn_pill_cute_danger"
-                android:textColor="#FF4D6D"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:elevation="4dp"/>
-        </LinearLayout>
-
-        <!-- MULTI-SLOT RLHF MODE BUTTONS -->
-        <LinearLayout
-            android:id="@+id/layoutMultiSlotTypeButtons"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <!-- 1. Type Code Slot (Primary Glow) -->
-            <Button
-                android:id="@+id/btnTypeCode"
-                android:layout_width="136dp"
-                android:layout_height="44dp"
-                android:text="✨ TYPE CODE"
-                android:background="@drawable/btn_pill_cute_primary"
-                android:textColor="#020B14"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:letterSpacing="0.04"
-                android:layout_marginBottom="5dp"
-                android:elevation="6dp"/>
-
-            <!-- 2. Type Explanation Slot (Cute Glass Pill) -->
-            <Button
-                android:id="@+id/btnTypeReason"
-                android:layout_width="136dp"
-                android:layout_height="38dp"
-                android:text="📝 JUSTIFICATION"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:textColor="#00FF88"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:layout_marginBottom="5dp"
-                android:elevation="4dp"/>
-
-            <!-- 3. Type Rating Slot (Cute Amethyst Pill) -->
-            <Button
-                android:id="@+id/btnTypeRating"
-                android:layout_width="136dp"
-                android:layout_height="36dp"
-                android:text="⭐ VERDICT"
-                android:background="@drawable/btn_pill_cute_purple"
-                android:textColor="#E9D5FF"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:layout_marginBottom="5dp"
-                android:elevation="4dp"/>
-
-            <!-- 4. Smart Auto-Sequence (Code -> Tab -> Reason) -->
-            <Button
-                android:id="@+id/btnTypeAutoSequence"
-                android:layout_width="136dp"
-                android:layout_height="34dp"
-                android:text="🪄 AUTO-FILL (TAB)"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:textColor="#38BDF8"
-                android:textSize="9sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:layout_marginBottom="5dp"
-                android:elevation="4dp"/>
-
-            <!-- 5. Emergency Stop Button (Cute Danger Pill) -->
-            <Button
-                android:id="@+id/btnStopMultiSlot"
-                android:layout_width="136dp"
-                android:layout_height="34dp"
-                android:text="🛑 STOP TYPING"
-                android:background="@drawable/btn_pill_cute_danger"
-                android:textColor="#FF4D6D"
-                android:textSize="9sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:elevation="4dp"/>
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <!-- RIGHT SIDE: Aesthetic Glowing Camera Shutter Jewel (Vertically Centered for Right Thumb) -->
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical|end"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:padding="20dp">
-
-        <ImageButton
-            android:id="@+id/btnCapture"
-            android:layout_width="76dp"
-            android:layout_height="76dp"
-            android:background="@drawable/btn_camera_shutter"
-            android:contentDescription="Capture"
-            android:elevation="12dp"/>
-    </LinearLayout>
-
-    <!-- ======================================================== -->
-    <!-- 4. EXPANDABLE / MAXIMIZEABLE RESULT SHEET                -->
+    <!-- 3. EXPANDABLE / FLOATING RESULT SHEET (CENTER-TOP AREA)  -->
     <!-- ======================================================== -->
     <LinearLayout
         android:id="@+id/layoutResponseContainer"
         android:layout_width="match_parent"
-        android:layout_height="230dp"
-        android:layout_gravity="bottom"
-        android:layout_marginBottom="16dp"
-        android:layout_marginStart="156dp"
-        android:layout_marginEnd="108dp"
+        android:layout_height="210dp"
+        android:layout_gravity="center_horizontal|bottom"
+        android:layout_marginBottom="88dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         android:orientation="vertical"
         android:background="@drawable/hud_glass_card"
         android:padding="12dp"
-        android:elevation="12dp"
+        android:elevation="14dp"
         android:visibility="gone">
 
-        <!-- Result Header Bar: Tag, Duration, Stop, Maximize, Close -->
+        <!-- Result Header Bar: Tag, Duration, Stop, Speak, Copy, Maximize, Close -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="30dp"
@@ -667,7 +462,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textColor="#FFFFFF"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:lineSpacingExtra="3dp"
                         android:includeFontPadding="false"
                         android:textStyle="bold"/>
@@ -736,6 +531,221 @@
             </LinearLayout>
         </ScrollView>
 
+    </LinearLayout>
+
+    <!-- ======================================================== -->
+    <!-- 4. BOTTOM ACTION & SHUTTER DOCK (ERGONOMIC LEFT THUMB)   -->
+    <!-- ======================================================== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="14dp"
+        android:paddingBottom="12dp">
+
+        <!-- 📸 LEFT BOTTOM: Aesthetic Camera Shutter Jewel (Charger Side / Left Thumb) -->
+        <ImageButton
+            android:id="@+id/btnCapture"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:background="@drawable/btn_camera_shutter"
+            android:contentDescription="Capture"
+            android:elevation="12dp"
+            android:layout_marginEnd="12dp"/>
+
+        <!-- 📱 BOTTOM ACTION BUTTONS DOCK (Right of Shutter) -->
+        <HorizontalScrollView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:scrollbars="none"
+            android:fillViewport="false">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- 1. Quick View Result Pill -->
+                <TextView
+                    android:id="@+id/btnQuickResult"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="📄 RESULT"
+                    android:textColor="#00F0FF"
+                    android:background="@drawable/btn_pill_cute_glass"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:paddingHorizontal="12dp"
+                    android:layout_marginEnd="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:visibility="gone"/>
+
+                <!-- 2. Quick Listen / TTS Floating Pill -->
+                <TextView
+                    android:id="@+id/btnQuickSpeak"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="🔊 LISTEN"
+                    android:textColor="#38BDF8"
+                    android:background="@drawable/btn_pill_cute_glass"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:paddingHorizontal="12dp"
+                    android:layout_marginEnd="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:visibility="gone"/>
+
+                <!-- STANDARD MODE BUTTONS -->
+                <LinearLayout
+                    android:id="@+id/layoutStandardTypeButtons"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <!-- USB Typing Button -->
+                    <Button
+                        android:id="@+id/btnTypeDirect"
+                        android:layout_width="120dp"
+                        android:layout_height="44dp"
+                        android:text="✨ TYPE (USB)"
+                        android:background="@drawable/btn_pill_cute_primary"
+                        android:textColor="#020B14"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:letterSpacing="0.03"
+                        android:layout_marginEnd="6dp"
+                        android:elevation="6dp"/>
+
+                    <!-- Bluetooth Typing Button -->
+                    <Button
+                        android:id="@+id/btnTypeBluetooth"
+                        android:layout_width="106dp"
+                        android:layout_height="40dp"
+                        android:text="📶 TYPE (BT)"
+                        android:background="@drawable/btn_pill_cute_glass"
+                        android:textColor="#00FF88"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="6dp"
+                        android:elevation="4dp"/>
+
+                    <!-- Emergency Stop Button -->
+                    <Button
+                        android:id="@+id/btnStopResponse"
+                        android:layout_width="96dp"
+                        android:layout_height="40dp"
+                        android:text="🛑 STOP"
+                        android:background="@drawable/btn_pill_cute_danger"
+                        android:textColor="#FF4D6D"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:elevation="4dp"/>
+                </LinearLayout>
+
+                <!-- MULTI-SLOT RLHF MODE BUTTONS -->
+                <LinearLayout
+                    android:id="@+id/layoutMultiSlotTypeButtons"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:visibility="gone">
+
+                    <!-- 1. Type Code Slot -->
+                    <Button
+                        android:id="@+id/btnTypeCode"
+                        android:layout_width="114dp"
+                        android:layout_height="42dp"
+                        android:text="✨ CODE"
+                        android:background="@drawable/btn_pill_cute_primary"
+                        android:textColor="#020B14"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:letterSpacing="0.03"
+                        android:layout_marginEnd="6dp"
+                        android:elevation="6dp"/>
+
+                    <!-- 2. Type Explanation Slot -->
+                    <Button
+                        android:id="@+id/btnTypeReason"
+                        android:layout_width="114dp"
+                        android:layout_height="40dp"
+                        android:text="📝 REASON"
+                        android:background="@drawable/btn_pill_cute_glass"
+                        android:textColor="#00FF88"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="6dp"
+                        android:elevation="4dp"/>
+
+                    <!-- 3. Type Rating Slot -->
+                    <Button
+                        android:id="@+id/btnTypeRating"
+                        android:layout_width="104dp"
+                        android:layout_height="38dp"
+                        android:text="⭐ VERDICT"
+                        android:background="@drawable/btn_pill_cute_purple"
+                        android:textColor="#E9D5FF"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="6dp"
+                        android:elevation="4dp"/>
+
+                    <!-- 4. Smart Auto-Sequence (Code -> Tab -> Reason) -->
+                    <Button
+                        android:id="@+id/btnTypeAutoSequence"
+                        android:layout_width="110dp"
+                        android:layout_height="38dp"
+                        android:text="🪄 AUTO-FILL"
+                        android:background="@drawable/btn_pill_cute_glass"
+                        android:textColor="#38BDF8"
+                        android:textSize="9sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="6dp"
+                        android:elevation="4dp"/>
+
+                    <!-- 5. Emergency Stop Button -->
+                    <Button
+                        android:id="@+id/btnStopMultiSlot"
+                        android:layout_width="96dp"
+                        android:layout_height="38dp"
+                        android:text="🛑 STOP"
+                        android:background="@drawable/btn_pill_cute_danger"
+                        android:textColor="#FF4D6D"
+                        android:textSize="9sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:elevation="4dp"/>
+                </LinearLayout>
+
+            </LinearLayout>
+        </HorizontalScrollView>
     </LinearLayout>
 
 </FrameLayout>
