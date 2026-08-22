@@ -705,20 +705,20 @@ public class MainActivity extends AppCompatActivity {
     private void showSpeedSettingsDialog() {
         final String[] presetKeys = {"ultra", "fast", "normal", "relaxed", "stealth", "ninja"};
         final String[] presetNames = {
-                "⚡ Ultra Fast (5ms - 15ms)",
-                "🏃 Fast Human (20ms - 45ms)",
-                "🚶 Normal Human (45ms - 90ms) [Default]",
-                "🐢 Relaxed Human (90ms - 180ms)",
-                "🦥 Ultra Stealth (180ms - 350ms)",
-                "🕵️ Ghost Ninja (350ms - 700ms)"
+                "⚡ Ultra Fast (3ms - 8ms) [Instant]",
+                "🏃 Fast Human (12ms - 28ms) [Fast]",
+                "🚶 Normal Human (25ms - 55ms) [Default]",
+                "🐢 Relaxed Human (60ms - 110ms)",
+                "🦥 Ultra Stealth (110ms - 180ms)",
+                "🕵️ Ghost Ninja (180ms - 280ms)"
         };
         final int[][] presetRanges = {
-                {5, 15},
-                {20, 45},
-                {45, 90},
-                {90, 180},
-                {180, 350},
-                {350, 700}
+                {3, 8},
+                {12, 28},
+                {25, 55},
+                {60, 110},
+                {110, 180},
+                {180, 280}
         };
 
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);

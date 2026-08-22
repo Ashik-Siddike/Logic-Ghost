@@ -194,8 +194,8 @@ context_manager = KnowledgeContextManager()
 class TypingSpeedManager:
     def __init__(self):
         self.lock = threading.Lock()
-        self.min_delay_ms = 45
-        self.max_delay_ms = 90
+        self.min_delay_ms = 25
+        self.max_delay_ms = 55
         self.preset_name = "normal"
         self.load()
 
@@ -205,8 +205,8 @@ class TypingSpeedManager:
                 try:
                     with open(SPEED_CONFIG_FILE, "r", encoding="utf-8") as f:
                         data = json.load(f)
-                        self.min_delay_ms = int(data.get("min_delay_ms", 45))
-                        self.max_delay_ms = int(data.get("max_delay_ms", 90))
+                        self.min_delay_ms = int(data.get("min_delay_ms", 25))
+                        self.max_delay_ms = int(data.get("max_delay_ms", 55))
                         self.preset_name = data.get("preset_name", "normal")
                 except Exception as e:
                     print(f"[Speed Config Warning] {e}", flush=True)
@@ -391,6 +391,9 @@ def show_browser_onscreen():
     except Exception as e:
         print(f"[Visible Warning] {e}", flush=True)
 
+# Serialization lock to prevent simultaneous keystroke collisions
+typing_lock = threading.Lock()
+
 def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=None):
     """
     Types text character-by-character into active foreground window on Windows.
@@ -401,78 +404,80 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     if sys.platform != "win32":
         return False
 
-    typing_controller.start_typing()
+    if not text or not text.strip():
+        return False
 
-    speed_info = speed_manager.get_info()
-    min_ms = min_delay_ms if min_delay_ms is not None else speed_info["min_delay_ms"]
-    max_ms = max_delay_ms if max_delay_ms is not None else speed_info["max_delay_ms"]
-    min_ms = max(2, min_ms)
-    max_ms = max(min_ms, max_ms)
+    # Clean text
+    text_to_type = text.replace('\r\n', '\n').replace('\r', '\n')
 
-    user32 = ctypes.windll.user32
-    KEYEVENTF_KEYUP = 0x0002
-    KEYEVENTF_UNICODE = 0x0004
-    VK_RETURN = 0x0D
-    VK_TAB = 0x09
+    # If already typing, signal previous stream to halt
+    if typing_controller.is_typing:
+        typing_controller.stop_typing()
+        time.sleep(0.04)
 
-    print(f"[Organic Human Typing] Starting dynamic keystroke injection for {len(text)} characters...", flush=True)
+    with typing_lock:
+        typing_controller.start_typing()
 
-    try:
-        pyperclip.copy(text)
-    except Exception:
-        pass
+        user32 = ctypes.windll.user32
+        KEYEVENTF_KEYUP = 0x0002
+        KEYEVENTF_UNICODE = 0x0004
+        VK_RETURN = 0x0D
+        VK_TAB = 0x09
 
-    try:
-        for char in text:
-            if typing_controller.should_stop():
-                print("[Organic Human Typing] Instantly halted by user abort command.", flush=True)
-                return False
+        print(f"[Organic Human Typing] >>> INJECTING {len(text_to_type)} CHARACTERS INTO ACTIVE WINDOW <<<", flush=True)
 
-            if char == '\r':
-                continue
+        try:
+            pyperclip.copy(text_to_type)
+        except Exception:
+            pass
 
-            # REAL-TIME ON-THE-FLY SPEED TUNING:
-            # Re-read speed manager on every single character so speed changes from phone take effect in <1ms mid-sentence!
-            speed_info = speed_manager.get_info()
-            curr_min_ms = speed_info["min_delay_ms"]
-            curr_max_ms = speed_info["max_delay_ms"]
-            curr_min_ms = max(2, curr_min_ms)
-            curr_max_ms = max(curr_min_ms, curr_max_ms)
+        try:
+            for char in text_to_type:
+                if typing_controller.should_stop():
+                    print("[Organic Human Typing] Instantly halted by user abort command.", flush=True)
+                    return False
 
-            code = ord(char)
-            # Random physical key contact time
-            key_hold_time = random.uniform(0.008, 0.022) if curr_min_ms < 100 else random.uniform(0.020, 0.055)
-            # Random inter-key delay based on real-time current speed
-            char_delay = random.uniform(curr_min_ms, curr_max_ms) / 1000.0
+                # REAL-TIME ON-THE-FLY SPEED TUNING:
+                speed_info = speed_manager.get_info()
+                curr_min_ms = speed_info["min_delay_ms"]
+                curr_max_ms = speed_info["max_delay_ms"]
+                curr_min_ms = max(2, curr_min_ms)
+                curr_max_ms = max(curr_min_ms, curr_max_ms)
 
-            # Organic human pauses on special characters, spaces, and brackets
-            if char in ['\n', ' ', '{', '}', '(', ')', ';', '=']:
-                extra = random.uniform(0.015, 0.045) if curr_min_ms < 100 else random.uniform(0.060, 0.200)
-                char_delay += extra
+                code = ord(char)
+                # Random physical key contact time
+                key_hold_time = random.uniform(0.005, 0.015) if curr_min_ms < 80 else random.uniform(0.015, 0.035)
+                # Random inter-key delay based on real-time current speed
+                char_delay = random.uniform(curr_min_ms, curr_max_ms) / 1000.0
 
-            if char == '\n':
-                user32.keybd_event(VK_RETURN, 0x1C, 0, 0)
+                # Organic human pauses on special characters, spaces, and brackets
+                if char in ['\n', ' ', '{', '}', '(', ')', ';', '=']:
+                    extra = random.uniform(0.010, 0.025) if curr_min_ms < 80 else random.uniform(0.030, 0.080)
+                    char_delay += extra
+
+                if char == '\n':
+                    user32.keybd_event(VK_RETURN, 0x1C, 0, 0)
+                    time.sleep(key_hold_time)
+                    user32.keybd_event(VK_RETURN, 0x1C, KEYEVENTF_KEYUP, 0)
+                    time.sleep(char_delay)
+                    continue
+
+                if char == '\t':
+                    user32.keybd_event(VK_TAB, 0x0F, 0, 0)
+                    time.sleep(key_hold_time)
+                    user32.keybd_event(VK_TAB, 0x0F, KEYEVENTF_KEYUP, 0)
+                    time.sleep(char_delay)
+                    continue
+
+                user32.keybd_event(0, code, KEYEVENTF_UNICODE, 0)
                 time.sleep(key_hold_time)
-                user32.keybd_event(VK_RETURN, 0x1C, KEYEVENTF_KEYUP, 0)
+                user32.keybd_event(0, code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0)
                 time.sleep(char_delay)
-                continue
 
-            if char == '\t':
-                user32.keybd_event(VK_TAB, 0x0F, 0, 0)
-                time.sleep(key_hold_time)
-                user32.keybd_event(VK_TAB, 0x0F, KEYEVENTF_KEYUP, 0)
-                time.sleep(char_delay)
-                continue
-
-            user32.keybd_event(0, code, KEYEVENTF_UNICODE, 0)
-            time.sleep(key_hold_time)
-            user32.keybd_event(0, code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0)
-            time.sleep(char_delay)
-
-        print(f"[Organic Human Typing] Successfully finished typing {len(text)} characters.", flush=True)
-        return True
-    finally:
-        typing_controller.finish_typing()
+            print(f"[Organic Human Typing] ✅ Successfully finished typing {len(text_to_type)} characters.", flush=True)
+            return True
+        finally:
+            typing_controller.finish_typing()
 
 def clean_code_snippet(text):
     match = re.search(r'```(?:javascript|python|java|cpp|c|typescript|html|css|sql|bash|sh|json)?\n?(.*?)\n?```', text, re.DOTALL | re.IGNORECASE)
