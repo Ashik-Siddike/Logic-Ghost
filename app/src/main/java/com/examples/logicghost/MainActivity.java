@@ -17,6 +17,7 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -51,6 +52,8 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -74,6 +77,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "LogicGhostPrefs";
     private static final String KEY_SERVER_URL = "server_url";
     private static final String DEFAULT_SERVER_URL = "http://127.0.0.1:5000";
+    private static final String KEY_TTS_VOICE = "tts_selected_voice";
+    private static final String KEY_TTS_SPEED = "tts_speech_rate";
     private static final int REQUEST_CODE_PERMISSIONS = 101;
 
     private static final String[] REQUIRED_PERMISSIONS = new String[]{
@@ -299,6 +304,12 @@ public class MainActivity extends AppCompatActivity {
             btnGuide.setOnClickListener(v -> showSetupGuideDialog(false));
         }
 
+        // 1-Click TTS Voice Model Selector Button
+        View btnVoiceSettings = findViewById(R.id.btnVoiceSettings);
+        if (btnVoiceSettings != null) {
+            btnVoiceSettings.setOnClickListener(v -> showVoiceSelectionDialog());
+        }
+
         // Capture Shutter Button
         btnCapture.setOnClickListener(v -> captureAndProcessScreen());
 
@@ -363,10 +374,21 @@ public class MainActivity extends AppCompatActivity {
         TextView btnHeaderStopTyping = findViewById(R.id.btnHeaderStopTyping);
         if (btnHeaderStopTyping != null) btnHeaderStopTyping.setOnClickListener(stopClickListener);
 
-        // Text-to-Speech Read Aloud / Listen Actions
+        // Text-to-Speech Read Aloud / Listen Actions (Click to Speak, Long-Click for Voice Selector)
         View.OnClickListener ttsClickListener = v -> toggleSpeakCurrentResult();
-        if (btnSpeakResult != null) btnSpeakResult.setOnClickListener(ttsClickListener);
-        if (btnQuickSpeak != null) btnQuickSpeak.setOnClickListener(ttsClickListener);
+        View.OnLongClickListener ttsLongClickListener = v -> {
+            showVoiceSelectionDialog();
+            return true;
+        };
+
+        if (btnSpeakResult != null) {
+            btnSpeakResult.setOnClickListener(ttsClickListener);
+            btnSpeakResult.setOnLongClickListener(ttsLongClickListener);
+        }
+        if (btnQuickSpeak != null) {
+            btnQuickSpeak.setOnClickListener(ttsClickListener);
+            btnQuickSpeak.setOnLongClickListener(ttsLongClickListener);
+        }
 
         initTextToSpeech();
 
@@ -882,13 +904,30 @@ public class MainActivity extends AppCompatActivity {
     private void initTextToSpeech() {
         tts = new TextToSpeech(this, status -> {
             if (status == TextToSpeech.SUCCESS) {
-                int result = tts.setLanguage(Locale.US);
-                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    Log.w("LogicGhost", "US English TTS not supported, falling back to default locale");
-                    tts.setLanguage(Locale.getDefault());
-                }
-                tts.setSpeechRate(0.96f);
+                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+                float savedRate = prefs.getFloat(KEY_TTS_SPEED, 0.98f);
+                tts.setSpeechRate(savedRate);
                 tts.setPitch(1.0f);
+
+                String savedVoiceName = prefs.getString(KEY_TTS_VOICE, "");
+                boolean voiceApplied = false;
+                if (!savedVoiceName.isEmpty() && tts.getVoices() != null) {
+                    for (Voice v : tts.getVoices()) {
+                        if (v.getName().equalsIgnoreCase(savedVoiceName)) {
+                            tts.setVoice(v);
+                            voiceApplied = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!voiceApplied) {
+                    int result = tts.setLanguage(Locale.US);
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        tts.setLanguage(Locale.getDefault());
+                    }
+                }
+
                 tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                     @Override
                     public void onStart(String utteranceId) {
@@ -909,6 +948,104 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("LogicGhost", "Failed to initialize TextToSpeech");
             }
         });
+    }
+
+    private void showVoiceSelectionDialog() {
+        if (tts == null) {
+            Toast.makeText(this, "TTS Engine initializing...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Set<Voice> voices = tts.getVoices();
+        if (voices == null || voices.isEmpty()) {
+            Toast.makeText(this, "No TTS voice models found on device", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String currentVoiceName = prefs.getString(KEY_TTS_VOICE, "");
+        if (currentVoiceName.isEmpty() && tts.getVoice() != null) {
+            currentVoiceName = tts.getVoice().getName();
+        }
+
+        // Filter and sort English / installed voices
+        List<Voice> voiceList = new ArrayList<>();
+        for (Voice v : voices) {
+            if (v.getLocale() != null && v.getLocale().getLanguage().startsWith("en")) {
+                voiceList.add(v);
+            }
+        }
+        if (voiceList.isEmpty()) {
+            voiceList.addAll(voices);
+        }
+
+        // Sort by Country code and name
+        Collections.sort(voiceList, (a, b) -> {
+            String cA = a.getLocale() != null ? a.getLocale().getCountry() : "";
+            String cB = b.getLocale() != null ? b.getLocale().getCountry() : "";
+            int cComp = cA.compareTo(cB);
+            if (cComp != 0) return cComp;
+            return a.getName().compareTo(b.getName());
+        });
+
+        String[] displayNames = new String[voiceList.size()];
+        int selectedIndex = 0;
+
+        for (int i = 0; i < voiceList.size(); i++) {
+            Voice v = voiceList.get(i);
+            String country = v.getLocale() != null ? v.getLocale().getCountry() : "EN";
+            String flag = "US".equalsIgnoreCase(country) ? "🇺🇸" :
+                          "GB".equalsIgnoreCase(country) ? "🇬🇧" :
+                          "IN".equalsIgnoreCase(country) ? "🇮🇳" :
+                          "NG".equalsIgnoreCase(country) ? "🇳🇬" :
+                          "AU".equalsIgnoreCase(country) ? "🇦🇺" :
+                          "CA".equalsIgnoreCase(country) ? "🇨🇦" : "🌐";
+
+            displayNames[i] = flag + " Google, " + country + "\n" + v.getName();
+            if (v.getName().equalsIgnoreCase(currentVoiceName)) {
+                selectedIndex = i;
+            }
+        }
+
+        final int[] chosenIndex = {selectedIndex};
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("🗣️ Select Google Voice Model");
+        builder.setSingleChoiceItems(displayNames, selectedIndex, (dialog, which) -> {
+            chosenIndex[0] = which;
+            Voice v = voiceList.get(which);
+            tts.setVoice(v);
+            // Play quick audio preview
+            String sample = "Hello! I am Google " + (v.getLocale() != null ? v.getLocale().getDisplayCountry() : "English") + " voice for your interview answers.";
+            Bundle params = new Bundle();
+            params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "SampleTest_" + System.currentTimeMillis());
+            tts.speak(sample, TextToSpeech.QUEUE_FLUSH, params, params.getString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID));
+        });
+
+        builder.setPositiveButton("💾 Apply & Save", (dialog, which) -> {
+            if (chosenIndex[0] >= 0 && chosenIndex[0] < voiceList.size()) {
+                Voice v = voiceList.get(chosenIndex[0]);
+                tts.setVoice(v);
+                prefs.edit().putString(KEY_TTS_VOICE, v.getName()).apply();
+                Toast.makeText(MainActivity.this, "✅ Voice set to: " + v.getName(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNeutralButton("⚙️ System TTS", (dialog, which) -> {
+            try {
+                Intent intent = new Intent("com.android.settings.TTS_SETTINGS");
+                startActivity(intent);
+            } catch (Exception e) {
+                try {
+                    Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+                    startActivity(intent);
+                } catch (Exception ignored) {}
+            }
+        });
+
+        builder.setNegativeButton("Cancel", null);
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     private void updateTtsUiState(boolean speaking) {
