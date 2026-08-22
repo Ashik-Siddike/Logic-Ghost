@@ -439,9 +439,6 @@ public class MainActivity extends AppCompatActivity {
         Button btnStopMultiSlot = findViewById(R.id.btnStopMultiSlot);
         if (btnStopMultiSlot != null) btnStopMultiSlot.setOnClickListener(stopClickListener);
 
-        TextView btnHeaderStopTyping = findViewById(R.id.btnHeaderStopTyping);
-        if (btnHeaderStopTyping != null) btnHeaderStopTyping.setOnClickListener(stopClickListener);
-
         // Text-to-Speech Read Aloud / Listen Actions (Click to Speak, Long-Click for Voice Selector)
         View.OnClickListener ttsClickListener = v -> toggleSpeakCurrentResult();
         View.OnLongClickListener ttsLongClickListener = v -> {
