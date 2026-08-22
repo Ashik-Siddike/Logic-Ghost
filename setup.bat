@@ -52,9 +52,9 @@ if not exist ".env" (
 
 REM 7. Generate Icon & Create Desktop Shortcut
 echo [6/6] Creating Desktop Shortcut with custom icon...
-python -c "from PIL import Image; import os; os.path.exists('logicghost_logo.png') and Image.open('logicghost_logo.png').save('logicghost.ico', format='ICO', sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])" >nul 2>&1
+python -c "from PIL import Image; import os; os.path.exists('app_logo.png') and Image.open('app_logo.png').save('app_icon.ico', format='ICO', sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])" >nul 2>&1
 
-powershell -NoProfile -Command "& { $ws = New-Object -ComObject WScript.Shell; $desktop = [System.Environment]::GetFolderPath('Desktop'); $s = $ws.CreateShortcut(\"$desktop\LogicGhost.lnk\"); $s.TargetPath = (Join-Path (Get-Location) 'start.bat'); $s.WorkingDirectory = (Get-Location).Path; $ico = (Join-Path (Get-Location) 'logicghost.ico'); if (Test-Path $ico) { $s.IconLocation = \"$ico,0\" }; $s.Description = 'LogicGhost AI Automation & Dashboard'; $s.Save(); }"
+powershell -NoProfile -Command "& { $ws = New-Object -ComObject WScript.Shell; $desktop = [System.Environment]::GetFolderPath('Desktop'); $s = $ws.CreateShortcut(\"$desktop\LogicGhost.lnk\"); $s.TargetPath = (Join-Path (Get-Location) 'start.bat'); $s.WorkingDirectory = (Get-Location).Path; $ico = (Join-Path (Get-Location) 'app_icon.ico'); if (Test-Path $ico) { $s.IconLocation = \"$ico,0\" }; $s.Description = 'LogicGhost AI Automation & Dashboard'; $s.Save(); }"
 
 echo.
 echo =================================================================
