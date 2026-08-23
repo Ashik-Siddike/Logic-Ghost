@@ -463,6 +463,13 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
         except Exception:
             pass
 
+        # Safety: Release any stuck OS modifier keys (Alt, Ctrl, Win) to avoid triggering hotkeys (like NVIDIA Alt+M or Win+H)
+        try:
+            for vk in [0x12, 0x11, 0x5B, 0x5C]: # VK_MENU, VK_CONTROL, VK_LWIN, VK_RWIN
+                user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
+        except Exception:
+            pass
+
         try:
             for char in text_to_type:
                 if typing_controller.should_stop():

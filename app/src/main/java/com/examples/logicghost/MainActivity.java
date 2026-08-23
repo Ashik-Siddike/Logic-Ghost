@@ -549,17 +549,13 @@ public class MainActivity extends AppCompatActivity {
         float density = getResources().getDisplayMetrics().density;
         if (isResultMaximized) {
             params.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            params.bottomMargin = (int) (12 * density);
-            params.topMargin = (int) (48 * density);
-            params.setMarginStart((int) (12 * density));
-            params.setMarginEnd((int) (12 * density));
+            int margin = (int) (4 * density);
+            params.setMargins(margin, margin, margin, margin);
             btnMaximizeResult.setText("🗗");
         } else {
-            params.height = (int) (230 * density);
-            params.bottomMargin = (int) (16 * density);
-            params.topMargin = 0;
-            params.setMarginStart((int) (152 * density));
-            params.setMarginEnd((int) (104 * density));
+            params.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            int margin = (int) (8 * density);
+            params.setMargins(margin, margin, margin, margin);
             btnMaximizeResult.setText("⛶");
         }
         layoutResponseContainer.setLayoutParams(params);
@@ -813,6 +809,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void animateUIElementsRotation(int targetDegrees) {
+        currentDeviceRotationDegrees = targetDegrees;
+
         View[] rotatableViews = new View[]{
                 btnCapture,
                 findViewById(R.id.btnAudioCapture),
@@ -845,6 +843,17 @@ public class MainActivity extends AppCompatActivity {
                         .setDuration(250)
                         .start();
             }
+        }
+
+        // Animate Floating Result Answer Sheet Container with smooth rotation & scale adaptation
+        if (layoutResponseContainer != null) {
+            float targetScale = (targetDegrees == 90 || targetDegrees == 270) ? 0.75f : 1.0f;
+            layoutResponseContainer.animate()
+                    .rotation(targetDegrees)
+                    .scaleX(targetScale)
+                    .scaleY(targetScale)
+                    .setDuration(250)
+                    .start();
         }
     }
 
@@ -1271,6 +1280,11 @@ public class MainActivity extends AppCompatActivity {
         triggerHapticSolveNotification();
 
         layoutResponseContainer.setVisibility(View.VISIBLE);
+        float targetScale = (currentDeviceRotationDegrees == 90 || currentDeviceRotationDegrees == 270) ? 0.75f : 1.0f;
+        layoutResponseContainer.setRotation(currentDeviceRotationDegrees);
+        layoutResponseContainer.setScaleX(targetScale);
+        layoutResponseContainer.setScaleY(targetScale);
+
         if (btnQuickResult != null) btnQuickResult.setVisibility(View.GONE);
 
         tvTagHeader.setText(tag);
