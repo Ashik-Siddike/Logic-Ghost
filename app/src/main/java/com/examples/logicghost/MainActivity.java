@@ -142,8 +142,9 @@ public class MainActivity extends AppCompatActivity {
 
     // Standard Buttons
     private LinearLayout layoutStandardTypeButtons;
-    private Button btnTypeDirect, btnTypeBluetooth;
+    private Button btnTypeDirect;
     private Button btnPauseResume;
+    private volatile boolean isServerOnline = false;
 
     // Multi-Slot RLHF Buttons & Tabs
     private LinearLayout layoutMultiSlotTypeButtons;
@@ -264,7 +265,6 @@ public class MainActivity extends AppCompatActivity {
         // Standard Buttons
         layoutStandardTypeButtons = findViewById(R.id.layoutStandardTypeButtons);
         btnTypeDirect = findViewById(R.id.btnTypeDirect);
-        btnTypeBluetooth = findViewById(R.id.btnTypeBluetooth);
         btnPauseResume = findViewById(R.id.btnPauseResume);
 
         // Multi-Slot RLHF Buttons & Tabs
@@ -440,14 +440,11 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Standard Typing Actions
-        btnTypeDirect.setOnClickListener(v -> triggerDirectServerTyping(currentPayload));
-        btnTypeBluetooth.setOnClickListener(v -> triggerBluetoothTyping(currentPayload));
-
-        // Multi-Slot RLHF Typing Actions
-        btnTypeCode.setOnClickListener(v -> triggerDirectServerTyping(currentSlotCode.isEmpty() ? currentPayload : currentSlotCode));
-        btnTypeReason.setOnClickListener(v -> triggerDirectServerTyping(currentSlotReason));
-        btnTypeRating.setOnClickListener(v -> triggerDirectServerTyping(currentSlotRating));
+        // Standard & Multi-Slot Smart Auto-Detect Typing Actions
+        btnTypeDirect.setOnClickListener(v -> triggerSmartAutoTyping(currentPayload));
+        btnTypeCode.setOnClickListener(v -> triggerSmartAutoTyping(currentSlotCode.isEmpty() ? currentPayload : currentSlotCode));
+        btnTypeReason.setOnClickListener(v -> triggerSmartAutoTyping(currentSlotReason));
+        btnTypeRating.setOnClickListener(v -> triggerSmartAutoTyping(currentSlotRating));
 
         // Long click on Type buttons opens Typing Speed Controller
         View.OnLongClickListener speedLongListener = v -> {
@@ -455,7 +452,6 @@ public class MainActivity extends AppCompatActivity {
             return true;
         };
         btnTypeDirect.setOnLongClickListener(speedLongListener);
-        btnTypeBluetooth.setOnLongClickListener(speedLongListener);
         btnTypeCode.setOnLongClickListener(speedLongListener);
 
         Button btnTypeAutoSequence = findViewById(R.id.btnTypeAutoSequence);
@@ -832,7 +828,6 @@ public class MainActivity extends AppCompatActivity {
                 btnQuickResult,
                 btnQuickSpeak,
                 btnTypeDirect,
-                btnTypeBluetooth,
                 btnPauseResume,
                 findViewById(R.id.btnStopResponse),
                 btnTypeCode,
@@ -943,26 +938,31 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        final int[] chosen = {selectedIndex};
-
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("⚡ Typing Speed & Jitter Control");
+        builder.setTitle("⚡ Select Typing Speed (1-Tap Apply)");
         builder.setSingleChoiceItems(presetNames, selectedIndex, (dialog, which) -> {
-            chosen[0] = which;
-        });
-
-        builder.setPositiveButton("💾 Apply Speed", (dialog, which) -> {
-            int idx = chosen[0];
-            String selectedKey = presetKeys[idx];
-            int minMs = presetRanges[idx][0];
-            int maxMs = presetRanges[idx][1];
+            String selectedKey = presetKeys[which];
+            int minMs = presetRanges[which][0];
+            int maxMs = presetRanges[which][1];
 
             prefs.edit().putString("typing_speed_preset", selectedKey).apply();
             applySpeedToServer(selectedKey, minMs, maxMs);
-            Toast.makeText(MainActivity.this, "✅ Speed set to: " + presetNames[idx], Toast.LENGTH_SHORT).show();
+            if (hidManager != null) {
+                hidManager.setTypingSpeedRange(minMs, maxMs);
+            }
+
+            try {
+                android.os.Vibrator v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+                if (v != null && v.hasVibrator()) {
+                    v.vibrate(50);
+                }
+            } catch (Exception ignored) {}
+
+            Toast.makeText(MainActivity.this, "⚡ Speed: " + presetNames[which], Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
         });
 
-        builder.setNegativeButton("Cancel", null);
+        builder.setNegativeButton("Close", null);
         builder.show();
     }
 
@@ -1735,6 +1735,26 @@ public class MainActivity extends AppCompatActivity {
                 .trim();
     }
 
+    private void triggerSmartAutoTyping(String payloadToType) {
+        if (payloadToType == null || payloadToType.trim().isEmpty()) {
+            Toast.makeText(this, "No text/code in this slot to type.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        boolean btConnected = hidManager != null && hidManager.isConnected();
+
+        if (isServerOnline) {
+            // 1. Prioritize fast USB tunnel when server is reachable
+            triggerDirectServerTyping(payloadToType);
+        } else if (btConnected) {
+            // 2. Auto-fallback to Bluetooth HID if USB is offline
+            triggerBluetoothTyping(payloadToType);
+        } else {
+            // 3. Attempt direct typing
+            triggerDirectServerTyping(payloadToType);
+        }
+    }
+
     private void triggerDirectServerTyping(String payloadToType) {
         if (payloadToType == null || payloadToType.trim().isEmpty()) {
             Toast.makeText(this, "No text/code in this slot to type.", Toast.LENGTH_SHORT).show();
@@ -1885,6 +1905,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 handler.post(() -> {
+                    isServerOnline = false;
                     ledServer.setBackgroundColor(Color.parseColor("#FF3333")); // Red
                     tvServerStatus.setText("SERVER: OFFLINE");
                 });
@@ -1894,9 +1915,11 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(@NonNull Call call, @NonNull Response response) {
                 handler.post(() -> {
                     if (response.isSuccessful()) {
+                        isServerOnline = true;
                         ledServer.setBackgroundColor(Color.parseColor("#00FF88")); // Green
                         tvServerStatus.setText("SERVER: ONLINE");
                     } else {
+                        isServerOnline = false;
                         ledServer.setBackgroundColor(Color.parseColor("#FF3333"));
                         tvServerStatus.setText("SERVER: ERROR (" + response.code() + ")");
                     }
