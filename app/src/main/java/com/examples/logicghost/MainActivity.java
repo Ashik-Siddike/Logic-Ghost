@@ -143,12 +143,15 @@ public class MainActivity extends AppCompatActivity {
     // Standard Buttons
     private LinearLayout layoutStandardTypeButtons;
     private Button btnTypeDirect, btnTypeBluetooth;
+    private Button btnPauseResume;
 
     // Multi-Slot RLHF Buttons & Tabs
     private LinearLayout layoutMultiSlotTypeButtons;
     private Button btnTypeCode, btnTypeReason, btnTypeRating;
+    private Button btnPauseResumeMultiSlot;
     private LinearLayout layoutMultiSlotTabs;
     private TextView tabSlotCode, tabSlotReason, tabSlotRating;
+    private boolean isTypingPausedState = false;
 
     private String currentSlotCode = "";
     private String currentSlotReason = "";
@@ -262,12 +265,14 @@ public class MainActivity extends AppCompatActivity {
         layoutStandardTypeButtons = findViewById(R.id.layoutStandardTypeButtons);
         btnTypeDirect = findViewById(R.id.btnTypeDirect);
         btnTypeBluetooth = findViewById(R.id.btnTypeBluetooth);
+        btnPauseResume = findViewById(R.id.btnPauseResume);
 
         // Multi-Slot RLHF Buttons & Tabs
         layoutMultiSlotTypeButtons = findViewById(R.id.layoutMultiSlotTypeButtons);
         btnTypeCode = findViewById(R.id.btnTypeCode);
         btnTypeReason = findViewById(R.id.btnTypeReason);
         btnTypeRating = findViewById(R.id.btnTypeRating);
+        btnPauseResumeMultiSlot = findViewById(R.id.btnPauseResumeMultiSlot);
 
         layoutMultiSlotTabs = findViewById(R.id.layoutMultiSlotTabs);
         tabSlotCode = findViewById(R.id.tabSlotCode);
@@ -458,8 +463,12 @@ public class MainActivity extends AppCompatActivity {
             btnTypeAutoSequence.setOnClickListener(v -> triggerAutoSequenceTyping());
         }
 
-        // Emergency Stop Typing Buttons (Standard, Multi-Slot, Header)
+        // Emergency Stop & Pause/Resume Typing Buttons
         View.OnClickListener stopClickListener = v -> triggerEmergencyStopTyping();
+        View.OnClickListener pauseClickListener = v -> togglePauseResumeTyping();
+
+        if (btnPauseResume != null) btnPauseResume.setOnClickListener(pauseClickListener);
+        if (btnPauseResumeMultiSlot != null) btnPauseResumeMultiSlot.setOnClickListener(pauseClickListener);
 
         Button btnStopResponse = findViewById(R.id.btnStopResponse);
         if (btnStopResponse != null) btnStopResponse.setOnClickListener(stopClickListener);
@@ -824,11 +833,13 @@ public class MainActivity extends AppCompatActivity {
                 btnQuickSpeak,
                 btnTypeDirect,
                 btnTypeBluetooth,
+                btnPauseResume,
                 findViewById(R.id.btnStopResponse),
                 btnTypeCode,
                 btnTypeReason,
                 btnTypeRating,
                 findViewById(R.id.btnTypeAutoSequence),
+                btnPauseResumeMultiSlot,
                 findViewById(R.id.btnStopMultiSlot)
         };
 
@@ -1318,7 +1329,104 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void togglePauseResumeTyping() {
+        try {
+            android.os.Vibrator v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+            if (v != null && v.hasVibrator()) {
+                v.vibrate(60);
+            }
+        } catch (Exception ignored) {}
+
+        // 1. If Bluetooth typing is active
+        if (hidManager != null && hidManager.isTypingActive()) {
+            boolean isPaused = hidManager.togglePauseTyping();
+            updatePauseButtonUI(isPaused);
+            if (isPaused) {
+                updateStatusText("⏸️ BT TYPING PAUSED • TAP RESUME");
+                Toast.makeText(this, "⏸️ Bluetooth typing paused!", Toast.LENGTH_SHORT).show();
+            } else {
+                updateStatusText("📶 BT TYPING RESUMED...");
+                Toast.makeText(this, "▶️ Bluetooth typing resumed!", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+
+        // 2. USB / Server-Side Typing
+        String serverUrl = getResolvedServerUrl();
+        String toggleEndpoint = serverUrl.replaceAll("/+$", "") + "/type/toggle_pause";
+
+        Request request = new Request.Builder()
+                .url(toggleEndpoint)
+                .post(RequestBody.create("{}", MediaType.parse("application/json; charset=utf-8")))
+                .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                handler.post(() -> {
+                    isTypingPausedState = !isTypingPausedState;
+                    updatePauseButtonUI(isTypingPausedState);
+                });
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
+                try {
+                    String body = response.body() != null ? response.body().string() : "";
+                    JsonObject json = com.google.gson.JsonParser.parseString(body).getAsJsonObject();
+                    boolean isPaused = json.has("is_paused") && json.get("is_paused").getAsBoolean();
+                    handler.post(() -> {
+                        isTypingPausedState = isPaused;
+                        updatePauseButtonUI(isPaused);
+                        if (isPaused) {
+                            updateStatusText("⏸️ TYPING PAUSED • TAP RESUME");
+                            Toast.makeText(MainActivity.this, "⏸️ Typing paused at current position!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            updateStatusText("✨ TYPING RESUMED...");
+                            Toast.makeText(MainActivity.this, "▶️ Typing resumed from exact position!", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } catch (Exception e) {
+                    handler.post(() -> {
+                        isTypingPausedState = !isTypingPausedState;
+                        updatePauseButtonUI(isTypingPausedState);
+                    });
+                } finally {
+                    response.close();
+                }
+            }
+        });
+    }
+
+    private void updatePauseButtonUI(boolean isPaused) {
+        if (isPaused) {
+            if (btnPauseResume != null) {
+                btnPauseResume.setText("▶️ RESUME");
+                btnPauseResume.setTextColor(Color.parseColor("#00FF88"));
+            }
+            if (btnPauseResumeMultiSlot != null) {
+                btnPauseResumeMultiSlot.setText("▶️ RESUME");
+                btnPauseResumeMultiSlot.setTextColor(Color.parseColor("#00FF88"));
+            }
+        } else {
+            if (btnPauseResume != null) {
+                btnPauseResume.setText("⏸️ PAUSE");
+                btnPauseResume.setTextColor(Color.parseColor("#FBBF24"));
+            }
+            if (btnPauseResumeMultiSlot != null) {
+                btnPauseResumeMultiSlot.setText("⏸️ PAUSE");
+                btnPauseResumeMultiSlot.setTextColor(Color.parseColor("#FBBF24"));
+            }
+        }
+    }
+
     private void triggerEmergencyStopTyping() {
+        if (hidManager != null) {
+            hidManager.stopTyping();
+        }
+        isTypingPausedState = false;
+        updatePauseButtonUI(false);
+
         // Haptic double tick for confirmation
         try {
             android.os.Vibrator v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);

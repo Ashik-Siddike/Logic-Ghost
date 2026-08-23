@@ -269,11 +269,54 @@ app.post('/type_sequence', async (req, res) => {
  */
 app.post('/type/stop', async (req, res) => {
     try {
-        const pythonResponse = await axios.post(PYTHON_TYPE_STOP_URL, {}, { timeout: 5000 });
-        return res.json(pythonResponse.data);
+        const response = await axios.post(PYTHON_TYPE_STOP_URL, {}, { timeout: 3000 });
+        io.emit('typing_stopped', { timestamp: Date.now() });
+        return res.json(response.data);
     } catch (err) {
-        console.error('[Express] Error stopping typing:', err.message);
-        return res.status(500).json({ error: 'Failed to stop typing', details: err.message });
+        console.error('[Node Server Error /type/stop]', err.message);
+        return res.status(500).json({ error: 'Failed to abort typing', details: err.message });
+    }
+});
+
+/**
+ * POST /type/pause: Pauses active typing at current character index
+ */
+app.post('/type/pause', async (req, res) => {
+    try {
+        const response = await axios.post('http://127.0.0.1:5001/api/type/pause', {}, { timeout: 3000 });
+        io.emit('typing_paused', { timestamp: Date.now() });
+        return res.json(response.data);
+    } catch (err) {
+        console.error('[Node Server Error /type/pause]', err.message);
+        return res.status(500).json({ error: 'Failed to pause typing', details: err.message });
+    }
+});
+
+/**
+ * POST /type/resume: Resumes active typing from current character index
+ */
+app.post('/type/resume', async (req, res) => {
+    try {
+        const response = await axios.post('http://127.0.0.1:5001/api/type/resume', {}, { timeout: 3000 });
+        io.emit('typing_resumed', { timestamp: Date.now() });
+        return res.json(response.data);
+    } catch (err) {
+        console.error('[Node Server Error /type/resume]', err.message);
+        return res.status(500).json({ error: 'Failed to resume typing', details: err.message });
+    }
+});
+
+/**
+ * POST /type/toggle_pause: Flips pause/resume state
+ */
+app.post('/type/toggle_pause', async (req, res) => {
+    try {
+        const response = await axios.post('http://127.0.0.1:5001/api/type/toggle_pause', {}, { timeout: 3000 });
+        io.emit('typing_pause_toggled', { timestamp: Date.now(), is_paused: response.data.is_paused });
+        return res.json(response.data);
+    } catch (err) {
+        console.error('[Node Server Error /type/toggle_pause]', err.message);
+        return res.status(500).json({ error: 'Failed to toggle pause typing', details: err.message });
     }
 });
 
@@ -282,10 +325,10 @@ app.post('/type/stop', async (req, res) => {
  */
 app.get('/type/status', async (req, res) => {
     try {
-        const pythonResponse = await axios.get(PYTHON_TYPE_STATUS_URL, { timeout: 5000 });
-        return res.json(pythonResponse.data);
+        const response = await axios.get(PYTHON_TYPE_STATUS_URL, { timeout: 3000 });
+        return res.json(response.data);
     } catch (err) {
-        return res.json({ is_typing: false });
+        return res.json({ is_typing: false, is_paused: false });
     }
 });
 

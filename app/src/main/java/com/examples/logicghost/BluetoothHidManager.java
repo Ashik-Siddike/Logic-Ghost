@@ -180,10 +180,40 @@ public class BluetoothHidManager implements BluetoothProfile.ServiceListener {
 
     private int minDelayMs = 18;
     private int maxDelayMs = 50;
+    private volatile boolean isTypingActive = false;
+    private volatile boolean isTypingPaused = false;
+    private volatile boolean shouldStopTyping = false;
 
     public void setTypingSpeedRange(int minMs, int maxMs) {
         this.minDelayMs = Math.max(2, minMs);
         this.maxDelayMs = Math.max(this.minDelayMs, maxMs);
+    }
+
+    public void pauseTyping() {
+        isTypingPaused = true;
+    }
+
+    public void resumeTyping() {
+        isTypingPaused = false;
+    }
+
+    public boolean togglePauseTyping() {
+        isTypingPaused = !isTypingPaused;
+        return isTypingPaused;
+    }
+
+    public void stopTyping() {
+        shouldStopTyping = true;
+        isTypingPaused = false;
+        isTypingActive = false;
+    }
+
+    public boolean isTypingActive() {
+        return isTypingActive;
+    }
+
+    public boolean isTypingPaused() {
+        return isTypingPaused;
     }
 
     public void sendKeystrokes(String text, KeystrokeCallback callback) {
@@ -195,10 +225,25 @@ public class BluetoothHidManager implements BluetoothProfile.ServiceListener {
             return;
         }
 
+        shouldStopTyping = false;
+        isTypingPaused = false;
+        isTypingActive = true;
+
         executor.execute(() -> {
             try {
                 java.util.Random rng = new java.util.Random();
                 for (char c : text.toCharArray()) {
+                    if (shouldStopTyping) {
+                        Log.d(TAG, "Bluetooth typing stopped by emergency abort.");
+                        break;
+                    }
+
+                    // Handle Pause / Resume at exact character
+                    while (isTypingPaused && !shouldStopTyping) {
+                        Thread.sleep(40);
+                    }
+                    if (shouldStopTyping) break;
+
                     if (c == '\r') continue; // Skip carriage return to prevent duplicate breaks
 
                     int[] hidCode = charToHidCode(c);
@@ -227,8 +272,10 @@ public class BluetoothHidManager implements BluetoothProfile.ServiceListener {
                     bluetoothHidDevice.sendReport(targetDevice, 1, releaseReport);
                     Thread.sleep(charDelay);
                 }
-                if (callback != null) callback.onSuccess();
+                isTypingActive = false;
+                if (!shouldStopTyping && callback != null) callback.onSuccess();
             } catch (Exception e) {
+                isTypingActive = false;
                 if (callback != null) callback.onError(e.getMessage());
             }
         });

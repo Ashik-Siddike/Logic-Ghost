@@ -242,26 +242,63 @@ speed_manager = TypingSpeedManager()
 class TypingAbortController:
     def __init__(self):
         self.stop_event = threading.Event()
+        self.pause_event = threading.Event()
+        self.pause_event.set()
         self.is_typing = False
+        self.is_paused = False
         self.lock = threading.Lock()
 
     def start_typing(self):
         with self.lock:
             self.stop_event.clear()
+            self.pause_event.set()
             self.is_typing = True
+            self.is_paused = False
+
+    def pause_typing(self):
+        with self.lock:
+            self.is_paused = True
+            self.pause_event.clear()
+            print("[Typing Controller] ⏸️ Typing PAUSED at current character index.", flush=True)
+
+    def resume_typing(self):
+        with self.lock:
+            self.is_paused = False
+            self.pause_event.set()
+            print("[Typing Controller] ▶️ Typing RESUMED from current character index.", flush=True)
+
+    def toggle_pause(self):
+        with self.lock:
+            if self.is_paused:
+                self.is_paused = False
+                self.pause_event.set()
+                print("[Typing Controller] ▶️ Typing RESUMED.", flush=True)
+            else:
+                self.is_paused = True
+                self.pause_event.clear()
+                print("[Typing Controller] ⏸️ Typing PAUSED.", flush=True)
+            return self.is_paused
 
     def stop_typing(self):
         with self.lock:
             self.stop_event.set()
+            self.pause_event.set()
             self.is_typing = False
+            self.is_paused = False
             print("[Typing Abort] EMERGENCY STOP SIGNAL TRIGGERED! Halting active typing.", flush=True)
 
     def should_stop(self):
         return self.stop_event.is_set()
 
+    def wait_if_paused(self):
+        while self.is_paused and not self.should_stop():
+            time.sleep(0.04)
+
     def finish_typing(self):
         with self.lock:
             self.is_typing = False
+            self.is_paused = False
+            self.pause_event.set()
 
 typing_controller = TypingAbortController()
 
@@ -430,6 +467,11 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
             for char in text_to_type:
                 if typing_controller.should_stop():
                     print("[Organic Human Typing] Stopped by Emergency Abort command.", flush=True)
+                    return False
+
+                # Handle instant pause/resume at current char index
+                typing_controller.wait_if_paused()
+                if typing_controller.should_stop():
                     return False
 
                 # Dynamic real-time speed
@@ -905,11 +947,26 @@ def handle_type():
 @app.route('/api/type/stop', methods=['POST'])
 def handle_stop_typing():
     typing_controller.stop_typing()
-    return jsonify({"success": True, "message": "Typing aborted successfully", "is_typing": False})
+    return jsonify({"success": True, "message": "Typing aborted successfully", "is_typing": False, "is_paused": False})
+
+@app.route('/api/type/pause', methods=['POST'])
+def handle_pause_typing():
+    typing_controller.pause_typing()
+    return jsonify({"success": True, "message": "Typing paused", "is_typing": typing_controller.is_typing, "is_paused": True})
+
+@app.route('/api/type/resume', methods=['POST'])
+def handle_resume_typing():
+    typing_controller.resume_typing()
+    return jsonify({"success": True, "message": "Typing resumed", "is_typing": typing_controller.is_typing, "is_paused": False})
+
+@app.route('/api/type/toggle_pause', methods=['POST'])
+def handle_toggle_pause_typing():
+    is_paused = typing_controller.toggle_pause()
+    return jsonify({"success": True, "is_typing": typing_controller.is_typing, "is_paused": is_paused})
 
 @app.route('/api/type/status', methods=['GET'])
 def handle_typing_status():
-    return jsonify({"is_typing": typing_controller.is_typing})
+    return jsonify({"is_typing": typing_controller.is_typing, "is_paused": typing_controller.is_paused})
 
 @app.route('/api/type_sequence', methods=['POST'])
 def handle_type_sequence():
