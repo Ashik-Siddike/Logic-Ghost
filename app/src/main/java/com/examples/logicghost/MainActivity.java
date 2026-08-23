@@ -342,10 +342,14 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // 1-Click History Button
+        // 1-Click History Buttons (Top & Bottom)
         View btnHistory = findViewById(R.id.btnHistory);
         if (btnHistory != null) {
             btnHistory.setOnClickListener(v -> showHistoryDialog());
+        }
+        View btnHistoryBottom = findViewById(R.id.btnHistoryBottom);
+        if (btnHistoryBottom != null) {
+            btnHistoryBottom.setOnClickListener(v -> showHistoryDialog());
         }
 
         // 1-Click USB Tethering Button
@@ -775,16 +779,16 @@ public class MainActivity extends AppCompatActivity {
 
                 if (orientation >= 315 || orientation < 45) {
                     surfaceRotation = Surface.ROTATION_0;
-                    targetDegrees = 270;
+                    targetDegrees = 0;
                 } else if (orientation >= 45 && orientation < 135) {
                     surfaceRotation = Surface.ROTATION_270;
-                    targetDegrees = 180;
+                    targetDegrees = 270;
                 } else if (orientation >= 135 && orientation < 225) {
                     surfaceRotation = Surface.ROTATION_180;
-                    targetDegrees = 90;
+                    targetDegrees = 180;
                 } else {
                     surfaceRotation = Surface.ROTATION_90;
-                    targetDegrees = 0;
+                    targetDegrees = 90;
                 }
 
                 if (imageCapture != null) {
@@ -806,11 +810,14 @@ public class MainActivity extends AppCompatActivity {
     private void animateUIElementsRotation(int targetDegrees) {
         View[] rotatableViews = new View[]{
                 btnCapture,
+                findViewById(R.id.btnAudioCapture),
+                findViewById(R.id.btnHistoryBottom),
                 btnZoom1x, btnZoom15x, btnZoom2x, btnZoom3x,
                 findViewById(R.id.btnHistory),
                 findViewById(R.id.btnUsbTether),
                 findViewById(R.id.btnGuide),
                 findViewById(R.id.btnVoiceSettings),
+                findViewById(R.id.btnVoiceListen),
                 findViewById(R.id.btnSpeedSettings),
                 findViewById(R.id.btnToggleHud),
                 btnQuickResult,

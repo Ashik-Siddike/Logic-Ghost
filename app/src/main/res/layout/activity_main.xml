@@ -1,36 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    android:background="#020408">
 
     <!-- ======================================================== -->
-    <!-- 1. FULL-SCREEN EDGE-TO-EDGE CAMERA VIEWFINDER            -->
-    <!-- ======================================================== -->
-    <androidx.camera.view.PreviewView
-        android:id="@+id/previewView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-
-    <!-- ======================================================== -->
-    <!-- 2. TOP FLOATING HUD CONTROLS (100% TRANSPARENT BACKGROUND) -->
+    <!-- 1. TOP BAND (HEADER HUD & STATUS CONTROLS)               -->
     <!-- ======================================================== -->
     <LinearLayout
         android:id="@+id/layoutTopHud"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="top"
         android:orientation="vertical"
-        android:background="@android:color/transparent"
-        android:paddingHorizontal="14dp"
-        android:paddingTop="10dp"
-        android:paddingBottom="4dp">
+        android:background="#060C18"
+        android:paddingHorizontal="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="6dp"
+        android:elevation="10dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Top Bar Row 1: Brand, Status, and Action Icons -->
+        <!-- Top Bar Row 1: Brand, Server URL Input, Action Icons -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="36dp"
+            android:layout_height="34dp"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
@@ -39,29 +35,25 @@
                 android:layout_height="wrap_content"
                 android:text="✨ LOGICGHOST"
                 android:textColor="#00F0FF"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textStyle="bold"
                 android:includeFontPadding="false"
-                android:shadowColor="#000000"
-                android:shadowDx="1"
-                android:shadowDy="1"
-                android:shadowRadius="4"
-                android:letterSpacing="0.08"
-                android:layout_marginEnd="8dp"/>
+                android:letterSpacing="0.06"
+                android:layout_marginEnd="6dp"/>
 
-            <!-- Compact URL Input Pill (Translucent Glass) -->
+            <!-- Compact URL Input Pill -->
             <EditText
                 android:id="@+id/etServerUrl"
                 android:layout_width="0dp"
-                android:layout_height="32dp"
+                android:layout_height="30dp"
                 android:layout_weight="1"
                 android:background="@drawable/btn_pill_cute_glass"
                 android:textColor="#00FF88"
                 android:text="http://127.0.0.1:5000"
                 android:hint="http://127.0.0.1:5000"
                 android:textColorHint="#627D98"
-                android:paddingHorizontal="12dp"
-                android:textSize="11sp"
+                android:paddingHorizontal="10dp"
+                android:textSize="10sp"
                 android:gravity="center_vertical"
                 android:includeFontPadding="false"
                 android:inputType="textUri"
@@ -71,7 +63,7 @@
             <!-- Action Buttons Scroll Container -->
             <HorizontalScrollView
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
+                android:layout_height="32dp"
                 android:scrollbars="none">
 
                 <LinearLayout
@@ -83,94 +75,94 @@
                     <!-- 1-Click History Icon Button -->
                     <TextView
                         android:id="@+id/btnHistory"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
                         android:text="⏱️"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:gravity="center"
                         android:includeFontPadding="false"
                         android:background="@drawable/btn_pill_cute_glass"
                         android:clickable="true"
                         android:focusable="true"
-                        android:layout_marginEnd="5dp"/>
+                        android:layout_marginEnd="4dp"/>
 
                     <!-- 1-Click USB Tethering Icon Button -->
                     <TextView
                         android:id="@+id/btnUsbTether"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
                         android:text="🔌"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:gravity="center"
                         android:includeFontPadding="false"
                         android:background="@drawable/btn_pill_cute_glass"
                         android:clickable="true"
                         android:focusable="true"
-                        android:layout_marginEnd="5dp"/>
+                        android:layout_marginEnd="4dp"/>
 
                     <!-- 1-Click Setup Guide Icon Button -->
                     <TextView
                         android:id="@+id/btnGuide"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
                         android:text="💡"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:gravity="center"
                         android:includeFontPadding="false"
                         android:background="@drawable/btn_pill_cute_glass"
                         android:clickable="true"
                         android:focusable="true"
-                        android:layout_marginEnd="5dp"/>
+                        android:layout_marginEnd="4dp"/>
 
                     <!-- 1-Click TTS Voice Model Selector Button -->
                     <TextView
                         android:id="@+id/btnVoiceSettings"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
                         android:text="🗣️"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:gravity="center"
                         android:includeFontPadding="false"
                         android:background="@drawable/btn_pill_cute_glass"
                         android:clickable="true"
                         android:focusable="true"
-                        android:layout_marginEnd="5dp"/>
+                        android:layout_marginEnd="4dp"/>
 
                     <!-- 1-Click Audio / Sound Listening Button -->
                     <TextView
                         android:id="@+id/btnVoiceListen"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
                         android:text="🎙️"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:gravity="center"
                         android:includeFontPadding="false"
                         android:background="@drawable/btn_pill_cute_glass"
                         android:clickable="true"
                         android:focusable="true"
-                        android:layout_marginEnd="5dp"/>
+                        android:layout_marginEnd="4dp"/>
 
                     <!-- 1-Click Typing Speed Controller Button -->
                     <TextView
                         android:id="@+id/btnSpeedSettings"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
                         android:text="⚡"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:gravity="center"
                         android:includeFontPadding="false"
                         android:background="@drawable/btn_pill_cute_glass"
                         android:clickable="true"
                         android:focusable="true"
-                        android:layout_marginEnd="5dp"/>
+                        android:layout_marginEnd="4dp"/>
 
                     <!-- 1-Click Collapse / Hide HUD Button -->
                     <TextView
                         android:id="@+id/btnToggleHud"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
                         android:text="🕶️"
-                        android:textSize="13sp"
+                        android:textSize="12sp"
                         android:gravity="center"
                         android:includeFontPadding="false"
                         android:background="@drawable/btn_pill_cute_glass"
@@ -188,7 +180,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginTop="4dp">
+            android:layout_marginTop="3dp">
 
             <TextView
                 android:id="@+id/tvStatus"
@@ -197,37 +189,33 @@
                 android:layout_weight="1"
                 android:text="READY • ZERO-CONFIG USB"
                 android:textColor="#38BDF8"
-                android:textSize="10sp"
+                android:textSize="9.5sp"
                 android:includeFontPadding="false"
-                android:shadowColor="#000000"
-                android:shadowDx="1"
-                android:shadowDy="1"
-                android:shadowRadius="3"
                 android:textStyle="bold"/>
 
             <!-- Server Status Pill -->
             <LinearLayout
                 android:id="@+id/cardServerStatus"
                 android:layout_width="wrap_content"
-                android:layout_height="22dp"
+                android:layout_height="20dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/btn_pill_cute_glass"
-                android:paddingHorizontal="8dp"
-                android:layout_marginEnd="6dp">
+                android:paddingHorizontal="7dp"
+                android:layout_marginEnd="5dp">
                 <View
                     android:id="@+id/ledServer"
-                    android:layout_width="7dp"
-                    android:layout_height="7dp"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
                     android:background="#FF3333"
-                    android:layout_marginEnd="5dp"/>
+                    android:layout_marginEnd="4dp"/>
                 <TextView
                     android:id="@+id/tvServerStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="SERVER: OFFLINE"
                     android:textColor="#E0E6ED"
-                    android:textSize="9sp"
+                    android:textSize="8.5sp"
                     android:includeFontPadding="false"
                     android:textStyle="bold"/>
             </LinearLayout>
@@ -236,24 +224,24 @@
             <LinearLayout
                 android:id="@+id/cardBluetoothStatus"
                 android:layout_width="wrap_content"
-                android:layout_height="22dp"
+                android:layout_height="20dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/btn_pill_cute_glass"
-                android:paddingHorizontal="8dp">
+                android:paddingHorizontal="7dp">
                 <View
                     android:id="@+id/ledBluetooth"
-                    android:layout_width="7dp"
-                    android:layout_height="7dp"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
                     android:background="#FF3333"
-                    android:layout_marginEnd="5dp"/>
+                    android:layout_marginEnd="4dp"/>
                 <TextView
                     android:id="@+id/tvBluetoothStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="BT: UNPAIRED"
                     android:textColor="#E0E6ED"
-                    android:textSize="9sp"
+                    android:textSize="8.5sp"
                     android:includeFontPadding="false"
                     android:textStyle="bold"/>
             </LinearLayout>
@@ -265,329 +253,69 @@
     <TextView
         android:id="@+id/btnRestoreHud"
         android:layout_width="wrap_content"
-        android:layout_height="32dp"
-        android:layout_gravity="top|end"
-        android:layout_marginTop="10dp"
-        android:layout_marginEnd="12dp"
+        android:layout_height="28dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="10dp"
         android:text="✨ HUD"
         android:textColor="#00F0FF"
         android:background="@drawable/btn_pill_cute_glass"
-        android:textSize="11sp"
+        android:textSize="10sp"
         android:textStyle="bold"
         android:gravity="center"
         android:includeFontPadding="false"
-        android:paddingHorizontal="14dp"
+        android:paddingHorizontal="12dp"
         android:clickable="true"
         android:focusable="true"
-        android:visibility="gone"/>
+        android:visibility="gone"
+        android:elevation="12dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <!-- ======================================================== -->
-    <!-- 3. EXPANDABLE / FLOATING RESULT SHEET (CENTER-TOP AREA)  -->
+    <!-- 2. CENTER 4:3 CAMERA VIEWFINDER FRAME                    -->
     <!-- ======================================================== -->
-    <LinearLayout
-        android:id="@+id/layoutResponseContainer"
-        android:layout_width="match_parent"
-        android:layout_height="210dp"
-        android:layout_gravity="center_horizontal|bottom"
-        android:layout_marginBottom="64dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="110dp"
-        android:orientation="vertical"
-        android:background="@drawable/hud_glass_card"
-        android:padding="12dp"
-        android:elevation="14dp"
-        android:visibility="gone">
+    <FrameLayout
+        android:id="@+id/layoutCameraFrame"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#000000"
+        app:layout_constraintDimensionRatio="3:4"
+        app:layout_constraintTop_toBottomOf="@id/layoutTopHud"
+        app:layout_constraintBottom_toTopOf="@id/layoutBottomControls"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Result Header Bar: Tag, Duration, Stop, Speak, Copy, Maximize, Close -->
-        <LinearLayout
+        <!-- 📸 Edge-to-Edge 4:3 Camera Viewfinder -->
+        <androidx.camera.view.PreviewView
+            android:id="@+id/previewView"
             android:layout_width="match_parent"
-            android:layout_height="30dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="6dp">
+            android:layout_height="match_parent"/>
 
-            <TextView
-                android:id="@+id/tvTagHeader"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="✨ SOLVED"
-                android:textColor="#00FF88"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.05"
-                android:includeFontPadding="false"/>
-
-            <TextView
-                android:id="@+id/tvResultDuration"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="(0.8s)"
-                android:textColor="#94A3B8"
-                android:textSize="10sp"
-                android:includeFontPadding="false"
-                android:layout_marginStart="6dp"/>
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1"/>
-
-            <!-- Action Pill: Voice Read Aloud -->
-            <TextView
-                android:id="@+id/btnSpeakResult"
-                android:layout_width="wrap_content"
-                android:layout_height="26dp"
-                android:text="🗣️ Read"
-                android:textColor="#38BDF8"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:paddingHorizontal="8dp"
-                android:layout_marginEnd="5dp"
-                android:clickable="true"
-                android:focusable="true"/>
-
-            <!-- Action Pill: Copy to Clipboard -->
-            <TextView
-                android:id="@+id/btnCopyResult"
-                android:layout_width="wrap_content"
-                android:layout_height="26dp"
-                android:text="📋 Copy"
-                android:textColor="#00F0FF"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:paddingHorizontal="8dp"
-                android:layout_marginEnd="5dp"
-                android:clickable="true"
-                android:focusable="true"/>
-
-            <!-- Action Pill: Maximize / Minimize -->
-            <TextView
-                android:id="@+id/btnMaximizeResult"
-                android:layout_width="26dp"
-                android:layout_height="26dp"
-                android:text="⛶"
-                android:textColor="#94A3B8"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:layout_marginEnd="5dp"
-                android:clickable="true"
-                android:focusable="true"/>
-
-            <!-- Action Pill: Close Result -->
-            <TextView
-                android:id="@+id/btnCloseResult"
-                android:layout_width="26dp"
-                android:layout_height="26dp"
-                android:text="✕"
-                android:textColor="#FF4D6D"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:clickable="true"
-                android:focusable="true"/>
-        </LinearLayout>
-
-        <!-- Multi-Slot Tab Switcher (Visible only for Multi-Slot RLHF / Complex) -->
-        <LinearLayout
-            android:id="@+id/layoutMultiSlotTabs"
-            android:layout_width="match_parent"
-            android:layout_height="26dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="6dp"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/tabSlotCode"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="💻 CODE"
-                android:textColor="#020B14"
-                android:background="@drawable/btn_pill_cute_primary"
-                android:textSize="9sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:layout_marginEnd="4dp"
-                android:clickable="true"
-                android:focusable="true"/>
-
-            <TextView
-                android:id="@+id/tabSlotReason"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="📝 EXPLANATION"
-                android:textColor="#94A3B8"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:textSize="9sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:layout_marginEnd="4dp"
-                android:clickable="true"
-                android:focusable="true"/>
-
-            <TextView
-                android:id="@+id/tabSlotRating"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="⭐ VERDICT"
-                android:textColor="#94A3B8"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:textSize="9sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:clickable="true"
-                android:focusable="true"/>
-        </LinearLayout>
-
-        <!-- Result Scrollable Body -->
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scrollbars="vertical">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <!-- 1. Voice Interview / Short Form Mode -->
-                <LinearLayout
-                    android:id="@+id/layoutVoiceMode"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone">
-
-                    <TextView
-                        android:id="@+id/tvVoicePayload"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="#38BDF8"
-                        android:fontFamily="sans-serif-medium"
-                        android:textSize="13sp"
-                        android:includeFontPadding="false"
-                        android:lineSpacingExtra="3dp"/>
-                </LinearLayout>
-
-                <!-- 2. MCQ Check Mode -->
-                <LinearLayout
-                    android:id="@+id/layoutCheckMode"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone">
-
-                    <TextView
-                        android:id="@+id/tvCheckSelected"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="#00FF88"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:includeFontPadding="false"/>
-                </LinearLayout>
-
-                <!-- 3. Comparison Mode -->
-                <LinearLayout
-                    android:id="@+id/layoutCompareMode"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone">
-
-                    <TextView
-                        android:id="@+id/tvCompareBest"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="#00FF88"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:includeFontPadding="false"/>
-
-                    <TextView
-                        android:id="@+id/tvCompareReason"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="#CBD5E1"
-                        android:textSize="11sp"
-                        android:includeFontPadding="false"
-                        android:layout_marginTop="4dp"/>
-                </LinearLayout>
-
-                <!-- 4. General / Code Mode -->
-                <LinearLayout
-                    android:id="@+id/layoutTypeMode"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tvCodePayload"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="#38BDF8"
-                        android:fontFamily="monospace"
-                        android:textSize="12sp"
-                        android:includeFontPadding="false"
-                        android:lineSpacingExtra="2dp"/>
-                </LinearLayout>
-            </LinearLayout>
-        </ScrollView>
-
-    </LinearLayout>
-
-    <!-- ======================================================== -->
-    <!-- 4. VERTICALLY CENTERED RIGHT CONTROLS (SHUTTER + ZOOM)   -->
-    <!-- ======================================================== -->
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical|end"
-        android:orientation="vertical"
-        android:gravity="center_horizontal"
-        android:paddingEnd="16dp"
-        android:paddingStart="8dp">
-
-        <!-- Quick Zoom Pill Selector (1x, 1.5x, 2x, 3x) -->
+        <!-- Quick Zoom Pill Selector (1x, 1.5x, 2x, 3x) Floating inside Viewfinder -->
         <LinearLayout
             android:id="@+id/layoutZoomPills"
             android:layout_width="wrap_content"
-            android:layout_height="28dp"
+            android:layout_height="26dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="10dp"
             android:orientation="horizontal"
             android:gravity="center"
             android:background="@drawable/btn_pill_cute_glass"
-            android:paddingHorizontal="4dp"
-            android:layout_marginBottom="12dp">
+            android:paddingHorizontal="5dp"
+            android:elevation="8dp">
 
             <TextView
                 android:id="@+id/btnZoom1x"
                 android:layout_width="wrap_content"
-                android:layout_height="22dp"
+                android:layout_height="20dp"
                 android:text="1x"
                 android:textColor="#020B14"
                 android:background="@drawable/btn_pill_cute_primary"
-                android:textSize="10sp"
+                android:textSize="9.5sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:includeFontPadding="false"
-                android:paddingHorizontal="6dp"
+                android:paddingHorizontal="7dp"
                 android:layout_marginEnd="2dp"
                 android:clickable="true"
                 android:focusable="true"/>
@@ -595,14 +323,14 @@
             <TextView
                 android:id="@+id/btnZoom15x"
                 android:layout_width="wrap_content"
-                android:layout_height="22dp"
+                android:layout_height="20dp"
                 android:text="1.5x"
                 android:textColor="#94A3B8"
-                android:textSize="10sp"
+                android:textSize="9.5sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:includeFontPadding="false"
-                android:paddingHorizontal="6dp"
+                android:paddingHorizontal="7dp"
                 android:layout_marginEnd="2dp"
                 android:clickable="true"
                 android:focusable="true"/>
@@ -610,14 +338,14 @@
             <TextView
                 android:id="@+id/btnZoom2x"
                 android:layout_width="wrap_content"
-                android:layout_height="22dp"
+                android:layout_height="20dp"
                 android:text="2x"
                 android:textColor="#94A3B8"
-                android:textSize="10sp"
+                android:textSize="9.5sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:includeFontPadding="false"
-                android:paddingHorizontal="6dp"
+                android:paddingHorizontal="7dp"
                 android:layout_marginEnd="2dp"
                 android:clickable="true"
                 android:focusable="true"/>
@@ -625,79 +353,309 @@
             <TextView
                 android:id="@+id/btnZoom3x"
                 android:layout_width="wrap_content"
-                android:layout_height="22dp"
+                android:layout_height="20dp"
                 android:text="3x"
                 android:textColor="#94A3B8"
-                android:textSize="10sp"
+                android:textSize="9.5sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:includeFontPadding="false"
-                android:paddingHorizontal="6dp"
+                android:paddingHorizontal="7dp"
                 android:clickable="true"
                 android:focusable="true"/>
         </LinearLayout>
 
-        <!-- 📸 Aesthetic Camera Shutter Jewel -->
-        <ImageButton
-            android:id="@+id/btnCapture"
-            android:layout_width="76dp"
-            android:layout_height="76dp"
-            android:background="@drawable/btn_camera_shutter"
-            android:contentDescription="Capture"
-            android:elevation="14dp"/>
-
-        <!-- 🎙️ Audio / Voice Listening Shutter Jewel -->
+        <!-- Floating Result Sheet Modal (Over Viewfinder) -->
         <LinearLayout
-            android:id="@+id/btnAudioCapture"
-            android:layout_width="wrap_content"
-            android:layout_height="32dp"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@drawable/btn_pill_cute_glass"
-            android:paddingHorizontal="10dp"
-            android:layout_marginTop="10dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:elevation="12dp">
-            <TextView
-                android:id="@+id/tvAudioIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🎙️"
-                android:textSize="12sp"
-                android:includeFontPadding="false"
-                android:layout_marginEnd="4dp"/>
-            <TextView
-                android:id="@+id/tvAudioLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="VOICE"
-                android:textColor="#00F0FF"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:includeFontPadding="false"/>
+            android:id="@+id/layoutResponseContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="8dp"
+            android:orientation="vertical"
+            android:background="@drawable/hud_glass_card"
+            android:padding="10dp"
+            android:elevation="16dp"
+            android:visibility="gone">
+
+            <!-- Result Header Bar: Tag, Duration, Read, Copy, Maximize, Close -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="28dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="5dp">
+
+                <TextView
+                    android:id="@+id/tvTagHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="✨ SOLVED"
+                    android:textColor="#00FF88"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05"
+                    android:includeFontPadding="false"/>
+
+                <TextView
+                    android:id="@+id/tvResultDuration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="(0.8s)"
+                    android:textColor="#94A3B8"
+                    android:textSize="9.5sp"
+                    android:includeFontPadding="false"
+                    android:layout_marginStart="5dp"/>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1"/>
+
+                <!-- Action Pill: Voice Read Aloud -->
+                <TextView
+                    android:id="@+id/btnSpeakResult"
+                    android:layout_width="wrap_content"
+                    android:layout_height="24dp"
+                    android:text="🗣️ Read"
+                    android:textColor="#38BDF8"
+                    android:background="@drawable/btn_pill_cute_glass"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:paddingHorizontal="7dp"
+                    android:layout_marginEnd="4dp"
+                    android:clickable="true"
+                    android:focusable="true"/>
+
+                <!-- Action Pill: Copy to Clipboard -->
+                <TextView
+                    android:id="@+id/btnCopyResult"
+                    android:layout_width="wrap_content"
+                    android:layout_height="24dp"
+                    android:text="📋 Copy"
+                    android:textColor="#00F0FF"
+                    android:background="@drawable/btn_pill_cute_glass"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:paddingHorizontal="7dp"
+                    android:layout_marginEnd="4dp"
+                    android:clickable="true"
+                    android:focusable="true"/>
+
+                <!-- Action Pill: Maximize / Minimize -->
+                <TextView
+                    android:id="@+id/btnMaximizeResult"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:text="⛶"
+                    android:textColor="#94A3B8"
+                    android:background="@drawable/btn_pill_cute_glass"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="4dp"
+                    android:clickable="true"
+                    android:focusable="true"/>
+
+                <!-- Action Pill: Close Result -->
+                <TextView
+                    android:id="@+id/btnCloseResult"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:text="✕"
+                    android:textColor="#FF4D6D"
+                    android:background="@drawable/btn_pill_cute_glass"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:clickable="true"
+                    android:focusable="true"/>
+            </LinearLayout>
+
+            <!-- Multi-Slot Tab Switcher -->
+            <LinearLayout
+                android:id="@+id/layoutMultiSlotTabs"
+                android:layout_width="match_parent"
+                android:layout_height="24dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="5dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tabSlotCode"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="💻 CODE"
+                    android:textColor="#020B14"
+                    android:background="@drawable/btn_pill_cute_primary"
+                    android:textSize="8.5sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="3dp"
+                    android:clickable="true"
+                    android:focusable="true"/>
+
+                <TextView
+                    android:id="@+id/tabSlotReason"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="📝 EXPLANATION"
+                    android:textColor="#94A3B8"
+                    android:background="@drawable/btn_pill_cute_glass"
+                    android:textSize="8.5sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="3dp"
+                    android:clickable="true"
+                    android:focusable="true"/>
+
+                <TextView
+                    android:id="@+id/tabSlotRating"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="⭐ VERDICT"
+                    android:textColor="#94A3B8"
+                    android:background="@drawable/btn_pill_cute_glass"
+                    android:textSize="8.5sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:clickable="true"
+                    android:focusable="true"/>
+            </LinearLayout>
+
+            <!-- Result Scrollable Body -->
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scrollbars="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- 1. Voice Mode -->
+                    <LinearLayout
+                        android:id="@+id/layoutVoiceMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tvVoicePayload"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#38BDF8"
+                            android:fontFamily="sans-serif-medium"
+                            android:textSize="12sp"
+                            android:includeFontPadding="false"
+                            android:lineSpacingExtra="2dp"/>
+                    </LinearLayout>
+
+                    <!-- 2. MCQ Check Mode -->
+                    <LinearLayout
+                        android:id="@+id/layoutCheckMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tvCheckSelected"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#00FF88"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:includeFontPadding="false"/>
+                    </LinearLayout>
+
+                    <!-- 3. Comparison Mode -->
+                    <LinearLayout
+                        android:id="@+id/layoutCompareMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tvCompareBest"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#00FF88"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:includeFontPadding="false"/>
+
+                        <TextView
+                            android:id="@+id/tvCompareReason"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#CBD5E1"
+                            android:textSize="10.5sp"
+                            android:includeFontPadding="false"
+                            android:layout_marginTop="3dp"/>
+                    </LinearLayout>
+
+                    <!-- 4. General / Code Mode -->
+                    <LinearLayout
+                        android:id="@+id/layoutTypeMode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvCodePayload"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#38BDF8"
+                            android:fontFamily="monospace"
+                            android:textSize="11sp"
+                            android:includeFontPadding="false"
+                            android:lineSpacingExtra="2dp"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </ScrollView>
+
         </LinearLayout>
-    </LinearLayout>
+    </FrameLayout>
 
     <!-- ======================================================== -->
-    <!-- 5. BOTTOM ACTION BUTTONS DOCK (HORIZONTAL SCROLL)        -->
+    <!-- 3. BOTTOM BAND (TYPING DOCK + CENTERED SHUTTER)          -->
     <!-- ======================================================== -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/layoutBottomControls"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="110dp"
-        android:paddingBottom="12dp">
+        android:orientation="vertical"
+        android:background="#060C18"
+        android:paddingTop="8dp"
+        android:paddingBottom="14dp"
+        android:elevation="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- 📱 BOTTOM ACTION BUTTONS DOCK -->
+        <!-- Row 1: Typing Action Buttons (Horizontal Scroll Dock) -->
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:scrollbars="none"
-            android:fillViewport="false">
+            android:paddingHorizontal="12dp"
+            android:layout_marginBottom="8dp">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -709,15 +667,15 @@
                 <TextView
                     android:id="@+id/btnQuickResult"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="36dp"
                     android:text="📄 RESULT"
                     android:textColor="#00F0FF"
                     android:background="@drawable/btn_pill_cute_glass"
-                    android:textSize="10sp"
+                    android:textSize="9.5sp"
                     android:textStyle="bold"
                     android:gravity="center"
                     android:includeFontPadding="false"
-                    android:paddingHorizontal="12dp"
+                    android:paddingHorizontal="10dp"
                     android:layout_marginEnd="6dp"
                     android:clickable="true"
                     android:focusable="true"
@@ -727,15 +685,15 @@
                 <TextView
                     android:id="@+id/btnQuickSpeak"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="36dp"
                     android:text="🔊 LISTEN"
                     android:textColor="#38BDF8"
                     android:background="@drawable/btn_pill_cute_glass"
-                    android:textSize="10sp"
+                    android:textSize="9.5sp"
                     android:textStyle="bold"
                     android:gravity="center"
                     android:includeFontPadding="false"
-                    android:paddingHorizontal="12dp"
+                    android:paddingHorizontal="10dp"
                     android:layout_marginEnd="6dp"
                     android:clickable="true"
                     android:focusable="true"
@@ -752,43 +710,43 @@
                     <!-- USB Typing Button -->
                     <Button
                         android:id="@+id/btnTypeDirect"
-                        android:layout_width="120dp"
-                        android:layout_height="44dp"
+                        android:layout_width="116dp"
+                        android:layout_height="38dp"
                         android:text="✨ TYPE (USB)"
                         android:background="@drawable/btn_pill_cute_primary"
                         android:textColor="#020B14"
-                        android:textSize="10sp"
+                        android:textSize="9.5sp"
                         android:textStyle="bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:letterSpacing="0.03"
-                        android:layout_marginEnd="6dp"
-                        android:elevation="6dp"/>
+                        android:letterSpacing="0.02"
+                        android:layout_marginEnd="5dp"
+                        android:elevation="4dp"/>
 
                     <!-- Bluetooth Typing Button -->
                     <Button
                         android:id="@+id/btnTypeBluetooth"
-                        android:layout_width="106dp"
-                        android:layout_height="40dp"
+                        android:layout_width="104dp"
+                        android:layout_height="38dp"
                         android:text="📶 TYPE (BT)"
                         android:background="@drawable/btn_pill_cute_glass"
                         android:textColor="#00FF88"
-                        android:textSize="10sp"
+                        android:textSize="9.5sp"
                         android:textStyle="bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="5dp"
                         android:elevation="4dp"/>
 
                     <!-- Emergency Stop Button -->
                     <Button
                         android:id="@+id/btnStopResponse"
-                        android:layout_width="96dp"
-                        android:layout_height="40dp"
+                        android:layout_width="90dp"
+                        android:layout_height="38dp"
                         android:text="🛑 STOP"
                         android:background="@drawable/btn_pill_cute_danger"
                         android:textColor="#FF4D6D"
-                        android:textSize="10sp"
+                        android:textSize="9.5sp"
                         android:textStyle="bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
@@ -807,73 +765,72 @@
                     <!-- 1. Type Code Slot -->
                     <Button
                         android:id="@+id/btnTypeCode"
-                        android:layout_width="114dp"
-                        android:layout_height="42dp"
+                        android:layout_width="108dp"
+                        android:layout_height="38dp"
                         android:text="✨ CODE"
                         android:background="@drawable/btn_pill_cute_primary"
                         android:textColor="#020B14"
-                        android:textSize="10sp"
+                        android:textSize="9.5sp"
                         android:textStyle="bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:letterSpacing="0.03"
-                        android:layout_marginEnd="6dp"
-                        android:elevation="6dp"/>
+                        android:layout_marginEnd="5dp"
+                        android:elevation="4dp"/>
 
                     <!-- 2. Type Explanation Slot -->
                     <Button
                         android:id="@+id/btnTypeReason"
-                        android:layout_width="114dp"
-                        android:layout_height="40dp"
+                        android:layout_width="108dp"
+                        android:layout_height="38dp"
                         android:text="📝 REASON"
                         android:background="@drawable/btn_pill_cute_glass"
                         android:textColor="#00FF88"
-                        android:textSize="10sp"
+                        android:textSize="9.5sp"
                         android:textStyle="bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="5dp"
                         android:elevation="4dp"/>
 
                     <!-- 3. Type Rating Slot -->
                     <Button
                         android:id="@+id/btnTypeRating"
-                        android:layout_width="104dp"
+                        android:layout_width="98dp"
                         android:layout_height="38dp"
                         android:text="⭐ VERDICT"
                         android:background="@drawable/btn_pill_cute_purple"
                         android:textColor="#E9D5FF"
-                        android:textSize="10sp"
+                        android:textSize="9.5sp"
                         android:textStyle="bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="5dp"
                         android:elevation="4dp"/>
 
-                    <!-- 4. Smart Auto-Sequence (Code -> Tab -> Reason) -->
+                    <!-- 4. Auto-Sequence -->
                     <Button
                         android:id="@+id/btnTypeAutoSequence"
-                        android:layout_width="110dp"
+                        android:layout_width="104dp"
                         android:layout_height="38dp"
                         android:text="🪄 AUTO-FILL"
                         android:background="@drawable/btn_pill_cute_glass"
                         android:textColor="#38BDF8"
-                        android:textSize="9sp"
+                        android:textSize="8.5sp"
                         android:textStyle="bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="5dp"
                         android:elevation="4dp"/>
 
                     <!-- 5. Emergency Stop Button -->
                     <Button
                         android:id="@+id/btnStopMultiSlot"
-                        android:layout_width="96dp"
+                        android:layout_width="88dp"
                         android:layout_height="38dp"
                         android:text="🛑 STOP"
                         android:background="@drawable/btn_pill_cute_danger"
                         android:textColor="#FF4D6D"
-                        android:textSize="9sp"
+                        android:textSize="8.5sp"
                         android:textStyle="bold"
                         android:gravity="center"
                         android:includeFontPadding="false"
@@ -882,6 +839,72 @@
 
             </LinearLayout>
         </HorizontalScrollView>
+
+        <!-- Row 2: Bottom Shutter Bar (Shutter Fixed at Center) -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="76dp"
+            android:paddingHorizontal="24dp">
+
+            <!-- Left Flank: History Quick Button -->
+            <TextView
+                android:id="@+id/btnHistoryBottom"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:text="⏱️"
+                android:textSize="18sp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:background="@drawable/btn_pill_cute_glass"
+                android:clickable="true"
+                android:focusable="true"
+                android:elevation="8dp"/>
+
+            <!-- Center Item: Primary Camera Shutter Jewel (ALWAYS AT BOTTOM CENTER) -->
+            <ImageButton
+                android:id="@+id/btnCapture"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:layout_centerInParent="true"
+                android:background="@drawable/btn_camera_shutter"
+                android:contentDescription="Capture"
+                android:elevation="14dp"/>
+
+            <!-- Right Flank: Dedicated Voice / Sound Audio Shutter Button -->
+            <LinearLayout
+                android:id="@+id/btnAudioCapture"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="@drawable/btn_pill_cute_glass"
+                android:paddingHorizontal="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:elevation="8dp">
+                <TextView
+                    android:id="@+id/tvAudioIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🎙️"
+                    android:textSize="14sp"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="4dp"/>
+                <TextView
+                    android:id="@+id/tvAudioLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="VOICE"
+                    android:textColor="#00F0FF"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false"/>
+            </LinearLayout>
+        </RelativeLayout>
     </LinearLayout>
 
-</FrameLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
