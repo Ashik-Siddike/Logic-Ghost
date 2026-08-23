@@ -22,8 +22,10 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.speech.tts.Voice;
 import android.text.Editable;
+import android.text.Layout;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.OrientationEventListener;
 import android.view.ScaleGestureDetector;
 import android.view.Surface;
@@ -256,6 +258,13 @@ public class MainActivity extends AppCompatActivity {
         tvCompareBest = findViewById(R.id.tvCompareBest);
         tvCompareReason = findViewById(R.id.tvCompareReason);
         tvCodePayload = findViewById(R.id.tvCodePayload);
+
+        // Tap any word to hear instant pronunciation without full reading
+        attachWordPronounceListener(tvVoicePayload);
+        attachWordPronounceListener(tvCompareReason);
+        attachWordPronounceListener(tvCodePayload);
+        attachWordPronounceListener(tvCheckSelected);
+        attachWordPronounceListener(tvCompareBest);
 
         btnMaximizeResult = findViewById(R.id.btnMaximizeResult);
         btnCloseResult = findViewById(R.id.btnCloseResult);
@@ -1747,6 +1756,121 @@ public class MainActivity extends AppCompatActivity {
                 .replaceAll("•", ", ")
                 .replaceAll("\\s+", " ")
                 .trim();
+    }
+
+    /**
+     * Pronounces ONLY the single tapped word via TTS (instant pronunciation).
+     */
+    private void speakSingleWordPronunciation(String word) {
+        if (word == null || word.trim().isEmpty() || tts == null) {
+            return;
+        }
+
+        String cleanedWord = word.trim().replaceAll("^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "");
+        if (cleanedWord.isEmpty()) return;
+
+        // Soft haptic tap
+        try {
+            android.os.Vibrator v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+            if (v != null && v.hasVibrator()) {
+                v.vibrate(35);
+            }
+        } catch (Exception ignored) {}
+
+        Bundle params = new Bundle();
+        params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "LogicGhost_Word_" + System.currentTimeMillis());
+        tts.speak(cleanedWord, TextToSpeech.QUEUE_FLUSH, params, params.getString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID));
+
+        Toast.makeText(this, "🗣️ " + cleanedWord, Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Attaches an intelligent touch listener to extract and pronounce tapped words.
+     */
+    private void attachWordPronounceListener(TextView textView) {
+        if (textView == null) return;
+        textView.setOnTouchListener(new View.OnTouchListener() {
+            private float downX, downY;
+            private long downTime;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        downX = event.getX();
+                        downY = event.getY();
+                        downTime = System.currentTimeMillis();
+                        return true;
+
+                    case MotionEvent.ACTION_UP:
+                        float deltaX = Math.abs(event.getX() - downX);
+                        float deltaY = Math.abs(event.getY() - downY);
+                        long duration = System.currentTimeMillis() - downTime;
+
+                        // Only consider as a tap if moved less than 30px and released within 400ms
+                        if (deltaX < 30 && deltaY < 30 && duration < 400) {
+                            TextView tv = (TextView) v;
+                            CharSequence text = tv.getText();
+                            if (text != null && text.length() > 0) {
+                                int x = (int) event.getX() - tv.getTotalPaddingLeft() + tv.getScrollX();
+                                int y = (int) event.getY() - tv.getTotalPaddingTop() + tv.getScrollY();
+
+                                Layout layout = tv.getLayout();
+                                if (layout != null) {
+                                    int line = layout.getLineForVertical(y);
+                                    int offset = layout.getOffsetForHorizontal(line, x);
+                                    String word = extractWordAtOffset(text.toString(), offset);
+                                    if (!word.isEmpty()) {
+                                        speakSingleWordPronunciation(word);
+                                        return true;
+                                    }
+                                }
+                            }
+                            v.performClick();
+                            return true;
+                        }
+                        break;
+                }
+                return false;
+            }
+        });
+    }
+
+    private String extractWordAtOffset(String text, int offset) {
+        if (text == null || text.isEmpty() || offset < 0 || offset >= text.length()) {
+            return "";
+        }
+
+        if (Character.isWhitespace(text.charAt(offset))) {
+            if (offset > 0 && !Character.isWhitespace(text.charAt(offset - 1))) {
+                offset = offset - 1;
+            } else if (offset + 1 < text.length() && !Character.isWhitespace(text.charAt(offset + 1))) {
+                offset = offset + 1;
+            } else {
+                return "";
+            }
+        }
+
+        int start = offset;
+        while (start > 0 && isWordChar(text.charAt(start - 1))) {
+            start--;
+        }
+
+        int end = offset;
+        while (end < text.length() && isWordChar(text.charAt(end))) {
+            end++;
+        }
+
+        if (start < end) {
+            String word = text.substring(start, end).trim();
+            word = word.replaceAll("^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "");
+            return word;
+        }
+        return "";
+    }
+
+    private boolean isWordChar(char c) {
+        return Character.isLetterOrDigit(c) || c == '_' || c == '-' || c == '\'';
     }
 
     private void triggerSmartAutoTyping(String payloadToType) {
