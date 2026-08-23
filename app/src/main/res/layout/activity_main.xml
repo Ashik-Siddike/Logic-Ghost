@@ -566,7 +566,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <!-- 1. Voice Mode -->
+                    <!-- 1. Voice / Reading Mode (Large, High-Contrast, Easy-To-Read Spoken Text) -->
                     <LinearLayout
                         android:id="@+id/layoutVoiceMode"
                         android:layout_width="match_parent"
@@ -578,11 +578,12 @@
                             android:id="@+id/tvVoicePayload"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textColor="#38BDF8"
+                            android:textColor="#FFFFFF"
                             android:fontFamily="sans-serif-medium"
-                            android:textSize="12sp"
+                            android:textSize="17sp"
                             android:includeFontPadding="false"
-                            android:lineSpacingExtra="2dp"/>
+                            android:lineSpacingExtra="6dp"
+                            android:padding="4dp"/>
                     </LinearLayout>
 
                     <!-- 2. MCQ Check Mode -->
@@ -598,9 +599,10 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:textColor="#00FF88"
-                            android:textSize="13sp"
+                            android:textSize="16.5sp"
                             android:textStyle="bold"
-                            android:includeFontPadding="false"/>
+                            android:includeFontPadding="false"
+                            android:padding="4dp"/>
                     </LinearLayout>
 
                     <!-- 3. Comparison Mode -->
@@ -616,18 +618,21 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:textColor="#00FF88"
-                            android:textSize="13sp"
+                            android:textSize="16sp"
                             android:textStyle="bold"
-                            android:includeFontPadding="false"/>
+                            android:includeFontPadding="false"
+                            android:padding="4dp"/>
 
                         <TextView
                             android:id="@+id/tvCompareReason"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textColor="#CBD5E1"
-                            android:textSize="10.5sp"
+                            android:textColor="#F1F5F9"
+                            android:textSize="14.5sp"
                             android:includeFontPadding="false"
-                            android:layout_marginTop="3dp"/>
+                            android:lineSpacingExtra="5dp"
+                            android:layout_marginTop="3dp"
+                            android:padding="4dp"/>
                     </LinearLayout>
 
                     <!-- 4. General / Code Mode -->
@@ -643,9 +648,10 @@
                             android:layout_height="wrap_content"
                             android:textColor="#38BDF8"
                             android:fontFamily="monospace"
-                            android:textSize="11sp"
+                            android:textSize="13.5sp"
                             android:includeFontPadding="false"
-                            android:lineSpacingExtra="2dp"/>
+                            android:lineSpacingExtra="3.5dp"
+                            android:padding="4dp"/>
                     </LinearLayout>
                 </LinearLayout>
             </ScrollView>
