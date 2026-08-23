@@ -68,88 +68,103 @@
                 android:singleLine="true"
                 android:layout_marginEnd="6dp"/>
 
-            <!-- 1-Click History Icon Button -->
-            <TextView
-                android:id="@+id/btnHistory"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:text="⏱️"
-                android:textSize="13sp"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginEnd="5dp"/>
+            <!-- Action Buttons Scroll Container -->
+            <HorizontalScrollView
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:scrollbars="none">
 
-            <!-- 1-Click USB Tethering Icon Button -->
-            <TextView
-                android:id="@+id/btnUsbTether"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:text="🔌"
-                android:textSize="13sp"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginEnd="5dp"/>
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-            <!-- 1-Click Setup Guide Icon Button -->
-            <TextView
-                android:id="@+id/btnGuide"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:text="💡"
-                android:textSize="13sp"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginEnd="5dp"/>
+                    <!-- 1-Click History Icon Button -->
+                    <TextView
+                        android:id="@+id/btnHistory"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:text="⏱️"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:background="@drawable/btn_pill_cute_glass"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_marginEnd="5dp"/>
 
-            <!-- 1-Click TTS Voice Model Selector Button -->
-            <TextView
-                android:id="@+id/btnVoiceSettings"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:text="🗣️"
-                android:textSize="13sp"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginEnd="5dp"/>
+                    <!-- 1-Click USB Tethering Icon Button -->
+                    <TextView
+                        android:id="@+id/btnUsbTether"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:text="🔌"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:background="@drawable/btn_pill_cute_glass"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_marginEnd="5dp"/>
 
-            <!-- 1-Click Typing Speed Controller Button -->
-            <TextView
-                android:id="@+id/btnSpeedSettings"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:text="⚡"
-                android:textSize="13sp"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginEnd="5dp"/>
+                    <!-- 1-Click Setup Guide Icon Button -->
+                    <TextView
+                        android:id="@+id/btnGuide"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:text="💡"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:background="@drawable/btn_pill_cute_glass"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_marginEnd="5dp"/>
 
-            <!-- 1-Click Collapse / Hide HUD Button -->
-            <TextView
-                android:id="@+id/btnToggleHud"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:text="🕶️"
-                android:textSize="13sp"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:background="@drawable/btn_pill_cute_glass"
-                android:clickable="true"
-                android:focusable="true"/>
+                    <!-- 1-Click TTS Voice Model Selector Button -->
+                    <TextView
+                        android:id="@+id/btnVoiceSettings"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:text="🗣️"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:background="@drawable/btn_pill_cute_glass"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_marginEnd="5dp"/>
+
+                    <!-- 1-Click Typing Speed Controller Button -->
+                    <TextView
+                        android:id="@+id/btnSpeedSettings"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:text="⚡"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:background="@drawable/btn_pill_cute_glass"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_marginEnd="5dp"/>
+
+                    <!-- 1-Click Collapse / Hide HUD Button -->
+                    <TextView
+                        android:id="@+id/btnToggleHud"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:text="🕶️"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:background="@drawable/btn_pill_cute_glass"
+                        android:clickable="true"
+                        android:focusable="true"/>
+
+                </LinearLayout>
+            </HorizontalScrollView>
 
         </LinearLayout>
 

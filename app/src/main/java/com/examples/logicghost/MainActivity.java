@@ -9,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -668,9 +669,10 @@ public class MainActivity extends AppCompatActivity {
                 Preview preview = new Preview.Builder().build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
+                int displayRotation = getWindowManager().getDefaultDisplay().getRotation();
                 imageCapture = new ImageCapture.Builder()
                         .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                        .setTargetRotation(Surface.ROTATION_90)
+                        .setTargetRotation(displayRotation)
                         .build();
 
                 CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
@@ -683,6 +685,17 @@ public class MainActivity extends AppCompatActivity {
                 updateStatusText("CAMERA ERROR: " + e.getMessage());
             }
         }, ContextCompat.getMainExecutor(this));
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        try {
+            int displayRotation = getWindowManager().getDefaultDisplay().getRotation();
+            if (imageCapture != null) {
+                imageCapture.setTargetRotation(displayRotation);
+            }
+        } catch (Exception ignored) {}
     }
 
     private void setCameraZoom(float targetRatio) {

@@ -1,0 +1,172 @@
+--- PAGE 1 ---
+নেটওয়া র্ক  অ্যাডমিনেস্ট্রেশনে অ্যান্ড সা র্ক সস
+চূড়ান্ত প্রস্তুতি - বিগতি বিছরেরে প্রশ্ন বিশ্লেষণ (২০১৯ - ২০২৪)
+১. সর্কাচ্চ অগ্রাধিার প্রাপ্ত প্রশ্নালি (ারার আসা)
+-াগ: অতি সংক্ষিপ্ত প্রশ্নালি
+Telnet ী এং নে ্যহৃতি হয়?[৫ ার] ২০২৩
+CIDR ী / লিতি ী াঝায়?[৪ ার] ২০২৪
+Routing ী এং নে রা হয়?[৪ ার] ২০২৩
+Static routing redundancy লিতি ী াঝায়?[৪ ার] ২০২৩
+Subnetting ী এং নে রা হয়?[৪ ার]
+VLSM ী?[৪ ার]
+Loop-back interface-এর াজ ী?[৪ ার]
+PAT / PAT overloading ী?[৪ ার]
+HSRP (Hot stand-by router protocol) ী / সংজ্ঞা দাও?[৩ ার] ২০২৪
+Spanning tree / Root guard / BPDU guard ী?[৩ ার] ২০২৪
+DHCP-এর পূর্করূপ লিখ / াজ ী?[৩ ার] ২০২৩
+OSI model ী?[৩ ার]
+Virtual link নে ্যহৃতি হয়?[৩ ার]
+Ether channel ী?[৩ ার]
+Topology table ী?[৩ ার]
+NAT ী / সুধিা ী?[৩ ার]
+SSH া লি?[২ ার] ২০২৪
+IPv4-এর সীমিাদ্ধতিা লিখ।[২ ার] ২০২৪
+Trunk link ী?[২ ার] ২০২৩
+খ-াগ: সংক্ষিপ্ত প্রশ্নালি
+TCP/IP এং OSI model-এর মিাঝ পার্ক্য লিখ / লিয়ারগুলিার নোমি লিখ।[৫ ার] ২০২৪
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+
+--- PAGE 2 ---
+Static NAT ও Dynamic NAT-এর মিাঝ পার্ক্য লিখ।[৫ ার] ২০২৪
+OSPF-এর Terminology গুলিা লিখ।[৪ ার] ২০২৪
+Spanning tree protocol (Cost calculation / Port fast / BPDU) ্যাখ্যা র।[৪ ার] ২০২৩
+Subnetting-এর সুধিা / CIDR-এর গুরুত্ব লিখ।[৩ ার] ২০২৩
+GLBP-এর শষ্ট্যগুলিা উল্লেখ র।[৩ ার] ২০২৪
+IPv4 ও IPv6-এর মিাঝ পার্ক্য / সীমিাদ্ধতিা লিখ।[৩ ার]
+Straight-through ও Cross-over cabling-এর মিাঝ পার্ক্য লিখ।[৩ ার]
+VLAN ও Inter-VLAN-এর মিাঝ পার্ক্য লিখ।[২ ার] ২০২৩
+DHCP-এর প্রয়াজনেীয়তিা লিখ।[২ ার]
+গ-াগ: রচনোমিূলি প্রশ্নালি
+OSI Reference Model অা TCP/IP model-এর প্রতিটি লিয়ারর ার্কপ্রালি চত্রসহ র্কনো র।
+[৬ ার] ২০২৩
+EIGRP Configuration / Neighbor adjacency ও Topology table র্কনো র।[৫ ার] ২০২৩
+CIDR পদ্ধতি ্যহার র Class-A/B/C Subnetting প্রক্রিয়া র্কনো র।[৪ ার] ২০২৪
+Spanning tree protocol-এর Cost ্যালি ু লিশনে / BPDU Guard-এর ফাংশনে র্কনো র।
+[৪ ার] ২০২৪
+Network address translation (NAT) / Static ও Dynamic NAT সম্প র্ক  স্তারতি ্যাখ্যা দাও।
+[৪ ার] ২০২৩
+VLSM ডজাইনে প্রক্রিয়া সংক্ষিপ র্কনো র / স্তারতি লিখ।[৪ ার] ২০২৩
+চত্রসহ OSPF অপারশনে র্কনো র।[৩ ার] ২০২৪
+Static, Dynamic ও Default routing পদ্ধতির সুধিা, অসুধিা ও পার্ক্য লিখ।[৩ ার]
+IPv6 Protocol-এর Addressing পদ্ধতি চত্রসহ র্কনো র।[২ ার] ২০২৪
+Gateway load balancing protocol (GLBP) স্তারতি র্কনো র।[২ ার]
+২. এার আসা প্রশ্নালি (রশনের জনে্য)
+-াগ: অতি সংক্ষিপ্ত প্রশ্নালি
+প্রটাকল স্যুট কী?
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+
+--- PAGE 3 ---
+অ্যুাকটিভ ডিরেক্টরে (Active directory) কাক বিল?
+ভালনারেবিলটিস (Vulnerabilities) কী?
+Network বিলতি কী বিাঝায়?
+Collision বিলতি কী বিাঝায়?
+IPv6-এরে দৈর্ঘ্যু কতি বিট?
+VRRP-এরে সংজ্ঞা দৈাও।
+BPDU ফিল্টারে-এরে কাজ কী?
+রেডিানডি্যুান্সি কী?
+Broadcast domain কাক বিল?
+Summarization কী?
+IP Routing কাক বিল?
+OSPF area বিলতি কী বিাঝায়?
+Protocol কী?
+VLSM Design কাক বিল?
+খ-াগ: সংক্ষিপ্ত প্রশ্নালি
+ক্লাস 'বি'-এরে নটওয়াক র্ঘ  সংখ্যুা ও হাস্ট সংখ্যুা গণনা করে।
+পাটর্ঘ ফিাস্ট (Port fast)-এরে বিশিষ্ট্যু লখ।
+সকউরেটি পাসওয়াডি র্ঘ  পলস এলমেন্টগুলা লখ।
+Cloud computing-এরে বিশিষ্ট্যু লখ। (সলবিাস বিহভূ র্ঘ তি)
+Routing information protocol বিণর্ঘনা করে।
+কলশিন ও ব্রডিকাস্ট ডিামেইন-এরে মোঝ পার্ঘক্যু লখ।
+DHCP snooping কীভাবি কাজ করে?
+Neighbour adjacency কী?
+User security level কীভাবি কাজ করে?
+Protected port-এরে বিণর্ঘনা দৈাও।
+মোল্টলয়ারে সইচ-এরে সংক্ষিপ্ত বিণর্ঘনা দৈাও।
+Rapid spanning tree প্রটাকল বি্যুাখ্যুা করে।
+Network-এ IP routing-এরে Configure পদ্ধতি বিণর্ঘনা করে।
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+
+--- PAGE 4 ---
+Inter-network-এরে প্রয়াজনীয়তিা লখ।
+IPv6 Address-এরে Expression লখ।
+গ-াগ: রচনোমিূলি প্রশ্নালি
+Active directory ডিামেইন সাভ র্ঘ স বিলতি কী বিাঝায়? আলাচনা করে।
+CIA-এরে বিণর্ঘনা দৈাও।
+চত্রসহ RIP রোউটিং বিণর্ঘনা করে।
+চত্রসহ VTP কনফিগারে করে বিণর্ঘনা করে।
+DHCP Snooping পদ্ধতি বিণর্ঘনা করে।
+Multilayer-switch-এরে সাহা্যু Inter-Vlan routing-এরে পদ্ধতি বিণর্ঘনা করে।
+বিশ্লেষণটি ২০১৯ ক ২০২৪ সালরে প্রশ্নপত্ররে উপরে ভত্তি করে তিরে।
+শুভকামেনা রেইল তিামোরে পরেীক্ষিারে জন্যু! 
+• 
+• 
+• 
+• 
+• 
+• 
+• 
+•
