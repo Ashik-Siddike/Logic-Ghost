@@ -267,6 +267,7 @@ typing_controller = TypingAbortController()
 
 try:
     from google import genai
+    from google.genai import types
     HAS_GENAI = True
 except ImportError:
     HAS_GENAI = False
@@ -572,6 +573,92 @@ def analyze_with_rotated_gemini_api(image_path):
             time.sleep(0.5)
 
     raise Exception(f"All {total_keys} API keys failed. Last error: {last_err}")
+    
+def build_effective_audio_prompt():
+    base = (
+        "You are an elite coding expert, AI benchmark evaluator, RLHF specialist, and technical problem solver.\n"
+        "Carefully listen to and understand the user's spoken audio / question / prompt in any language (English, Bengali, Hindi, etc.).\n"
+        "Transcribe and analyze what was asked or spoken in the audio, and provide the most direct, accurate, high-quality, optimal answer.\n\n"
+        "STRICT OUTPUT PROTOCOLS:\n\n"
+        "PROTOCOL 1: MULTI-PART / CODE + EXPLANATION / RLHF TASKS:\n"
+        "When the audio asks for code along with an explanation or evaluation:\n"
+        "Structure your response with:\n"
+        "<<<SLOT:RATING>>>\nConcise verdict/rating\n"
+        "<<<SLOT:CODE>>>\nOnly the clean, 100% production-ready solution code\n"
+        "<<<SLOT:EXPLANATION>>>\nDetailed technical explanation covering root cause, logic, and complexity.\n"
+        "<<<SLOT:AUDIT>>>\nEdge cases & security notes.\n\n"
+        "PROTOCOL 2: STANDARD CODING OR TEXT:\n"
+        "• Prefix with [TYPE] followed by the pure code or text solution to type.\n"
+        "• Prefix with [CHECK] for multiple-choice or true/false questions.\n"
+        "• Prefix with [VOICE] for direct spoken answers.\n"
+        "Do not add conversational filler. Provide the exact solution directly."
+    )
+    ctx_info = context_manager.get_info()
+    if ctx_info["enabled"] and ctx_info["text"]:
+        base += f"\n\n### MANDATORY REFERENCE GUIDELINES & RULEBOOK:\n{ctx_info['text']}\n### END REFERENCE GUIDELINES\n"
+    return base
+
+def analyze_audio_with_rotated_gemini_api(audio_path):
+    """
+    Executes audio speech understanding and problem solving with Gemini API & Round-Robin Key Rotation.
+    """
+    total_keys = len(rotator.keys)
+    if total_keys == 0:
+        raise Exception("No Gemini API Keys configured in .env or rotator.")
+
+    last_err = None
+    prompt = build_effective_audio_prompt()
+    ctx_info = context_manager.get_info()
+    if ctx_info["enabled"]:
+        print(f"[Context Engine] Attaching {ctx_info['word_count']} words of reference guidelines to audio prompt.", flush=True)
+
+    with open(audio_path, 'rb') as f:
+        audio_bytes = f.read()
+
+    mime_type = "audio/mp4"
+    if audio_path.endswith(".mp3"):
+        mime_type = "audio/mp3"
+    elif audio_path.endswith(".wav"):
+        mime_type = "audio/wav"
+    elif audio_path.endswith(".ogg") or audio_path.endswith(".opus"):
+        mime_type = "audio/ogg"
+    elif audio_path.endswith(".m4a") or audio_path.endswith(".aac") or audio_path.endswith(".mp4"):
+        mime_type = "audio/mp4"
+
+    audio_part = types.Part.from_bytes(data=audio_bytes, mime_type=mime_type)
+
+    for attempt in range(total_keys):
+        api_key = rotator.get_next_key()
+        masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "***"
+        print(f"[API Rotator Audio] (Attempt {attempt+1}/{total_keys}) Using Key: {masked_key}...", flush=True)
+
+        try:
+            client = genai.Client(api_key=api_key)
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=[prompt, audio_part]
+            )
+
+            raw_text = (response.text or "").strip()
+            print(f"[API Rotator Audio] Success with key {masked_key} ({len(raw_text)} chars).", flush=True)
+
+            tag, payload, is_multi_slot, slots = parse_ai_response(raw_text)
+            return {
+                "raw_answer": raw_text,
+                "tag": tag,
+                "payload": payload,
+                "is_multi_slot": is_multi_slot,
+                "slots": slots,
+                "engine": "gemini-2.5-flash-audio",
+                "key_used": masked_key,
+                "rules_active": ctx_info["enabled"]
+            }
+        except Exception as e:
+            last_err = e
+            print(f"[API Rotator Audio Warning] Key {masked_key} encountered error: {e}. Rotating to next key...", flush=True)
+            time.sleep(0.5)
+
+    raise Exception(f"All {total_keys} API keys failed for audio. Last error: {last_err}")
 
 class GeminiAutomationEngine:
     def __init__(self):
@@ -725,6 +812,17 @@ def worker_thread():
                         "engine": "none"
                     }
                 result_holder['result'] = res
+            elif action == 'process_audio':
+                if len(rotator.keys) > 0 and HAS_GENAI:
+                    res = analyze_audio_with_rotated_gemini_api(args['audio_path'])
+                else:
+                    res = {
+                        "raw_answer": "[VOICE] No Gemini API Key configured. Please add Gemini API Keys via dashboard or .env.",
+                        "tag": "[VOICE]",
+                        "payload": "Please add Gemini API Key",
+                        "engine": "none"
+                    }
+                result_holder['result'] = res
             elif action == 'stealth_hide':
                 hide_browser_stealth()
                 result_holder['result'] = {"success": True, "mode": "hidden"}
@@ -753,6 +851,26 @@ def handle_process():
 
     if not done_event.wait(timeout=120):
         return jsonify({"error": "Automation request timed out after 120s"}), 504
+
+    if 'error' in result_holder:
+        return jsonify({"error": result_holder['error']}), 500
+
+    return jsonify(result_holder.get('result', {}))
+
+@app.route('/process_audio', methods=['POST'])
+def handle_process_audio():
+    data = request.json or {}
+    audio_path = data.get('audioPath')
+
+    if not audio_path or not os.path.exists(audio_path):
+        return jsonify({"error": "Valid audioPath required"}), 400
+
+    result_holder = {}
+    done_event = threading.Event()
+    task_queue.put(('process_audio', {'audio_path': audio_path}, result_holder, done_event))
+
+    if not done_event.wait(timeout=120):
+        return jsonify({"error": "Audio processing timed out after 120s"}), 504
 
     if 'error' in result_holder:
         return jsonify({"error": result_holder['error']}), 500

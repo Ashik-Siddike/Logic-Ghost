@@ -10,6 +10,7 @@ const FormData = require('form-data');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const PYTHON_PROCESS_URL = 'http://127.0.0.1:5001/process';
+const PYTHON_PROCESS_AUDIO_URL = 'http://127.0.0.1:5001/process_audio';
 const PYTHON_TYPE_URL = 'http://127.0.0.1:5001/type';
 const PYTHON_STATUS_URL = 'http://127.0.0.1:5001/status';
 const PYTHON_STEALTH_HIDE = 'http://127.0.0.1:5001/stealth/hide';
@@ -150,6 +151,65 @@ app.post('/capture', upload.single('image'), async (req, res) => {
         console.error('[Express] Error processing capture:', err.message);
         return res.status(500).json({
             error: 'Failed to process image capture',
+            details: err.response ? err.response.data : err.message
+        });
+    }
+});
+
+/**
+ * POST /audio-capture: Receives audio recording from Android, routes to Gemini AI Engine
+ */
+app.post('/audio-capture', upload.single('audio'), async (req, res) => {
+    const startTime = Date.now();
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No audio file provided in request' });
+        }
+
+        const audioPath = req.file.path;
+        console.log(`[Express] Received audio question: ${audioPath}. Processing with Gemini AI engine...`);
+
+        const pythonResponse = await axios.post(PYTHON_PROCESS_AUDIO_URL, {
+            audioPath: audioPath
+        }, { timeout: 120000 });
+
+        const data = pythonResponse.data || {};
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`[Express] Audio AI processed in ${duration}s. Tag: ${data.tag || '[VOICE]'}`);
+
+        const item = {
+            id: Date.now(),
+            time: new Date().toLocaleTimeString(),
+            duration: duration + 's',
+            audioFile: path.basename(audioPath),
+            tag: data.tag || '[VOICE]',
+            payload: data.payload || '',
+            is_multi_slot: data.is_multi_slot || false,
+            slots: data.slots || {},
+            engine: data.engine || 'gemini-2.5-flash-audio',
+            key_used: data.key_used || '',
+            rules_active: data.rules_active || false
+        };
+
+        activityFeed.unshift(item);
+        if (activityFeed.length > 30) activityFeed.pop();
+
+        return res.json({
+            success: true,
+            tag: data.tag || '[VOICE]',
+            payload: data.payload || '',
+            is_multi_slot: data.is_multi_slot || false,
+            slots: data.slots || {},
+            raw_answer: data.raw_answer || '',
+            engine: data.engine,
+            key_used: data.key_used,
+            rules_active: data.rules_active || false,
+            duration: duration + 's'
+        });
+    } catch (err) {
+        console.error('[Express] Error processing audio capture:', err.message);
+        return res.status(500).json({
+            error: 'Failed to process audio capture',
             details: err.response ? err.response.data : err.message
         });
     }

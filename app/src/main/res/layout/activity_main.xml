@@ -136,6 +136,20 @@
                         android:focusable="true"
                         android:layout_marginEnd="5dp"/>
 
+                    <!-- 1-Click Audio / Sound Listening Button -->
+                    <TextView
+                        android:id="@+id/btnVoiceListen"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:text="🎙️"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:background="@drawable/btn_pill_cute_glass"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:layout_marginEnd="5dp"/>
+
                     <!-- 1-Click Typing Speed Controller Button -->
                     <TextView
                         android:id="@+id/btnSpeedSettings"
@@ -631,6 +645,38 @@
             android:background="@drawable/btn_camera_shutter"
             android:contentDescription="Capture"
             android:elevation="14dp"/>
+
+        <!-- 🎙️ Audio / Voice Listening Shutter Jewel -->
+        <LinearLayout
+            android:id="@+id/btnAudioCapture"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/btn_pill_cute_glass"
+            android:paddingHorizontal="10dp"
+            android:layout_marginTop="10dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:elevation="12dp">
+            <TextView
+                android:id="@+id/tvAudioIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎙️"
+                android:textSize="12sp"
+                android:includeFontPadding="false"
+                android:layout_marginEnd="4dp"/>
+            <TextView
+                android:id="@+id/tvAudioLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="VOICE"
+                android:textColor="#00F0FF"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:includeFontPadding="false"/>
+        </LinearLayout>
     </LinearLayout>
 
     <!-- ======================================================== -->

@@ -11,6 +11,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -158,6 +159,14 @@ public class MainActivity extends AppCompatActivity {
     private boolean isResultMaximized = false;
     private ImageCapture imageCapture;
     private BluetoothHidManager hidManager;
+
+    // Audio & Voice Question Listening
+    private MediaRecorder mediaRecorder;
+    private File currentAudioFile;
+    private boolean isRecordingAudio = false;
+    private TextView btnVoiceListen;
+    private LinearLayout btnAudioCapture;
+    private TextView tvAudioIcon, tvAudioLabel;
 
     // Camera & Zoom Control
     private Camera camera;
@@ -355,6 +364,20 @@ public class MainActivity extends AppCompatActivity {
         View btnVoiceSettings = findViewById(R.id.btnVoiceSettings);
         if (btnVoiceSettings != null) {
             btnVoiceSettings.setOnClickListener(v -> showVoiceSelectionDialog());
+        }
+
+        // 1-Click Top HUD Audio / Sound Listening Button
+        btnVoiceListen = findViewById(R.id.btnVoiceListen);
+        if (btnVoiceListen != null) {
+            btnVoiceListen.setOnClickListener(v -> toggleAudioRecording());
+        }
+
+        // 1-Click Dedicated Audio Shutter Button in Capture Cluster
+        btnAudioCapture = findViewById(R.id.btnAudioCapture);
+        tvAudioIcon = findViewById(R.id.tvAudioIcon);
+        tvAudioLabel = findViewById(R.id.tvAudioLabel);
+        if (btnAudioCapture != null) {
+            btnAudioCapture.setOnClickListener(v -> toggleAudioRecording());
         }
 
         // 1-Click Typing Speed Controller Button
@@ -627,6 +650,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean hasAllPermissions() {
         boolean camera = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+        boolean audio = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
         boolean btConnect = true;
         boolean btScan = true;
 
@@ -635,12 +659,13 @@ public class MainActivity extends AppCompatActivity {
             btScan = ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED;
         }
 
-        return camera && btConnect && btScan;
+        return camera && audio && btConnect && btScan;
     }
 
     private void requestAppPermissions() {
         List<String> list = new ArrayList<>();
         list.add(Manifest.permission.CAMERA);
+        list.add(Manifest.permission.RECORD_AUDIO);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             list.add(Manifest.permission.BLUETOOTH_CONNECT);
@@ -1020,6 +1045,175 @@ public class MainActivity extends AppCompatActivity {
 
                     handler.post(() -> {
                         updateStatusText("✅ SOLVED (" + duration + ")");
+                        renderResponseUI(tag, payload, duration, isMulti, finalCode, finalReason, finalRating, finalAudit);
+
+                        // Save to history
+                        String timeNow = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+                        historyList.add(0, new HistoryItem(tag, payload, duration, timeNow, isMulti, finalCode, finalReason, finalRating, finalAudit));
+                        if (historyList.size() > 10) historyList.remove(historyList.size() - 1);
+                    });
+                } catch (Exception e) {
+                    handler.post(() -> updateStatusText("PARSE ERROR: " + e.getMessage()));
+                }
+            }
+        });
+    }
+
+    private void toggleAudioRecording() {
+        if (!hasAllPermissions()) {
+            requestAppPermissions();
+            return;
+        }
+
+        if (!isRecordingAudio) {
+            startAudioRecording();
+        } else {
+            stopAudioRecordingAndSolve();
+        }
+    }
+
+    private void startAudioRecording() {
+        try {
+            currentAudioFile = new File(getCacheDir(), "voice_" + System.currentTimeMillis() + ".m4a");
+            mediaRecorder = new MediaRecorder();
+            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+            mediaRecorder.setAudioEncodingBitRate(128000);
+            mediaRecorder.setAudioSamplingRate(44100);
+            mediaRecorder.setOutputFile(currentAudioFile.getAbsolutePath());
+            mediaRecorder.prepare();
+            mediaRecorder.start();
+
+            isRecordingAudio = true;
+            triggerHapticSolveNotification();
+
+            updateStatusText("🎙️ LISTENING TO AUDIO... (TAP TO SOLVE)");
+
+            // Update UI to recording state
+            if (tvAudioIcon != null) tvAudioIcon.setText("🔴");
+            if (tvAudioLabel != null) {
+                tvAudioLabel.setText("SOLVE NOW");
+                tvAudioLabel.setTextColor(Color.parseColor("#FF4D6D"));
+            }
+            if (btnVoiceListen != null) {
+                btnVoiceListen.setText("🔴");
+                btnVoiceListen.setBackgroundResource(R.drawable.btn_pill_cute_danger);
+            }
+            if (btnAudioCapture != null) {
+                btnAudioCapture.setBackgroundResource(R.drawable.btn_pill_cute_danger);
+            }
+            Toast.makeText(this, "🎙️ Listening... Speak your question and tap again to solve!", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Log.e(TAG, "Audio recording failed to start: " + e.getMessage(), e);
+            updateStatusText("MIC ERROR: " + e.getMessage());
+            Toast.makeText(this, "Could not start mic: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            resetAudioRecordingUI();
+        }
+    }
+
+    private void stopAudioRecordingAndSolve() {
+        try {
+            if (mediaRecorder != null) {
+                try {
+                    mediaRecorder.stop();
+                } catch (Exception ignored) {}
+                mediaRecorder.release();
+                mediaRecorder = null;
+            }
+
+            isRecordingAudio = false;
+            triggerHapticShutterNotification(btnAudioCapture != null ? btnAudioCapture : btnCapture);
+            resetAudioRecordingUI();
+
+            if (currentAudioFile != null && currentAudioFile.exists() && currentAudioFile.length() > 500) {
+                updateStatusText("⚡ SOLVING AUDIO WITH GEMINI...");
+                uploadAudioToServer(currentAudioFile);
+            } else {
+                updateStatusText("AUDIO CLIP TOO SHORT");
+                Toast.makeText(this, "Audio clip too short. Hold and speak longer.", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Audio recording failed to stop: " + e.getMessage(), e);
+            resetAudioRecordingUI();
+        }
+    }
+
+    private void resetAudioRecordingUI() {
+        isRecordingAudio = false;
+        if (tvAudioIcon != null) tvAudioIcon.setText("🎙️");
+        if (tvAudioLabel != null) {
+            tvAudioLabel.setText("VOICE");
+            tvAudioLabel.setTextColor(Color.parseColor("#00F0FF"));
+        }
+        if (btnVoiceListen != null) {
+            btnVoiceListen.setText("🎙️");
+            btnVoiceListen.setBackgroundResource(R.drawable.btn_pill_cute_glass);
+        }
+        if (btnAudioCapture != null) {
+            btnAudioCapture.setBackgroundResource(R.drawable.btn_pill_cute_glass);
+        }
+    }
+
+    private void uploadAudioToServer(File audioFile) {
+        String serverUrl = getResolvedServerUrl();
+        String uploadEndpoint = serverUrl.replaceAll("/+$", "") + "/audio-capture";
+
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("audio", audioFile.getName(),
+                        RequestBody.create(audioFile, MediaType.parse("audio/mp4")))
+                .build();
+
+        Request request = new Request.Builder()
+                .url(uploadEndpoint)
+                .post(requestBody)
+                .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                handler.post(() -> {
+                    updateStatusText("NETWORK ERROR: " + e.getMessage());
+                    Toast.makeText(MainActivity.this, "Server unreachable. Check USB cable / URL.", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    handler.post(() -> updateStatusText("SERVER ERROR (" + response.code() + ")"));
+                    return;
+                }
+
+                String responseBody = response.body() != null ? response.body().string() : "";
+                try {
+                    JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
+                    String tag = json.has("tag") ? json.get("tag").getAsString() : "[VOICE]";
+                    String payload = json.has("payload") ? json.get("payload").getAsString() : "";
+                    String duration = json.has("duration") ? json.get("duration").getAsString() : "0.9s";
+                    boolean isMulti = json.has("is_multi_slot") && json.get("is_multi_slot").getAsBoolean();
+
+                    String code = "";
+                    String reason = "";
+                    String rating = "";
+                    String audit = "";
+
+                    if (json.has("slots") && json.get("slots").isJsonObject()) {
+                        JsonObject slotsObj = json.getAsJsonObject("slots");
+                        if (slotsObj.has("code")) code = slotsObj.get("code").getAsString();
+                        if (slotsObj.has("explanation")) reason = slotsObj.get("explanation").getAsString();
+                        if (slotsObj.has("rating")) rating = slotsObj.get("rating").getAsString();
+                        if (slotsObj.has("audit")) audit = slotsObj.get("audit").getAsString();
+                    }
+
+                    final String finalCode = code;
+                    final String finalReason = reason;
+                    final String finalRating = rating;
+                    final String finalAudit = audit;
+
+                    handler.post(() -> {
+                        updateStatusText("✅ AUDIO SOLVED (" + duration + ")");
                         renderResponseUI(tag, payload, duration, isMulti, finalCode, finalReason, finalRating, finalAudit);
 
                         // Save to history
@@ -1612,6 +1806,12 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         if (orientationEventListener != null) {
             orientationEventListener.disable();
+        }
+        if (mediaRecorder != null) {
+            try {
+                mediaRecorder.release();
+            } catch (Exception ignored) {}
+            mediaRecorder = null;
         }
         if (tts != null) {
             tts.stop();
