@@ -429,29 +429,38 @@ BASE_MASTER_PROMPT = (
     "PROTOCOL 1: ORAL / READING / INTERVIEW / CONCEPTUAL / VIVA QUESTIONS (PREFIX: [VOICE])\n"
     "Detect if the question is conceptual, theoretical, behavioral, viva, or an interview question (e.g. 'Explain...', 'What is...', 'Why...', 'How does...', 'Difference between...', or spoken audio):\n"
     "• Prefix your response with: [VOICE]\n"
-    "• VOCABULARY & LANGUAGE RULES (CRITICAL FOR LIVE SPOKEN READING):\n"
+    "• STRUCTURE & SPOKEN HUMAN DELIVERY (CRITICAL FOR LIVE INTERVIEWS):\n"
+    "  1. Start with 1 natural, conversational opening sentence (e.g. 'Basically, in simple terms...', 'In practical projects, the core idea is...', 'To break this down simply...').\n"
+    "  2. Follow with EXACTLY 3 direct, punchy bullet points (• Point 1, • Point 2, • Point 3) highlighting the key concept, role, and practical benefit.\n"
+    "  3. End with 1 short, confident takeaway sentence (10-14 words).\n"
+    "• VOCABULARY & NATURAL TONE RULES:\n"
+    "  - Speak like a friendly, experienced human software engineer explaining to a peer, NOT a textbook or dictionary.\n"
     "  - Use simple, plain, everyday conversational English that is very easy to pronounce.\n"
     "  - STRICTLY FORBIDDEN: Complex, rare, archaic, pretentious, or difficult-to-pronounce words (e.g. DO NOT use words like 'juxtaposition', 'quintessential', 'obfuscate', 'ubiquitous', 'paradigm', 'egregious', 'idiosyncratic', 'circumvent', 'insurmountable', 'aforementioned', etc.).\n"
     "  - Use common, familiar words so non-native speakers (such as Bangladeshi students) can read it aloud fluently without stuttering, stumbling, or fumbling.\n"
     "  - Standard industry technical terms (e.g. API, function, array, database, loop, memory, cache, thread, server, async) are completely fine.\n"
-    "  - Keep sentences short, crisp, and punchy (10 to 15 words per sentence) so they can be spoken comfortably in one breath.\n"
-    "  - Total length: 3 to 5 clear sentences (around 50-80 words). Direct, confident, and to the point.\n\n"
+    "  - Keep sentences short, crisp, and punchy (10 to 14 words per sentence) so they can be spoken comfortably in one breath.\n"
+    "  - Total length: 50 to 80 words max.\n\n"
     "PROTOCOL 2: STANDARD CODING / PURE PROGRAMMING PROBLEM (PREFIX: [TYPE])\n"
     "When asked to write a program, algorithm, script, query, or solve a coding challenge in a single file/box:\n"
     "• Prefix with: [TYPE]\n"
-    "• Output ONLY the complete, production-ready, working code (ready to be typed into the code editor) without markdown code blocks or conversational text.\n\n"
+    "• ANTI-AI CODE SIGNATURES (CRITICAL TO AVOID SUSPICION):\n"
+    "  - Output ONLY clean, standard, production-ready code with natural variable names.\n"
+    "  - STRICTLY FORBIDDEN: Redundant AI essay comments (e.g. DO NOT write '// Step 1: Initialize variables', '// Time Complexity: O(N)', '// Optimal two pointer approach', '# Helper function to calculate...').\n"
+    "  - Write code exactly as a senior human engineer writes under live interview conditions.\n"
+    "  - DO NOT output markdown code block fences (```) or conversational filler text.\n\n"
     "PROTOCOL 3: MULTI-PART EVALUATION / RLHF / BUG FIXING / CODE COMPARISON\n"
     "When a task requires writing code AND providing an explanation/critique or rating:\n"
     "You MUST structure your output using these exact tags:\n"
     "<<<SLOT:RATING>>>\n"
     "Concise verdict (e.g. 'Model A is significantly better (5/5 vs 2/5)' or 'Verdict: Root Cause Identified')\n"
     "<<<SLOT:CODE>>>\n"
-    "Clean, 100% production-ready bugfix or solution code\n"
+    "Clean, 100% production-ready bugfix or solution code (No AI boilerplate comments)\n"
     "<<<SLOT:EXPLANATION>>>\n"
-    "Clear, easy-to-read explanation in simple everyday language covering:\n"
+    "Clear, natural human explanation covering:\n"
     "• Root Cause / Critique: Why original code failed or comparison breakdown.\n"
-    "• The Fix / Justification: What was changed and why.\n"
-    "• Complexity: Time and Space complexity improvements.\n"
+    "• The Fix: What was changed and why in simple words.\n"
+    "• Complexity: Short time & space summary.\n"
     "<<<SLOT:AUDIT>>>\n"
     "(If applicable: Hallucination status, fake libraries detected, valid official alternatives)\n\n"
     "PROTOCOL 4: MULTIPLE CHOICE / CHECKBOX QUESTIONS (PREFIX: [CHECK])\n"
@@ -540,10 +549,51 @@ def show_browser_onscreen():
 # Serialization lock to prevent simultaneous keystroke collisions
 typing_lock = threading.Lock()
 
+# Realistic Standard US QWERTY Adjacent Key Map for Simulated Human Typos
+QWERTY_NEIGHBORS = {
+    'a': ['q', 'w', 's', 'z'],
+    'b': ['v', 'g', 'h', 'n'],
+    'c': ['x', 'd', 'f', 'v'],
+    'd': ['s', 'e', 'r', 'f', 'c', 'x'],
+    'e': ['w', 's', 'd', 'r'],
+    'f': ['d', 'r', 't', 'g', 'v'],
+    'g': ['f', 't', 'y', 'h', 'b', 'v'],
+    'h': ['g', 'y', 'u', 'j', 'b'],
+    'i': ['u', 'j', 'k', 'o'],
+    'j': ['h', 'u', 'i', 'k', 'n'],
+    'k': ['j', 'i', 'o', 'l', 'm'],
+    'l': ['k', 'o', 'p'],
+    'm': ['n', 'j', 'k'],
+    'n': ['b', 'h', 'j', 'm'],
+    'o': ['i', 'k', 'l', 'p'],
+    'p': ['o', 'l'],
+    'q': ['w', 'a'],
+    'r': ['e', 'd', 'f', 't'],
+    's': ['a', 'w', 'e', 'd', 'x', 'z'],
+    't': ['r', 'f', 'g', 'y'],
+    'u': ['y', 'h', 'j', 'i'],
+    'v': ['c', 'f', 'g', 'b'],
+    'w': ['q', 'a', 's', 'e'],
+    'x': ['z', 's', 'd', 'c'],
+    'y': ['t', 'g', 'h', 'u'],
+    'z': ['a', 's', 'x']
+}
+
+COMMON_BURST_KEYWORDS = {
+    'function', 'return', 'const', 'import', 'export', 'async', 'await',
+    'for', 'if', 'while', 'else', 'true', 'false', 'null', 'undefined',
+    'class', 'def', 'self', 'let', 'var', 'public', 'private', 'static',
+    'void', 'int', 'string', 'boolean', 'package', 'new', 'try', 'catch'
+}
+
 def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=None):
     """
     Types text character-by-character into active foreground window on Windows.
-    Simulates real human physical typing with non-uniform keypress intervals and micro-pauses.
+    Simulates real human physical typing with:
+    1. Realistic QWERTY neighbor typos & auto-correction (types neighbor key -> pause -> backspace -> correct key)
+    2. Muscle-memory burst typing on common programming keywords
+    3. Natural thinking hesitation pauses before new lines and structural syntax
+    4. Non-uniform physical jitter delays
     Allows instant emergency abort via typing_controller.
     """
     import random
@@ -563,25 +613,29 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
         KEYEVENTF_UNICODE = 0x0004
         VK_RETURN = 0x0D
         VK_TAB = 0x09
+        VK_BACK = 0x08
 
-        print(f"[Organic Human Typing] >>> INJECTING {len(text_to_type)} CHARACTERS INTO ACTIVE WINDOW <<<", flush=True)
+        print(f"[Human Typing Engine] >>> INJECTING {len(text_to_type)} CHARACTERS (Stealth Human Simulation Active) <<<", flush=True)
 
         try:
             pyperclip.copy(text_to_type)
         except Exception:
             pass
 
-        # Safety: Release any stuck OS modifier keys (Alt, Ctrl, Win) to avoid triggering hotkeys (like NVIDIA Alt+M or Win+H)
+        # Safety: Release any stuck OS modifier keys (Alt, Ctrl, Win)
         try:
             for vk in [0x12, 0x11, 0x5B, 0x5C]: # VK_MENU, VK_CONTROL, VK_LWIN, VK_RWIN
                 user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
         except Exception:
             pass
 
+        typo_cooldown = 20 # Minimum characters before next typo can occur
+        chars_since_typo = 20
+
         try:
-            for char in text_to_type:
+            for i, char in enumerate(text_to_type):
                 if typing_controller.should_stop():
-                    print("[Organic Human Typing] Stopped by Emergency Abort command.", flush=True)
+                    print("[Human Typing Engine] Stopped by Emergency Abort command.", flush=True)
                     return False
 
                 # Handle instant pause/resume at current char index
@@ -589,7 +643,7 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
                 if typing_controller.should_stop():
                     return False
 
-                # Dynamic real-time speed
+                # Dynamic real-time speed from settings
                 speed_info = speed_manager.get_info()
                 curr_min_ms = speed_info.get("min_delay_ms", 25)
                 curr_max_ms = speed_info.get("max_delay_ms", 55)
@@ -597,18 +651,43 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
                 curr_max_ms = max(curr_min_ms, int(curr_max_ms))
 
                 code = ord(char)
-                key_hold_time = 0.005 if curr_min_ms < 80 else 0.018
+                key_hold_time = 0.005 if curr_min_ms < 50 else 0.015
                 char_delay = random.uniform(curr_min_ms, curr_max_ms) / 1000.0
 
-                if char in ['\n', ' ', '{', '}', '(', ')', ';', '=']:
-                    extra = random.uniform(0.008, 0.018) if curr_min_ms < 80 else random.uniform(0.025, 0.060)
-                    char_delay += extra
+                # 1. Simulated Realistic Human Typo & Auto-Correction Engine
+                # Occurs with ~2.5% probability on lowercase letters when speed is not "ultra"
+                chars_since_typo += 1
+                if (curr_min_ms >= 10 and chars_since_typo > typo_cooldown and 
+                    char.islower() and char in QWERTY_NEIGHBORS and random.random() < 0.025):
+                    
+                    typo_char = random.choice(QWERTY_NEIGHBORS[char])
+                    typo_code = ord(typo_char)
 
+                    # Type the mistaken neighbor key
+                    user32.keybd_event(0, typo_code, KEYEVENTF_UNICODE, 0)
+                    time.sleep(key_hold_time)
+                    user32.keybd_event(0, typo_code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0)
+                    
+                    # Human reaction time recognizing typo (70ms - 150ms)
+                    time.sleep(random.uniform(0.07, 0.15))
+
+                    # Press Backspace to erase typo
+                    user32.keybd_event(VK_BACK, 0x0E, 0, 0)
+                    time.sleep(key_hold_time)
+                    user32.keybd_event(VK_BACK, 0x0E, KEYEVENTF_KEYUP, 0)
+                    
+                    # Brief micro pause before typing correct character (40ms - 90ms)
+                    time.sleep(random.uniform(0.04, 0.09))
+                    chars_since_typo = 0
+
+                # 2. Syntax & Structural Hesitation Delays (Real programmer thinking pauses)
                 if char == '\n':
+                    # Natural pause before starting a new line of logic (0.12s - 0.28s)
+                    line_pause = random.uniform(0.12, 0.28) if curr_min_ms >= 15 else 0.02
                     user32.keybd_event(VK_RETURN, 0x1C, 0, 0)
                     time.sleep(key_hold_time)
                     user32.keybd_event(VK_RETURN, 0x1C, KEYEVENTF_KEYUP, 0)
-                    time.sleep(char_delay)
+                    time.sleep(line_pause)
                     continue
 
                 if char == '\t':
@@ -618,21 +697,49 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
                     time.sleep(char_delay)
                     continue
 
+                if char in ['{', '}', '(', ')', ';', '=', ',']:
+                    extra = random.uniform(0.025, 0.065) if curr_min_ms >= 15 else 0.005
+                    char_delay += extra
+
+                # 3. Standard Keystroke Injection
                 user32.keybd_event(0, code, KEYEVENTF_UNICODE, 0)
                 time.sleep(key_hold_time)
                 user32.keybd_event(0, code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0)
                 time.sleep(char_delay)
 
-            print(f"[Organic Human Typing] ✅ Successfully finished typing {len(text_to_type)} characters.", flush=True)
+            print(f"[Human Typing Engine] ✅ Successfully finished typing {len(text_to_type)} characters.", flush=True)
             return True
         finally:
             typing_controller.finish_typing()
 
 def clean_code_snippet(text):
-    match = re.search(r'```(?:javascript|python|java|cpp|c|typescript|html|css|sql|bash|sh|json)?\n?(.*?)\n?```', text, re.DOTALL | re.IGNORECASE)
-    if match:
-        return match.group(1).strip()
-    return text
+    """
+    Cleans code snippet and aggressively strips markdown fences & AI watermark comments
+    so the output looks 100% written by a real human engineer in a live interview.
+    """
+    if not text:
+        return ""
+    
+    cleaned = text.strip()
+    # Strip markdown code blocks
+    cleaned = re.sub(r'^```[a-zA-Z0-9_-]*\n?', '', cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r'\n?```$', '', cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r'```', '', cleaned)
+
+    # Strip AI Watermark comments & LeetCode essay commentary
+    ai_comment_patterns = [
+        r'//\s*(?:Step\s*\d+|Time\s*Complexity|Space\s*Complexity|Time\s*:|Space\s*:|TC\s*:|SC\s*:|Optimal|Approach|Algorithm|Complexity|Note\s*:).*',
+        r'#\s*(?:Step\s*\d+|Time\s*Complexity|Space\s*Complexity|Time\s*:|Space\s*:|TC\s*:|SC\s*:|Optimal|Approach|Algorithm|Complexity|Note\s*:).*',
+        r'/\*\s*(?:Time\s*Complexity|Space\s*Complexity|LeetCode).*?\*/',
+        r'//\s*LeetCode\s*.*',
+        r'#\s*LeetCode\s*.*'
+    ]
+    for pat in ai_comment_patterns:
+        cleaned = re.sub(pat, '', cleaned, flags=re.IGNORECASE)
+
+    # Clean up redundant consecutive empty lines
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned).strip()
+    return cleaned
 
 def parse_ai_response(raw_text):
     raw_text = (raw_text or "").strip()
