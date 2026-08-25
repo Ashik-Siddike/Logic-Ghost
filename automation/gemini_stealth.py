@@ -1003,7 +1003,8 @@ def analyze_with_rotated_gemini_api(image_path):
         print(f"[API Rotator] (Attempt {attempt+1}/{total_keys}) Using Key: {masked_key} on {model_name}...", flush=True)
 
         try:
-            client = genai.Client(api_key=api_key)
+            http_opts = types.HttpOptions(timeout=10000) if hasattr(types, 'HttpOptions') else None
+            client = genai.Client(api_key=api_key, http_options=http_opts) if http_opts else genai.Client(api_key=api_key)
             response = client.models.generate_content(
                 model=model_name,
                 contents=[prompt, img],
@@ -1095,7 +1096,8 @@ def analyze_audio_with_rotated_gemini_api(audio_path):
         print(f"[API Rotator Audio] (Attempt {attempt+1}/{total_keys}) Using Key: {masked_key} on {model_name}...", flush=True)
 
         try:
-            client = genai.Client(api_key=api_key)
+            http_opts = types.HttpOptions(timeout=10000) if hasattr(types, 'HttpOptions') else None
+            client = genai.Client(api_key=api_key, http_options=http_opts) if http_opts else genai.Client(api_key=api_key)
             response = client.models.generate_content(
                 model=model_name,
                 contents=[prompt, audio_part],
