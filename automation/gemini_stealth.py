@@ -546,6 +546,99 @@ def show_browser_onscreen():
     except Exception as e:
         print(f"[Visible Warning] {e}", flush=True)
 
+# Win32 SendInput Structures & Driver-Level Keystroke Injection
+INPUT_KEYBOARD = 1
+KEYEVENTF_KEYUP = 0x0002
+KEYEVENTF_UNICODE = 0x0004
+KEYEVENTF_SCANCODE = 0x0008
+
+class KEYBDINPUT(ctypes.Structure):
+    _fields_ = [
+        ("wVk", wintypes.WORD),
+        ("wScan", wintypes.WORD),
+        ("dwFlags", wintypes.DWORD),
+        ("time", wintypes.DWORD),
+        ("dwExtraInfo", ctypes.c_void_p)
+    ]
+
+class HARDWAREINPUT(ctypes.Structure):
+    _fields_ = [
+        ("uMsg", wintypes.DWORD),
+        ("wParamL", wintypes.WORD),
+        ("wParamH", wintypes.WORD)
+    ]
+
+class MOUSEINPUT(ctypes.Structure):
+    _fields_ = [
+        ("dx", wintypes.LONG),
+        ("dy", wintypes.LONG),
+        ("mouseData", wintypes.DWORD),
+        ("dwFlags", wintypes.DWORD),
+        ("time", wintypes.DWORD),
+        ("dwExtraInfo", ctypes.c_void_p)
+    ]
+
+class INPUT_UNION(ctypes.Union):
+    _fields_ = [
+        ("ki", KEYBDINPUT),
+        ("mi", MOUSEINPUT),
+        ("hi", HARDWAREINPUT)
+    ]
+
+class INPUT(ctypes.Structure):
+    _fields_ = [
+        ("type", wintypes.DWORD),
+        ("union", INPUT_UNION)
+    ]
+
+def send_input_unicode(char_code, key_hold_time=0.005):
+    """Sends a Unicode character via driver-level SendInput API."""
+    user32 = ctypes.windll.user32
+    inp_down = INPUT()
+    inp_down.type = INPUT_KEYBOARD
+    inp_down.union.ki.wVk = 0
+    inp_down.union.ki.wScan = char_code
+    inp_down.union.ki.dwFlags = KEYEVENTF_UNICODE
+    inp_down.union.ki.time = 0
+    inp_down.union.ki.dwExtraInfo = None
+
+    inp_up = INPUT()
+    inp_up.type = INPUT_KEYBOARD
+    inp_up.union.ki.wVk = 0
+    inp_up.union.ki.wScan = char_code
+    inp_up.union.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
+    inp_up.union.ki.time = 0
+    inp_up.union.ki.dwExtraInfo = None
+
+    user32.SendInput(1, ctypes.byref(inp_down), ctypes.sizeof(INPUT))
+    if key_hold_time > 0:
+        time.sleep(key_hold_time)
+    user32.SendInput(1, ctypes.byref(inp_up), ctypes.sizeof(INPUT))
+
+def send_input_vk(vk, scancode, key_hold_time=0.005):
+    """Sends a Virtual Key with hardware scan code via SendInput API."""
+    user32 = ctypes.windll.user32
+    inp_down = INPUT()
+    inp_down.type = INPUT_KEYBOARD
+    inp_down.union.ki.wVk = vk
+    inp_down.union.ki.wScan = scancode
+    inp_down.union.ki.dwFlags = 0
+    inp_down.union.ki.time = 0
+    inp_down.union.ki.dwExtraInfo = None
+
+    inp_up = INPUT()
+    inp_up.type = INPUT_KEYBOARD
+    inp_up.union.ki.wVk = vk
+    inp_up.union.ki.wScan = scancode
+    inp_up.union.ki.dwFlags = KEYEVENTF_KEYUP
+    inp_up.union.ki.time = 0
+    inp_up.union.ki.dwExtraInfo = None
+
+    user32.SendInput(1, ctypes.byref(inp_down), ctypes.sizeof(INPUT))
+    if key_hold_time > 0:
+        time.sleep(key_hold_time)
+    user32.SendInput(1, ctypes.byref(inp_up), ctypes.sizeof(INPUT))
+
 # Serialization lock to prevent simultaneous keystroke collisions
 typing_lock = threading.Lock()
 
@@ -583,40 +676,64 @@ COMMON_BURST_KEYWORDS = {
     'function', 'return', 'const', 'import', 'export', 'async', 'await',
     'for', 'if', 'while', 'else', 'true', 'false', 'null', 'undefined',
     'class', 'def', 'self', 'let', 'var', 'public', 'private', 'static',
-    'void', 'int', 'string', 'boolean', 'package', 'new', 'try', 'catch'
+    'void', 'int', 'string', 'boolean', 'package', 'new', 'try', 'catch',
+    'func', 'chan', 'defer', 'select', 'impl', 'mut', 'trait', 'enum',
+    'override', 'object', 'SELECT', 'FROM', 'WHERE', 'JOIN'
 }
+
+def is_python_code(code_text):
+    """Detects whether the code snippet is Python (requires 4-space indents, not tabs)."""
+    if not code_text:
+        return False
+    has_py_kw = bool(re.search(r'\b(def|elif|lambda|pass|assert|except|finally)\b', code_text))
+    has_braces = '{' in code_text and '}' in code_text
+    return has_py_kw or (not has_braces and ':' in code_text)
 
 def humanize_code_for_typing(code_text):
     """
-    Ultra-lightweight (0.1ms) deterministic string humanizer:
-    1. Converts leading 4-space indentation blocks to instant single Tab (\\t) keystrokes.
-    2. Protects string literals and keywords from corruption.
+    Universal Multi-Language Deterministic Code Humanizer (0.1ms):
+    1. Converts indents safely: Smart 4-space burst for Python (prevents TabError) & Tab for others.
+    2. Protects string literals and keywords across 15+ programming languages.
     3. Naturally varies ~20-30% of binary operators and control syntax for realistic human coding aesthetics.
     """
     if not code_text or not code_text.strip():
         return code_text
 
     import random
+    is_py = is_python_code(code_text)
     lines = code_text.replace('\r\n', '\n').replace('\r', '\n').split('\n')
     humanized_lines = []
 
-    # Mandatory keywords where trailing space is strictly required
-    KEYWORDS = r'\b(let|const|var|return|def|class|int|float|double|char|long|short|byte|boolean|bool|public|private|protected|static|void|import|from|export|new|throw|typeof|instanceof|yield|package|struct|fn|val)\b'
+    # Comprehensive multi-language keywords covering JS/TS, Python, Java, C/C++, C#, Go, Rust, Kotlin, SQL, Swift, PHP, Ruby
+    KEYWORDS = (
+        r'\b(let|const|var|return|def|class|int|float|double|char|long|short|byte|boolean|bool|'
+        r'public|private|protected|static|void|import|from|export|new|throw|typeof|instanceof|'
+        r'yield|package|struct|fn|val|fun|elif|except|finally|raise|with|as|lambda|assert|pass|'
+        r'func|chan|defer|select|go|interface|impl|mut|trait|enum|pub|match|where|override|object|'
+        r'constexpr|nullptr|auto|template|typename|using|namespace|'
+        r'SELECT|FROM|WHERE|JOIN|GROUP|ORDER|INSERT|UPDATE|DELETE|CREATE|TABLE|ALTER|DROP|HAVING|LIMIT)\b'
+    )
 
     for line in lines:
         if not line:
             humanized_lines.append('')
             continue
 
-        # 1. Smart Indentation: Convert leading 4-space blocks to single Tab (\t)
+        # 1. Smart Indentation handling
         l_stripped = line.lstrip(' ')
         leading_spaces = len(line) - len(l_stripped)
         tab_count = leading_spaces // 4
         rem_spaces = leading_spaces % 4
-        indent = ('\t' * tab_count) + (' ' * rem_spaces)
 
-        # 2. Tokenize line into Strings, Comments, and Code
-        parts = re.split(r'(".*?"|\'.*?\'|`.*?`|//.*$|#.*$)', l_stripped)
+        if is_py:
+            # For Python: maintain 4-space blocks to strictly prevent TabError
+            indent = ('    ' * tab_count) + (' ' * rem_spaces)
+        else:
+            # For other languages: use 1 Tab per 4 spaces
+            indent = ('\t' * tab_count) + (' ' * rem_spaces)
+
+        # 2. Tokenize line into Strings, Comments, and Code (Supporting //, /* */, #, --, <!-- -->)
+        parts = re.split(r'(".*?"|\'.*?\'|`.*?`|//.*$|#.*$|--.*$|<!--.*?-->)', l_stripped)
         transformed_parts = []
 
         for part in parts:
@@ -624,7 +741,7 @@ def humanize_code_for_typing(code_text):
                 continue
             # If this part is a string literal or comment, leave it 100% UNTOUCHED
             if (part.startswith('"') or part.startswith("'") or part.startswith('`') or 
-                part.startswith('//') or part.startswith('#')):
+                part.startswith('//') or part.startswith('#') or part.startswith('--') or part.startswith('<!--')):
                 transformed_parts.append(part)
             else:
                 code_part = part
@@ -667,12 +784,13 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     """
     Types text character-by-character into active foreground window on Windows.
     Simulates real human physical typing with:
-    1. Smart line indentation conversion (4 leading spaces -> 1 Tab keypress)
-    2. Realistic QWERTY neighbor typos & auto-correction (types neighbor key -> pause -> backspace -> correct key)
-    3. Casual human operator spacing variations
-    4. Muscle-memory burst typing on common programming keywords
-    5. Natural thinking hesitation pauses before new lines and structural syntax
-    6. Non-uniform physical jitter delays
+    1. Driver-level Win32 SendInput API (Zero clipboard touching, high stealth)
+    2. Smart line indentation conversion (4-space burst for Python / Tab key for others)
+    3. Realistic QWERTY neighbor typos & auto-correction
+    4. Casual human operator spacing variations across all programming languages
+    5. Muscle-memory burst typing on common programming keywords
+    6. Natural thinking hesitation pauses before new lines and structural syntax
+    7. Syllable cognitive micro-jitter for identifier names
     Allows instant emergency abort via typing_controller.
     """
     import random
@@ -688,24 +806,17 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     with typing_lock:
         typing_controller.start_typing()
 
-        user32 = ctypes.windll.user32
-        KEYEVENTF_KEYUP = 0x0002
-        KEYEVENTF_UNICODE = 0x0004
         VK_RETURN = 0x0D
         VK_TAB = 0x09
         VK_BACK = 0x08
+        VK_SPACE = 0x20
 
-        print(f"[Human Typing Engine] >>> INJECTING {len(text_to_type)} CHARACTERS (Stealth Human Simulation Active) <<<", flush=True)
+        print(f"[SendInput Stealth Engine] >>> INJECTING {len(text_to_type)} CHARACTERS (Raw Driver Input Active) <<<", flush=True)
 
-        try:
-            pyperclip.copy(text_to_type)
-        except Exception:
-            pass
-
-        # Safety: Release any stuck OS modifier keys (Alt, Ctrl, Win)
+        # Safety: Release any stuck OS modifier keys (Alt, Ctrl, Win) via SendInput
         try:
             for vk in [0x12, 0x11, 0x5B, 0x5C]: # VK_MENU, VK_CONTROL, VK_LWIN, VK_RWIN
-                user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
+                send_input_vk(vk, 0, key_hold_time=0)
         except Exception:
             pass
 
@@ -715,7 +826,7 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
         try:
             for i, char in enumerate(text_to_type):
                 if typing_controller.should_stop():
-                    print("[Human Typing Engine] Stopped by Emergency Abort command.", flush=True)
+                    print("[SendInput Stealth Engine] Stopped by Emergency Abort command.", flush=True)
                     return False
 
                 # Handle instant pause/resume at current char index
@@ -743,18 +854,14 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
                     typo_char = random.choice(QWERTY_NEIGHBORS[char])
                     typo_code = ord(typo_char)
 
-                    # Type the mistaken neighbor key
-                    user32.keybd_event(0, typo_code, KEYEVENTF_UNICODE, 0)
-                    time.sleep(key_hold_time)
-                    user32.keybd_event(0, typo_code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0)
+                    # Type the mistaken neighbor key via SendInput
+                    send_input_unicode(typo_code, key_hold_time)
                     
                     # Human reaction time recognizing typo (70ms - 150ms)
                     time.sleep(random.uniform(0.07, 0.15))
 
-                    # Press Backspace to erase typo
-                    user32.keybd_event(VK_BACK, 0x0E, 0, 0)
-                    time.sleep(key_hold_time)
-                    user32.keybd_event(VK_BACK, 0x0E, KEYEVENTF_KEYUP, 0)
+                    # Press Backspace to erase typo via SendInput
+                    send_input_vk(VK_BACK, 0x0E, key_hold_time)
                     
                     # Brief micro pause before typing correct character (40ms - 90ms)
                     time.sleep(random.uniform(0.04, 0.09))
@@ -764,30 +871,26 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
                 if char == '\n':
                     # Natural pause before starting a new line of logic (0.12s - 0.28s)
                     line_pause = random.uniform(0.12, 0.28) if curr_min_ms >= 15 else 0.02
-                    user32.keybd_event(VK_RETURN, 0x1C, 0, 0)
-                    time.sleep(key_hold_time)
-                    user32.keybd_event(VK_RETURN, 0x1C, KEYEVENTF_KEYUP, 0)
+                    send_input_vk(VK_RETURN, 0x1C, key_hold_time)
                     time.sleep(line_pause)
                     continue
 
                 if char == '\t':
-                    user32.keybd_event(VK_TAB, 0x0F, 0, 0)
-                    time.sleep(key_hold_time)
-                    user32.keybd_event(VK_TAB, 0x0F, KEYEVENTF_KEYUP, 0)
-                    time.sleep(char_delay)
+                    # Tab jump keystroke
+                    tab_delay = random.uniform(0.012, 0.028) if curr_min_ms >= 15 else 0.005
+                    send_input_vk(VK_TAB, 0x0F, key_hold_time)
+                    time.sleep(tab_delay)
                     continue
 
                 if char in ['{', '}', '(', ')', ';', '=', ',']:
                     extra = random.uniform(0.025, 0.065) if curr_min_ms >= 15 else 0.005
                     char_delay += extra
 
-                # 3. Standard Keystroke Injection
-                user32.keybd_event(0, code, KEYEVENTF_UNICODE, 0)
-                time.sleep(key_hold_time)
-                user32.keybd_event(0, code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0)
+                # 3. Send Unicode character via driver-level SendInput
+                send_input_unicode(code, key_hold_time)
                 time.sleep(char_delay)
 
-            print(f"[Human Typing Engine] ✅ Successfully finished typing {len(text_to_type)} characters.", flush=True)
+            print(f"[SendInput Stealth Engine] ✅ Successfully finished typing {len(text_to_type)} characters.", flush=True)
             return True
         finally:
             typing_controller.finish_typing()
@@ -795,6 +898,7 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
 def clean_code_snippet(text):
     """
     Cleans code snippet and aggressively strips markdown fences & AI watermark comments
+    across all programming languages (C/C++/Java/JS //, Python/Ruby/Bash #, SQL --, HTML <!-- -->)
     so the output looks 100% written by a real human engineer in a live interview.
     """
     if not text:
@@ -806,13 +910,16 @@ def clean_code_snippet(text):
     cleaned = re.sub(r'\n?```$', '', cleaned, flags=re.MULTILINE)
     cleaned = re.sub(r'```', '', cleaned)
 
-    # Strip AI Watermark comments & LeetCode essay commentary
+    # Strip AI Watermark comments & LeetCode essay commentary across all comment styles
     ai_comment_patterns = [
         r'//\s*(?:Step\s*\d+|Time\s*Complexity|Space\s*Complexity|Time\s*:|Space\s*:|TC\s*:|SC\s*:|Optimal|Approach|Algorithm|Complexity|Note\s*:).*',
         r'#\s*(?:Step\s*\d+|Time\s*Complexity|Space\s*Complexity|Time\s*:|Space\s*:|TC\s*:|SC\s*:|Optimal|Approach|Algorithm|Complexity|Note\s*:).*',
+        r'--\s*(?:Step\s*\d+|Time\s*Complexity|Space\s*Complexity|Time\s*:|Space\s*:|TC\s*:|SC\s*:|Optimal|Approach|Algorithm|Complexity|Note\s*:).*',
+        r'<!--\s*(?:Step\s*\d+|Time\s*Complexity|Space\s*Complexity|LeetCode).*?-->',
         r'/\*\s*(?:Time\s*Complexity|Space\s*Complexity|LeetCode).*?\*/',
         r'//\s*LeetCode\s*.*',
-        r'#\s*LeetCode\s*.*'
+        r'#\s*LeetCode\s*.*',
+        r'--\s*LeetCode\s*.*'
     ]
     for pat in ai_comment_patterns:
         cleaned = re.sub(pat, '', cleaned, flags=re.IGNORECASE)
