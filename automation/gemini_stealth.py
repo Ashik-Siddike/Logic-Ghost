@@ -586,14 +586,93 @@ COMMON_BURST_KEYWORDS = {
     'void', 'int', 'string', 'boolean', 'package', 'new', 'try', 'catch'
 }
 
+def humanize_code_for_typing(code_text):
+    """
+    Ultra-lightweight (0.1ms) deterministic string humanizer:
+    1. Converts leading 4-space indentation blocks to instant single Tab (\\t) keystrokes.
+    2. Protects string literals and keywords from corruption.
+    3. Naturally varies ~20-30% of binary operators and control syntax for realistic human coding aesthetics.
+    """
+    if not code_text or not code_text.strip():
+        return code_text
+
+    import random
+    lines = code_text.replace('\r\n', '\n').replace('\r', '\n').split('\n')
+    humanized_lines = []
+
+    # Mandatory keywords where trailing space is strictly required
+    KEYWORDS = r'\b(let|const|var|return|def|class|int|float|double|char|long|short|byte|boolean|bool|public|private|protected|static|void|import|from|export|new|throw|typeof|instanceof|yield|package|struct|fn|val)\b'
+
+    for line in lines:
+        if not line:
+            humanized_lines.append('')
+            continue
+
+        # 1. Smart Indentation: Convert leading 4-space blocks to single Tab (\t)
+        l_stripped = line.lstrip(' ')
+        leading_spaces = len(line) - len(l_stripped)
+        tab_count = leading_spaces // 4
+        rem_spaces = leading_spaces % 4
+        indent = ('\t' * tab_count) + (' ' * rem_spaces)
+
+        # 2. Tokenize line into Strings, Comments, and Code
+        parts = re.split(r'(".*?"|\'.*?\'|`.*?`|//.*$|#.*$)', l_stripped)
+        transformed_parts = []
+
+        for part in parts:
+            if not part:
+                continue
+            # If this part is a string literal or comment, leave it 100% UNTOUCHED
+            if (part.startswith('"') or part.startswith("'") or part.startswith('`') or 
+                part.startswith('//') or part.startswith('#')):
+                transformed_parts.append(part)
+            else:
+                code_part = part
+
+                # A. Control Flow keyword spacing (e.g. 'for (' -> 'for(', 'if (' -> 'if(') with ~35% chance
+                if random.random() < 0.35:
+                    code_part = re.sub(r'\b(for|if|while|switch|catch)\s+\(', r'\1(', code_part)
+
+                # B. Assignment spacing (e.g. 'diff = target' -> 'diff=target', 'seen[n] = i' -> 'seen[n]=i') with ~30% chance
+                def compact_assign(m):
+                    if random.random() < 0.30:
+                        return f'{m.group(1)}={m.group(2)}'
+                    return m.group(0)
+                code_part = re.sub(r'([a-zA-Z0-9_\]\)])\s+=\s+([a-zA-Z0-9_\[\(\'"])', compact_assign, code_part)
+
+                # C. Binary operator spacing (e.g. 'target - n' -> 'target-n', 'x + 1' -> 'x+1') with ~25% chance
+                def compact_op(m):
+                    if random.random() < 0.25:
+                        return f'{m.group(1)}{m.group(2)}{m.group(3)}'
+                    return m.group(0)
+                code_part = re.sub(r'([a-zA-Z0-9_\]\)])\s*([\+\-\*\/])\s*([a-zA-Z0-9_\[\(\'"])', compact_op, code_part)
+
+                # D. Comparison operator spacing (e.g. 'i < n' -> 'i<n', 'a == b' -> 'a==b') with ~25% chance
+                def compact_comp(m):
+                    if random.random() < 0.25:
+                        return f'{m.group(1)}{m.group(2)}{m.group(3)}'
+                    return m.group(0)
+                code_part = re.sub(r'([a-zA-Z0-9_\]\)])\s+(<=|>=|==|!=|<|>)\s+([a-zA-Z0-9_\[\(\'"])', compact_comp, code_part)
+
+                # Safety Check: Ensure mandatory keywords never lost their trailing space
+                code_part = re.sub(f'{KEYWORDS}([a-zA-Z0-9_])', r'\1 \2', code_part)
+
+                transformed_parts.append(code_part)
+
+        humanized_lines.append(indent + ''.join(transformed_parts))
+
+    return '\n'.join(humanized_lines)
+
 def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=None):
     """
     Types text character-by-character into active foreground window on Windows.
     Simulates real human physical typing with:
-    1. Realistic QWERTY neighbor typos & auto-correction (types neighbor key -> pause -> backspace -> correct key)
-    2. Muscle-memory burst typing on common programming keywords
-    3. Natural thinking hesitation pauses before new lines and structural syntax
-    4. Non-uniform physical jitter delays
+    1. Smart line indentation conversion (4 leading spaces -> 1 Tab keypress)
+    2. Realistic QWERTY neighbor typos & auto-correction (types neighbor key -> pause -> backspace -> correct key)
+    3. Casual human operator spacing variations
+    4. Muscle-memory burst typing on common programming keywords
+    5. Natural thinking hesitation pauses before new lines and structural syntax
+    6. Non-uniform physical jitter delays
     Allows instant emergency abort via typing_controller.
     """
     import random
@@ -603,7 +682,8 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     if not text or not text.strip():
         return False
 
-    text_to_type = text.replace('\r\n', '\n').replace('\r', '\n')
+    # Automatically apply smart humanization (tab indents + safe casual spacing)
+    text_to_type = humanize_code_for_typing(text)
 
     with typing_lock:
         typing_controller.start_typing()
