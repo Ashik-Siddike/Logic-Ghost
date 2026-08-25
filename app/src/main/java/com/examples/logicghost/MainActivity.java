@@ -398,6 +398,12 @@ public class MainActivity extends AppCompatActivity {
             btnAudioCapture.setOnClickListener(v -> toggleAudioRecording());
         }
 
+        // 1-Click AI Model & Thinking Mode Controller Button
+        View btnModelSettings = findViewById(R.id.btnModelSettings);
+        if (btnModelSettings != null) {
+            btnModelSettings.setOnClickListener(v -> showModelSettingsDialog());
+        }
+
         // 1-Click Typing Speed Controller Button
         View btnSpeedSettings = findViewById(R.id.btnSpeedSettings);
         if (btnSpeedSettings != null) {
@@ -830,6 +836,7 @@ public class MainActivity extends AppCompatActivity {
                 findViewById(R.id.btnGuide),
                 findViewById(R.id.btnVoiceSettings),
                 findViewById(R.id.btnVoiceListen),
+                findViewById(R.id.btnModelSettings),
                 findViewById(R.id.btnSpeedSettings),
                 findViewById(R.id.btnToggleHud),
                 btnQuickResult,
@@ -923,6 +930,79 @@ public class MainActivity extends AppCompatActivity {
             public void onError(@NonNull ImageCaptureException exception) {
                 Log.e(TAG, "Photo capture failed: " + exception.getMessage(), exception);
                 updateStatusText("CAPTURE FAILED: " + exception.getMessage());
+            }
+        });
+    }
+
+    private void showModelSettingsDialog() {
+        final String[] presetKeys = {
+                "ultra_instant",
+                "fast_turbo",
+                "balanced",
+                "deep_thinking",
+                "pro_expert"
+        };
+        final String[] presetNames = {
+                "⚡ Ultra Instant (0s Thinking ~0.6s - 1.0s) [Zero Delay]",
+                "🚀 Fast Turbo (Light Reasoning ~1.2s - 2.0s)",
+                "⚖️ Balanced Reasoning (~2.0s - 3.5s)",
+                "🧠 Deep Thinking (~4.0s - 7.0s) [Full Reasoning]",
+                "🌟 Gemini 2.5 Pro Expert [Highest IQ]"
+        };
+
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String currentPreset = prefs.getString("ai_model_preset", "ultra_instant");
+        int selectedIndex = 0; // ultra_instant by default
+        for (int i = 0; i < presetKeys.length; i++) {
+            if (presetKeys[i].equalsIgnoreCase(currentPreset)) {
+                selectedIndex = i;
+                break;
+            }
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("🧠 AI Model & Thinking Mode (1-Tap Apply)");
+        builder.setSingleChoiceItems(presetNames, selectedIndex, (dialog, which) -> {
+            String selectedKey = presetKeys[which];
+
+            prefs.edit().putString("ai_model_preset", selectedKey).apply();
+            applyModelToServer(selectedKey);
+
+            try {
+                android.os.Vibrator v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+                if (v != null && v.hasVibrator()) {
+                    v.vibrate(50);
+                }
+            } catch (Exception ignored) {}
+
+            Toast.makeText(MainActivity.this, "🧠 Applied: " + presetNames[which], Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        builder.setNegativeButton("Close", null);
+        builder.show();
+    }
+
+    private void applyModelToServer(String presetKey) {
+        String serverUrl = getResolvedServerUrl();
+        String modelEndpoint = serverUrl.replaceAll("/+$", "") + "/settings/model";
+
+        JsonObject json = new JsonObject();
+        json.addProperty("preset_key", presetKey);
+
+        RequestBody body = RequestBody.create(json.toString(), MediaType.parse("application/json; charset=utf-8"));
+        Request request = new Request.Builder()
+                .url(modelEndpoint)
+                .post(body)
+                .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {}
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
+                response.close();
             }
         });
     }

@@ -20,6 +20,7 @@ const PYTHON_CONTEXT_URL = 'http://127.0.0.1:5001/api/context';
 const PYTHON_CONTEXT_CLEAR = 'http://127.0.0.1:5001/api/context/clear';
 const PYTHON_CONTEXT_UPLOAD = 'http://127.0.0.1:5001/api/context/upload';
 const PYTHON_SPEED_URL = 'http://127.0.0.1:5001/settings/speed';
+const PYTHON_MODEL_URL = 'http://127.0.0.1:5001/settings/model';
 const PYTHON_TYPE_SEQUENCE_URL = 'http://127.0.0.1:5001/api/type_sequence';
 const PYTHON_TYPE_STOP_URL = 'http://127.0.0.1:5001/api/type/stop';
 const PYTHON_TYPE_STATUS_URL = 'http://127.0.0.1:5001/api/type/status';
@@ -423,6 +424,27 @@ app.get('/settings/speed', async (req, res) => {
 app.post('/settings/speed', async (req, res) => {
     try {
         const r = await axios.post(PYTHON_SPEED_URL, req.body, { timeout: 5000 });
+        return res.json(r.data);
+    } catch (e) {
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+/**
+ * AI Model & Thinking Mode Configuration Endpoints
+ */
+app.get('/settings/model', async (req, res) => {
+    try {
+        const r = await axios.get(PYTHON_MODEL_URL, { timeout: 5000 });
+        return res.json(r.data);
+    } catch (e) {
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/settings/model', async (req, res) => {
+    try {
+        const r = await axios.post(PYTHON_MODEL_URL, req.body, { timeout: 5000 });
         return res.json(r.data);
     } catch (e) {
         return res.status(500).json({ error: e.message });

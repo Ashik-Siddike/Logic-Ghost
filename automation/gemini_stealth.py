@@ -238,6 +238,109 @@ class TypingSpeedManager:
 
 speed_manager = TypingSpeedManager()
 
+AI_MODEL_CONFIG_FILE = os.path.join(os.path.dirname(__file__), "ai_model_config.json")
+
+class AIModelManager:
+    """
+    Manages AI Model Selection and Gemini 2.5 Thinking Budget.
+    Provides Ultra Instant (0s thinking) for ultra-fast latency (<1s response).
+    """
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.presets = {
+            "ultra_instant": {
+                "name": "⚡ Ultra Instant (0s Thinking ~0.6s - 1.0s) [Ultra Fast]",
+                "model": "gemini-2.5-flash",
+                "thinking_budget": 0,
+                "description": "Zero thinking overhead. Direct instant answers in under a second!"
+            },
+            "fast_turbo": {
+                "name": "🚀 Fast Turbo (Light Reasoning ~1.2s - 2.0s)",
+                "model": "gemini-2.5-flash",
+                "thinking_budget": 512,
+                "description": "Minimal thinking budget for fast yet checked logic."
+            },
+            "balanced": {
+                "name": "⚖️ Balanced Reasoning (~2.0s - 3.5s)",
+                "model": "gemini-2.5-flash",
+                "thinking_budget": 1024,
+                "description": "Standard balanced reasoning for coding challenges."
+            },
+            "deep_thinking": {
+                "name": "🧠 Deep Thinking (~4.0s - 7.0s)",
+                "model": "gemini-2.5-flash",
+                "thinking_budget": -1,
+                "description": "Full dynamic reasoning for complex proofs and hard algorithms."
+            },
+            "pro_expert": {
+                "name": "🌟 Gemini 2.5 Pro Expert",
+                "model": "gemini-2.5-pro",
+                "thinking_budget": -1,
+                "description": "Flagship Pro model for multi-file system architecture."
+            }
+        }
+        self.current_preset = "ultra_instant"
+        self.load()
+
+    def load(self):
+        with self.lock:
+            if os.path.exists(AI_MODEL_CONFIG_FILE):
+                try:
+                    with open(AI_MODEL_CONFIG_FILE, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        preset = data.get("current_preset", "ultra_instant")
+                        if preset in self.presets:
+                            self.current_preset = preset
+                except Exception as e:
+                    print(f"[AI Model Config Warning] {e}", flush=True)
+
+    def save(self):
+        try:
+            with open(AI_MODEL_CONFIG_FILE, "w", encoding="utf-8") as f:
+                json.dump({"current_preset": self.current_preset}, f, indent=2)
+        except Exception as e:
+            print(f"[AI Model Config Error] {e}", flush=True)
+
+    def set_preset(self, preset_key):
+        with self.lock:
+            if preset_key in self.presets:
+                self.current_preset = preset_key
+                self.save()
+                print(f"[AI Model Config] Active preset changed to: {self.current_preset} ({self.presets[self.current_preset]['name']})", flush=True)
+                return True
+            return False
+
+    def get_info(self):
+        with self.lock:
+            info = self.presets.get(self.current_preset, self.presets["ultra_instant"])
+            return {
+                "current_preset": self.current_preset,
+                "name": info["name"],
+                "model": info["model"],
+                "thinking_budget": info["thinking_budget"],
+                "description": info["description"],
+                "presets": self.presets
+            }
+
+    def get_generate_config(self):
+        with self.lock:
+            info = self.presets.get(self.current_preset, self.presets["ultra_instant"])
+            budget = info.get("thinking_budget", 0)
+            if not HAS_GENAI:
+                return None
+            if budget == 0:
+                return types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(thinking_budget=0)
+                )
+            elif budget > 0:
+                return types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(thinking_budget=budget)
+                )
+            else:
+                return types.GenerateContentConfig()
+
+model_manager = AIModelManager()
+
 # Thread-safe Emergency Typing Abort Controller
 class TypingAbortController:
     def __init__(self):
@@ -580,7 +683,7 @@ def parse_ai_response(raw_text):
 
 def analyze_with_rotated_gemini_api(image_path):
     """
-    Executes vision analysis with Round-Robin Key Rotation & Auto-Failover.
+    Executes vision analysis with Round-Robin Key Rotation, Dynamic Model, Thinking Budget & Auto-Failover.
     """
     total_keys = len(rotator.keys)
     if total_keys == 0:
@@ -593,16 +696,22 @@ def analyze_with_rotated_gemini_api(image_path):
     if ctx_info["enabled"]:
         print(f"[Context Engine] Attaching {ctx_info['word_count']} words of reference guidelines to prompt.", flush=True)
 
+    curr_model_info = model_manager.get_info()
+    model_name = curr_model_info.get("model", "gemini-2.5-flash")
+    gen_config = model_manager.get_generate_config()
+    print(f"[AI Model Engine] Selected: {curr_model_info['name']} (Budget: {curr_model_info['thinking_budget']})", flush=True)
+
     for attempt in range(total_keys):
         api_key = rotator.get_next_key()
         masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "***"
-        print(f"[API Rotator] (Attempt {attempt+1}/{total_keys}) Using Key: {masked_key}...", flush=True)
+        print(f"[API Rotator] (Attempt {attempt+1}/{total_keys}) Using Key: {masked_key} on {model_name}...", flush=True)
 
         try:
             client = genai.Client(api_key=api_key)
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=[prompt, img]
+                model=model_name,
+                contents=[prompt, img],
+                config=gen_config
             )
 
             raw_text = (response.text or "").strip()
@@ -615,8 +724,9 @@ def analyze_with_rotated_gemini_api(image_path):
                 "payload": payload,
                 "is_multi_slot": is_multi_slot,
                 "slots": slots,
-                "engine": "gemini-2.5-flash-api",
+                "engine": f"{model_name}-api",
                 "key_used": masked_key,
+                "model_preset": curr_model_info['current_preset'],
                 "rules_active": ctx_info["enabled"]
             }
         except Exception as e:
@@ -679,16 +789,21 @@ def analyze_audio_with_rotated_gemini_api(audio_path):
 
     audio_part = types.Part.from_bytes(data=audio_bytes, mime_type=mime_type)
 
+    curr_model_info = model_manager.get_info()
+    model_name = curr_model_info.get("model", "gemini-2.5-flash")
+    gen_config = model_manager.get_generate_config()
+
     for attempt in range(total_keys):
         api_key = rotator.get_next_key()
         masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "***"
-        print(f"[API Rotator Audio] (Attempt {attempt+1}/{total_keys}) Using Key: {masked_key}...", flush=True)
+        print(f"[API Rotator Audio] (Attempt {attempt+1}/{total_keys}) Using Key: {masked_key} on {model_name}...", flush=True)
 
         try:
             client = genai.Client(api_key=api_key)
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=[prompt, audio_part]
+                model=model_name,
+                contents=[prompt, audio_part],
+                config=gen_config
             )
 
             raw_text = (response.text or "").strip()
@@ -701,8 +816,9 @@ def analyze_audio_with_rotated_gemini_api(audio_path):
                 "payload": payload,
                 "is_multi_slot": is_multi_slot,
                 "slots": slots,
-                "engine": "gemini-2.5-flash-audio",
+                "engine": f"{model_name}-audio",
                 "key_used": masked_key,
+                "model_preset": curr_model_info['current_preset'],
                 "rules_active": ctx_info["enabled"]
             }
         except Exception as e:
@@ -1040,6 +1156,18 @@ def handle_set_speed():
 @app.route('/settings/speed', methods=['GET'])
 def handle_get_speed():
     return jsonify(speed_manager.get_info())
+
+@app.route('/settings/model', methods=['GET'])
+def handle_get_model_settings():
+    return jsonify(model_manager.get_info())
+
+@app.route('/settings/model', methods=['POST'])
+def handle_set_model_settings():
+    data = request.json or {}
+    preset_key = data.get('preset_key')
+    if preset_key:
+        model_manager.set_preset(preset_key)
+    return jsonify({"success": True, "model": model_manager.get_info()})
 
 # Knowledge Context Endpoints
 @app.route('/api/context', methods=['GET'])
