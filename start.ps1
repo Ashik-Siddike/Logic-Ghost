@@ -16,6 +16,7 @@ Get-NetTCPConnection -LocalPort 5000, 5001 -ErrorAction SilentlyContinue | ForEa
 if (Test-Path "server.log") { Remove-Item "server.log" -Force }
 if (Test-Path "automation.log") { Remove-Item "automation.log" -Force }
 
+$env:PYTHONIOENCODING = "utf-8"
 Write-Host "[LogicGhost] Starting Python Stealth Automation Engine on port 5001..." -ForegroundColor Green
 $pythonProc = Start-Process python -ArgumentList "automation/gemini_stealth.py" -NoNewWindow -PassThru -RedirectStandardOutput "automation.log" -RedirectStandardError "automation_err.log"
 

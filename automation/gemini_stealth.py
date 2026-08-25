@@ -14,9 +14,11 @@ import pyautogui
 from flask import Flask, request, jsonify
 from PIL import Image
 
-# Force unbuffered stdout
+# Force UTF-8 unbuffered stdout & stderr on Windows
 if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(line_buffering=True)
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
 
 # File Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
