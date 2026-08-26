@@ -8,6 +8,7 @@ import collections
 import traceback
 import queue
 import threading
+import concurrent.futures
 import ctypes
 from ctypes import wintypes
 import pyperclip
@@ -1085,16 +1086,30 @@ def preprocess_and_optimize_image_for_gemini(image_path, max_dim=1600):
 
     return types.Part.from_bytes(data=webp_bytes, mime_type="image/webp")
 
+def execute_gemini_vision_attempt(api_key, model_name, prompt, img_part, gen_config):
+    masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "***"
+    http_opts = types.HttpOptions(timeout=10000) if hasattr(types, 'HttpOptions') else None
+    client = genai.Client(api_key=api_key, http_options=http_opts) if http_opts else genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model=model_name,
+        contents=[prompt, img_part],
+        config=gen_config
+    )
+    raw_text = (response.text or "").strip()
+    if not raw_text:
+        raise Exception("Empty response received from Gemini API")
+    return raw_text, masked_key
+
 def analyze_with_rotated_gemini_api(image_path):
     """
-    Executes vision analysis with Round-Robin Key Rotation, Dynamic Model, Thinking Budget & Instant Auto-Failover.
-    Automatically optimizes image with WebP + Adaptive Edge Sharpening, and auto-quarantines failing keys.
+    Executes vision analysis with Parallel Dual-Key Speculative Execution.
+    Fires 2 healthy API keys simultaneously in parallel. Whichever finishes first wins!
+    Auto-quarantines bad keys and immediately fails over with zero delay.
     """
     total_keys = len(rotator.keys)
     if total_keys == 0:
         raise Exception("No Gemini API Keys configured in .env or rotator.")
 
-    last_err = None
     img_part = preprocess_and_optimize_image_for_gemini(image_path)
     prompt = build_effective_master_prompt()
     ctx_info = context_manager.get_info()
@@ -1106,44 +1121,50 @@ def analyze_with_rotated_gemini_api(image_path):
     gen_config = model_manager.get_generate_config()
     print(f"[AI Model Engine] Selected: {curr_model_info['name']} (Budget: {curr_model_info['thinking_budget']})", flush=True)
 
-    max_attempts = max(1, rotator.get_active_count())
-    for attempt in range(max_attempts):
-        api_key = rotator.get_next_key()
-        if not api_key:
+    last_err = None
+    active_count = rotator.get_active_count()
+    max_rounds = max(1, (active_count + 1) // 2)
+
+    for round_idx in range(max_rounds):
+        key1 = rotator.get_next_key()
+        key2 = rotator.get_next_key() if active_count > 1 else None
+
+        keys_to_race = [k for k in [key1, key2] if k]
+        if not keys_to_race:
             break
-        masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "***"
-        print(f"[API Rotator] (Attempt {attempt+1}/{max_attempts}) Using Key: {masked_key} on {model_name}...", flush=True)
 
-        try:
-            http_opts = types.HttpOptions(timeout=10000) if hasattr(types, 'HttpOptions') else None
-            client = genai.Client(api_key=api_key, http_options=http_opts) if http_opts else genai.Client(api_key=api_key)
-            response = client.models.generate_content(
-                model=model_name,
-                contents=[prompt, img_part],
-                config=gen_config
-            )
+        masked_keys = [f"{k[:6]}...{k[-4:]}" for k in keys_to_race]
+        print(f"[API Parallel Race] (Round {round_idx+1}/{max_rounds}) Racing {len(keys_to_race)} Keys: {', '.join(masked_keys)} on {model_name}...", flush=True)
 
-            raw_text = (response.text or "").strip()
-            print(f"[API Rotator] Success with key {masked_key} ({len(raw_text)} chars).", flush=True)
-
-            tag, payload, is_multi_slot, slots = parse_ai_response(raw_text)
-            return {
-                "raw_answer": raw_text,
-                "tag": tag,
-                "payload": payload,
-                "is_multi_slot": is_multi_slot,
-                "slots": slots,
-                "engine": f"{model_name}-api",
-                "key_used": masked_key,
-                "model_preset": curr_model_info['current_preset'],
-                "rules_active": ctx_info["enabled"]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(keys_to_race)) as executor:
+            future_to_key = {
+                executor.submit(execute_gemini_vision_attempt, k, model_name, prompt, img_part, gen_config): k
+                for k in keys_to_race
             }
-        except Exception as e:
-            last_err = e
-            rotator.mark_key_failed(api_key, e)
-            print(f"[API Rotator Warning] Key {masked_key} failed: {e}. Immediately rotating to next key...", flush=True)
 
-    raise Exception(f"All API keys failed or were quarantined. Last error: {last_err}")
+            for future in concurrent.futures.as_completed(future_to_key):
+                k = future_to_key[future]
+                try:
+                    raw_text, masked_key = future.result()
+                    print(f"[API Parallel Race] 🏁 WINNER: Key {masked_key} won race ({len(raw_text)} chars).", flush=True)
+                    tag, payload, is_multi_slot, slots = parse_ai_response(raw_text)
+                    return {
+                        "raw_answer": raw_text,
+                        "tag": tag,
+                        "payload": payload,
+                        "is_multi_slot": is_multi_slot,
+                        "slots": slots,
+                        "engine": f"{model_name}-api",
+                        "key_used": masked_key,
+                        "model_preset": curr_model_info['current_preset'],
+                        "rules_active": ctx_info["enabled"]
+                    }
+                except Exception as e:
+                    last_err = e
+                    rotator.mark_key_failed(k, e)
+                    print(f"[API Parallel Race Warning] Key {f'{k[:6]}...{k[-4:]}'} failed: {e}. Checking other parallel racer...", flush=True)
+
+    raise Exception(f"All API keys failed in parallel race or were quarantined. Last error: {last_err}")
     
 def build_effective_audio_prompt():
     base = (
@@ -1169,16 +1190,30 @@ def build_effective_audio_prompt():
         base += f"\n\n### MANDATORY REFERENCE GUIDELINES & RULEBOOK:\n{ctx_info['text']}\n### END REFERENCE GUIDELINES\n"
     return base
 
+def execute_gemini_audio_attempt(api_key, model_name, prompt, audio_part, gen_config):
+    masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "***"
+    http_opts = types.HttpOptions(timeout=10000) if hasattr(types, 'HttpOptions') else None
+    client = genai.Client(api_key=api_key, http_options=http_opts) if http_opts else genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model=model_name,
+        contents=[prompt, audio_part],
+        config=gen_config
+    )
+    raw_text = (response.text or "").strip()
+    if not raw_text:
+        raise Exception("Empty response received from Gemini API")
+    return raw_text, masked_key
+
 def analyze_audio_with_rotated_gemini_api(audio_path):
     """
-    Executes audio speech understanding and problem solving with Gemini API & Round-Robin Key Rotation.
-    Automatically quarantines failing/exhausted keys and rotates immediately.
+    Executes audio speech understanding with Parallel Dual-Key Speculative Execution.
+    Fires 2 healthy API keys simultaneously in parallel. Whichever finishes first wins!
+    Auto-quarantines bad keys and rotates immediately.
     """
     total_keys = len(rotator.keys)
     if total_keys == 0:
         raise Exception("No Gemini API Keys configured in .env or rotator.")
 
-    last_err = None
     prompt = build_effective_audio_prompt()
     ctx_info = context_manager.get_info()
     if ctx_info["enabled"]:
@@ -1203,44 +1238,50 @@ def analyze_audio_with_rotated_gemini_api(audio_path):
     model_name = curr_model_info.get("model", "gemini-2.5-flash")
     gen_config = model_manager.get_generate_config()
 
-    max_attempts = max(1, rotator.get_active_count())
-    for attempt in range(max_attempts):
-        api_key = rotator.get_next_key()
-        if not api_key:
+    last_err = None
+    active_count = rotator.get_active_count()
+    max_rounds = max(1, (active_count + 1) // 2)
+
+    for round_idx in range(max_rounds):
+        key1 = rotator.get_next_key()
+        key2 = rotator.get_next_key() if active_count > 1 else None
+
+        keys_to_race = [k for k in [key1, key2] if k]
+        if not keys_to_race:
             break
-        masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "***"
-        print(f"[API Rotator Audio] (Attempt {attempt+1}/{max_attempts}) Using Key: {masked_key} on {model_name}...", flush=True)
 
-        try:
-            http_opts = types.HttpOptions(timeout=10000) if hasattr(types, 'HttpOptions') else None
-            client = genai.Client(api_key=api_key, http_options=http_opts) if http_opts else genai.Client(api_key=api_key)
-            response = client.models.generate_content(
-                model=model_name,
-                contents=[prompt, audio_part],
-                config=gen_config
-            )
+        masked_keys = [f"{k[:6]}...{k[-4:]}" for k in keys_to_race]
+        print(f"[API Parallel Audio Race] (Round {round_idx+1}/{max_rounds}) Racing {len(keys_to_race)} Keys: {', '.join(masked_keys)} on {model_name}...", flush=True)
 
-            raw_text = (response.text or "").strip()
-            print(f"[API Rotator Audio] Success with key {masked_key} ({len(raw_text)} chars).", flush=True)
-
-            tag, payload, is_multi_slot, slots = parse_ai_response(raw_text)
-            return {
-                "raw_answer": raw_text,
-                "tag": tag,
-                "payload": payload,
-                "is_multi_slot": is_multi_slot,
-                "slots": slots,
-                "engine": f"{model_name}-audio",
-                "key_used": masked_key,
-                "model_preset": curr_model_info['current_preset'],
-                "rules_active": ctx_info["enabled"]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(keys_to_race)) as executor:
+            future_to_key = {
+                executor.submit(execute_gemini_audio_attempt, k, model_name, prompt, audio_part, gen_config): k
+                for k in keys_to_race
             }
-        except Exception as e:
-            last_err = e
-            rotator.mark_key_failed(api_key, e)
-            print(f"[API Rotator Audio Warning] Key {masked_key} failed: {e}. Immediately rotating to next key...", flush=True)
 
-    raise Exception(f"All API keys failed or were quarantined for audio. Last error: {last_err}")
+            for future in concurrent.futures.as_completed(future_to_key):
+                k = future_to_key[future]
+                try:
+                    raw_text, masked_key = future.result()
+                    print(f"[API Parallel Audio Race] 🏁 WINNER: Key {masked_key} won race ({len(raw_text)} chars).", flush=True)
+                    tag, payload, is_multi_slot, slots = parse_ai_response(raw_text)
+                    return {
+                        "raw_answer": raw_text,
+                        "tag": tag,
+                        "payload": payload,
+                        "is_multi_slot": is_multi_slot,
+                        "slots": slots,
+                        "engine": f"{model_name}-api",
+                        "key_used": masked_key,
+                        "model_preset": curr_model_info['current_preset'],
+                        "rules_active": ctx_info["enabled"]
+                    }
+                except Exception as e:
+                    last_err = e
+                    rotator.mark_key_failed(k, e)
+                    print(f"[API Parallel Audio Race Warning] Key {f'{k[:6]}...{k[-4:]}'} failed: {e}. Checking other parallel racer...", flush=True)
+
+    raise Exception(f"All API keys failed in parallel audio race or were quarantined. Last error: {last_err}")
 
 class GeminiAutomationEngine:
     def __init__(self):
