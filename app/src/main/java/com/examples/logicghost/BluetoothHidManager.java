@@ -284,11 +284,21 @@ public class BluetoothHidManager implements BluetoothProfile.ServiceListener {
                     bluetoothHidDevice.sendReport(targetDevice, 1, pressReport);
                     Thread.sleep(keyHoldTime);
 
-                    // Key Release Report
+                    // TWO-PHASE KEY RELEASE:
+                    // Phase 1: Release keycode while maintaining modifier (if modifier was used)
+                    if (modifier != 0) {
+                        byte[] keycodeRelease = new byte[]{(byte) modifier, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+                        bluetoothHidDevice.sendReport(targetDevice, 1, keycodeRelease);
+                        Thread.sleep(8);
+                    }
+
+                    // Phase 2: Complete clean release (all 0s)
                     bluetoothHidDevice.sendReport(targetDevice, 1, cleanRelease);
                     Thread.sleep(charDelay);
                 }
-                // Final safety release
+                // Final safety triple release
+                bluetoothHidDevice.sendReport(targetDevice, 1, cleanRelease);
+                Thread.sleep(10);
                 bluetoothHidDevice.sendReport(targetDevice, 1, cleanRelease);
                 isTypingActive = false;
                 if (!shouldStopTyping && callback != null) callback.onSuccess();
