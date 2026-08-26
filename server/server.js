@@ -472,6 +472,15 @@ app.post('/api/keys', async (req, res) => {
     }
 });
 
+app.post('/api/keys/reset', async (req, res) => {
+    try {
+        const r = await axios.post('http://127.0.0.1:5001/api/keys/reset', {}, { timeout: 5000 });
+        return res.json(r.data);
+    } catch (e) {
+        return res.status(500).json({ error: e.message });
+    }
+});
+
 /**
  * POST /stealth/hide: Hides off-screen browser from taskbar
  */

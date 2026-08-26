@@ -27,17 +27,23 @@ CONTEXT_FILE = os.path.join(BASE_DIR, "custom_context.txt")
 CONTEXT_CONFIG_FILE = os.path.join(BASE_DIR, "context_config.json")
 SPEED_CONFIG_FILE = os.path.join(BASE_DIR, "speed_config.json")
 
-# Multi-API Key Manager with Round-Robin Rotation & Auto-Failover
+# Multi-API Key Manager with Smart Round-Robin Rotation, Instant Failover & Dead-Key Quarantine
 class ApiKeyRotator:
     def __init__(self):
-        self.keys = []
-        self.queue = collections.deque()
+        self.all_keys = []
+        self.active_queue = collections.deque()
+        self.quarantined = {} # {key: {"error": str, "time": float, "masked": str}}
         self.lock = threading.Lock()
         self.load_keys()
 
+    @property
+    def keys(self):
+        with self.lock:
+            return list(self.all_keys)
+
     def load_keys(self):
         with self.lock:
-            self.keys = []
+            self.all_keys = []
             if os.path.exists(ENV_PATH):
                 try:
                     with open(ENV_PATH, "r", encoding="utf-8") as f:
@@ -50,45 +56,109 @@ class ApiKeyRotator:
                                 if k in ["GEMINI_API_KEYS", "GEMINI_API_KEY"]:
                                     for part in v.split(","):
                                         part = part.strip()
-                                        if part and part not in self.keys:
-                                            self.keys.append(part)
+                                        if part and part not in self.all_keys:
+                                            self.all_keys.append(part)
                 except Exception as e:
                     print(f"[Rotator Warning] Could not read .env: {e}", flush=True)
 
-            self.queue = collections.deque(self.keys)
-            print(f"[API Rotator] Initialized with {len(self.keys)} active Gemini API Key(s).", flush=True)
+            self.active_queue = collections.deque(self.all_keys)
+            self.quarantined = {}
+            print(f"[Smart API Rotator] Initialized with {len(self.all_keys)} active Gemini API Key(s).", flush=True)
 
     def save_keys_to_env(self, key_list):
         with self.lock:
-            self.keys = [k.strip() for k in key_list if k.strip()]
-            self.queue = collections.deque(self.keys)
+            self.all_keys = [k.strip() for k in key_list if k.strip()]
+            self.active_queue = collections.deque(self.all_keys)
+            self.quarantined = {}
             try:
                 content = "# LogicGhost Gemini Configuration\n"
-                content += f"GEMINI_API_KEYS={','.join(self.keys)}\n"
+                content += f"GEMINI_API_KEYS={','.join(self.all_keys)}\n"
                 with open(ENV_PATH, "w", encoding="utf-8") as f:
                     f.write(content)
-                print(f"[API Rotator] Saved {len(self.keys)} keys to .env.", flush=True)
+                print(f"[Smart API Rotator] Saved {len(self.all_keys)} keys to .env.", flush=True)
             except Exception as e:
                 print(f"[Rotator Error] Could not save to .env: {e}", flush=True)
 
     def get_next_key(self):
+        """Pops the next healthy key from the front of the queue and rotates it to the back."""
         with self.lock:
-            if not self.queue:
+            # Check if any quarantined key can be restored after cooldown
+            if not self.active_queue:
+                now = time.time()
+                restored = []
+                for k, info in list(self.quarantined.items()):
+                    if now - info["time"] > 600: # 10 min cooldown
+                        self.active_queue.append(k)
+                        del self.quarantined[k]
+                        restored.append(k)
+                if restored:
+                    print(f"[Smart API Rotator] Restored {len(restored)} keys after cooldown.", flush=True)
+
+                if not self.active_queue and self.all_keys:
+                    self.active_queue = collections.deque(self.all_keys)
+                    self.quarantined = {}
+                    print("[Smart API Rotator] Emergency Pool Reset: Re-activated all keys.", flush=True)
+
+            if not self.active_queue:
                 return None
-            key = self.queue.popleft()
-            self.queue.append(key)
+
+            key = self.active_queue.popleft()
+            self.active_queue.append(key)
             return key
+
+    def mark_key_failed(self, key, error):
+        """Immediately removes/quarantines a failing or exhausted key from the active queue."""
+        with self.lock:
+            masked = f"{key[:6]}...{key[-4:]}" if len(key) > 10 else "***"
+            err_str = str(error)
+            
+            # Remove from active_queue
+            new_queue = collections.deque([k for k in self.active_queue if k != key])
+            self.active_queue = new_queue
+            
+            self.quarantined[key] = {
+                "error": err_str[:120],
+                "time": time.time(),
+                "masked": masked
+            }
+            print(f"[Smart API Rotator] ⚠️ QUARANTINED failing key: {masked} | Reason: {err_str[:80]} | Active remaining: {len(self.active_queue)}/{len(self.all_keys)}", flush=True)
+
+    def reset_quarantine(self):
+        """Manually un-quarantines all keys."""
+        with self.lock:
+            self.active_queue = collections.deque(self.all_keys)
+            self.quarantined = {}
+            print(f"[Smart API Rotator] Quarantine reset. All {len(self.all_keys)} keys active.", flush=True)
+
+    def get_active_count(self):
+        with self.lock:
+            return len(self.active_queue)
 
     def get_all_keys_masked(self):
         with self.lock:
             masked = []
-            for i, k in enumerate(self.keys):
+            for i, k in enumerate(self.all_keys):
                 if len(k) > 10:
                     m = f"{k[:6]}...{k[-4:]}"
                 else:
                     m = "******"
-                masked.append({"index": i + 1, "masked": m, "raw": k})
+                is_active = k in self.active_queue
+                q_info = self.quarantined.get(k)
+                status = "ACTIVE" if is_active else ("QUARANTINED: " + q_info["error"] if q_info else "INACTIVE")
+                masked.append({"index": i + 1, "masked": m, "raw": k, "status": status, "is_active": is_active})
             return masked
+
+    def get_status(self):
+        with self.lock:
+            return {
+                "total_keys": len(self.all_keys),
+                "active_keys": len(self.active_queue),
+                "quarantined_keys": len(self.quarantined),
+                "quarantine_list": [
+                    {"masked": v["masked"], "error": v["error"], "time_ago_sec": int(time.time() - v["time"])}
+                    for v in self.quarantined.values()
+                ]
+            }
 
 rotator = ApiKeyRotator()
 
@@ -979,7 +1049,8 @@ def parse_ai_response(raw_text):
 
 def analyze_with_rotated_gemini_api(image_path):
     """
-    Executes vision analysis with Round-Robin Key Rotation, Dynamic Model, Thinking Budget & Auto-Failover.
+    Executes vision analysis with Round-Robin Key Rotation, Dynamic Model, Thinking Budget & Instant Auto-Failover.
+    Automatically quarantines failing/exhausted keys and rotates to next healthy key immediately.
     """
     total_keys = len(rotator.keys)
     if total_keys == 0:
@@ -997,10 +1068,13 @@ def analyze_with_rotated_gemini_api(image_path):
     gen_config = model_manager.get_generate_config()
     print(f"[AI Model Engine] Selected: {curr_model_info['name']} (Budget: {curr_model_info['thinking_budget']})", flush=True)
 
-    for attempt in range(total_keys):
+    max_attempts = max(1, rotator.get_active_count())
+    for attempt in range(max_attempts):
         api_key = rotator.get_next_key()
+        if not api_key:
+            break
         masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "***"
-        print(f"[API Rotator] (Attempt {attempt+1}/{total_keys}) Using Key: {masked_key} on {model_name}...", flush=True)
+        print(f"[API Rotator] (Attempt {attempt+1}/{max_attempts}) Using Key: {masked_key} on {model_name}...", flush=True)
 
         try:
             http_opts = types.HttpOptions(timeout=10000) if hasattr(types, 'HttpOptions') else None
@@ -1028,10 +1102,10 @@ def analyze_with_rotated_gemini_api(image_path):
             }
         except Exception as e:
             last_err = e
-            print(f"[API Rotator Warning] Key {masked_key} encountered error: {e}. Rotating to next key...", flush=True)
-            time.sleep(0.5)
+            rotator.mark_key_failed(api_key, e)
+            print(f"[API Rotator Warning] Key {masked_key} failed: {e}. Immediately rotating to next key...", flush=True)
 
-    raise Exception(f"All {total_keys} API keys failed. Last error: {last_err}")
+    raise Exception(f"All API keys failed or were quarantined. Last error: {last_err}")
     
 def build_effective_audio_prompt():
     base = (
@@ -1060,6 +1134,7 @@ def build_effective_audio_prompt():
 def analyze_audio_with_rotated_gemini_api(audio_path):
     """
     Executes audio speech understanding and problem solving with Gemini API & Round-Robin Key Rotation.
+    Automatically quarantines failing/exhausted keys and rotates immediately.
     """
     total_keys = len(rotator.keys)
     if total_keys == 0:
@@ -1090,10 +1165,13 @@ def analyze_audio_with_rotated_gemini_api(audio_path):
     model_name = curr_model_info.get("model", "gemini-2.5-flash")
     gen_config = model_manager.get_generate_config()
 
-    for attempt in range(total_keys):
+    max_attempts = max(1, rotator.get_active_count())
+    for attempt in range(max_attempts):
         api_key = rotator.get_next_key()
+        if not api_key:
+            break
         masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "***"
-        print(f"[API Rotator Audio] (Attempt {attempt+1}/{total_keys}) Using Key: {masked_key} on {model_name}...", flush=True)
+        print(f"[API Rotator Audio] (Attempt {attempt+1}/{max_attempts}) Using Key: {masked_key} on {model_name}...", flush=True)
 
         try:
             http_opts = types.HttpOptions(timeout=10000) if hasattr(types, 'HttpOptions') else None
@@ -1121,10 +1199,10 @@ def analyze_audio_with_rotated_gemini_api(audio_path):
             }
         except Exception as e:
             last_err = e
-            print(f"[API Rotator Audio Warning] Key {masked_key} encountered error: {e}. Rotating to next key...", flush=True)
-            time.sleep(0.5)
+            rotator.mark_key_failed(api_key, e)
+            print(f"[API Rotator Audio Warning] Key {masked_key} failed: {e}. Immediately rotating to next key...", flush=True)
 
-    raise Exception(f"All {total_keys} API keys failed for audio. Last error: {last_err}")
+    raise Exception(f"All API keys failed or were quarantined for audio. Last error: {last_err}")
 
 class GeminiAutomationEngine:
     def __init__(self):
@@ -1506,8 +1584,22 @@ def handle_upload_context():
 # API Keys Management Endpoints
 @app.route('/api/keys', methods=['GET'])
 def handle_get_keys():
+    status = rotator.get_status()
     return jsonify({
-        "total": len(rotator.keys),
+        "total": status["total_keys"],
+        "active": status["active_keys"],
+        "quarantined": status["quarantined_keys"],
+        "keys": rotator.get_all_keys_masked(),
+        "quarantine_list": status["quarantine_list"]
+    })
+
+@app.route('/api/keys/reset', methods=['POST'])
+def handle_reset_keys():
+    rotator.reset_quarantine()
+    return jsonify({
+        "success": True,
+        "message": "Quarantine reset. All keys restored to active rotation pool.",
+        "active": rotator.get_active_count(),
         "keys": rotator.get_all_keys_masked()
     })
 
@@ -1518,9 +1610,11 @@ def handle_save_keys():
     if isinstance(keys, str):
         keys = [k.strip() for k in keys.split(',') if k.strip()]
     rotator.save_keys_to_env(keys)
+    status = rotator.get_status()
     return jsonify({
         "success": True,
-        "total": len(rotator.keys),
+        "total": status["total_keys"],
+        "active": status["active_keys"],
         "keys": rotator.get_all_keys_masked()
     })
 
