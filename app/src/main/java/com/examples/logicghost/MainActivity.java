@@ -67,9 +67,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import java.io.FileOutputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -190,6 +192,7 @@ public class MainActivity extends AppCompatActivity {
             .writeTimeout(60, TimeUnit.SECONDS)
             .build();
 
+    private final ExecutorService imageProcessingExecutor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private SharedPreferences prefs;
     private String currentPayload = "";
@@ -907,6 +910,62 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
     }
 
+    private File optimizeImageForUpload(File originalFile) {
+        try {
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(originalFile.getAbsolutePath(), options);
+
+            int origWidth = options.outWidth;
+            int origHeight = options.outHeight;
+            int maxDim = 1600;
+
+            int sampleSize = 1;
+            while (origWidth / (sampleSize * 2) >= maxDim || origHeight / (sampleSize * 2) >= maxDim) {
+                sampleSize *= 2;
+            }
+
+            options.inJustDecodeBounds = false;
+            options.inSampleSize = sampleSize;
+            Bitmap bitmap = BitmapFactory.decodeFile(originalFile.getAbsolutePath(), options);
+
+            if (bitmap == null) return originalFile;
+
+            int curW = bitmap.getWidth();
+            int curH = bitmap.getHeight();
+            if (curW > maxDim || curH > maxDim) {
+                float scale = Math.min((float) maxDim / curW, (float) maxDim / curH);
+                int targetW = Math.round(curW * scale);
+                int targetH = Math.round(curH * scale);
+                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, targetW, targetH, true);
+                if (scaled != bitmap) {
+                    bitmap.recycle();
+                    bitmap = scaled;
+                }
+            }
+
+            File webpFile = new File(getCacheDir(), "opt_" + System.currentTimeMillis() + ".webp");
+            FileOutputStream fos = new FileOutputStream(webpFile);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 85, fos);
+            } else {
+                bitmap.compress(Bitmap.CompressFormat.WEBP, 85, fos);
+            }
+            fos.flush();
+            fos.close();
+            bitmap.recycle();
+
+            if (originalFile.exists()) {
+                originalFile.delete();
+            }
+
+            return webpFile;
+        } catch (Exception e) {
+            Log.e(TAG, "Image optimization error: " + e.getMessage(), e);
+            return originalFile;
+        }
+    }
+
     private void captureAndProcessScreen() {
         triggerHapticShutterNotification(btnCapture);
 
@@ -922,8 +981,11 @@ public class MainActivity extends AppCompatActivity {
         imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(this), new ImageCapture.OnImageSavedCallback() {
             @Override
             public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-                updateStatusText("⚡ SOLVING WITH GEMINI AI...");
-                uploadImageToServer(photoFile);
+                updateStatusText("⚡ OPTIMIZING & SOLVING WITH GEMINI AI...");
+                imageProcessingExecutor.execute(() -> {
+                    File readyFile = optimizeImageForUpload(photoFile);
+                    handler.post(() -> uploadImageToServer(readyFile));
+                });
             }
 
             @Override
@@ -1105,11 +1167,12 @@ public class MainActivity extends AppCompatActivity {
     private void uploadImageToServer(File file) {
         String serverUrl = getResolvedServerUrl();
         String uploadEndpoint = serverUrl.replaceAll("/+$", "") + "/capture";
+        String mediaTypeStr = file.getName().endsWith(".webp") ? "image/webp" : "image/jpeg";
 
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("image", file.getName(),
-                        RequestBody.create(file, MediaType.parse("image/jpeg")))
+                        RequestBody.create(file, MediaType.parse(mediaTypeStr)))
                 .build();
 
         Request request = new Request.Builder()

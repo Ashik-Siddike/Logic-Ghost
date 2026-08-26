@@ -1,5 +1,6 @@
 import os
 import sys
+import io
 import time
 import re
 import json
@@ -12,7 +13,7 @@ from ctypes import wintypes
 import pyperclip
 import pyautogui
 from flask import Flask, request, jsonify
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageFilter
 
 # Force UTF-8 unbuffered stdout & stderr on Windows
 if hasattr(sys.stdout, 'reconfigure'):
@@ -1047,17 +1048,46 @@ def parse_ai_response(raw_text):
 
     return tag, payload, False, {}
 
+def preprocess_and_optimize_image_for_gemini(image_path, max_dim=1600):
+    """
+    Optimizes screen capture images for Gemini Vision:
+    1. Downscales large photos to max 1600px with Lanczos resampling.
+    2. Applies gentle UnsharpMask and Contrast boost for razor-sharp text/code.
+    3. Encodes to ultra-efficient WebP byte part.
+    """
+    img = Image.open(image_path)
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
+
+    w, h = img.size
+    if max(w, h) > max_dim:
+        scale = max_dim / float(max(w, h))
+        new_w = int(w * scale)
+        new_h = int(h * scale)
+        img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+    # Adaptive Text Sharpening & Contrast Boost
+    enhancer = ImageEnhance.Contrast(img)
+    img = enhancer.enhance(1.15)
+    img = img.filter(ImageFilter.UnsharpMask(radius=1.2, percent=125, threshold=3))
+
+    buf = io.BytesIO()
+    img.save(buf, format="WEBP", quality=85, method=6)
+    webp_bytes = buf.getvalue()
+
+    return types.Part.from_bytes(data=webp_bytes, mime_type="image/webp")
+
 def analyze_with_rotated_gemini_api(image_path):
     """
     Executes vision analysis with Round-Robin Key Rotation, Dynamic Model, Thinking Budget & Instant Auto-Failover.
-    Automatically quarantines failing/exhausted keys and rotates to next healthy key immediately.
+    Automatically optimizes image with WebP + Adaptive Edge Sharpening, and auto-quarantines failing keys.
     """
     total_keys = len(rotator.keys)
     if total_keys == 0:
         raise Exception("No Gemini API Keys configured in .env or rotator.")
 
     last_err = None
-    img = Image.open(image_path)
+    img_part = preprocess_and_optimize_image_for_gemini(image_path)
     prompt = build_effective_master_prompt()
     ctx_info = context_manager.get_info()
     if ctx_info["enabled"]:
@@ -1081,7 +1111,7 @@ def analyze_with_rotated_gemini_api(image_path):
             client = genai.Client(api_key=api_key, http_options=http_opts) if http_opts else genai.Client(api_key=api_key)
             response = client.models.generate_content(
                 model=model_name,
-                contents=[prompt, img],
+                contents=[prompt, img_part],
                 config=gen_config
             )
 
