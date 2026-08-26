@@ -97,9 +97,9 @@ public class BluetoothHidManager implements BluetoothProfile.ServiceListener {
         if (bluetoothHidDevice == null) return;
 
         BluetoothHidDeviceAppSdpSettings sdpSettings = new BluetoothHidDeviceAppSdpSettings(
-            "LogicGhost Keyboard",
-            "Stealth HID Keyboard Bridge",
-            "LogicGhost",
+            "Wireless Keyboard",
+            "Standard Bluetooth Keyboard",
+            "Generic",
             BluetoothHidDevice.SUBCLASS1_KEYBOARD,
             KEYBOARD_COMBO_DESCRIPTOR
         );
@@ -206,6 +206,11 @@ public class BluetoothHidManager implements BluetoothProfile.ServiceListener {
         shouldStopTyping = true;
         isTypingPaused = false;
         isTypingActive = false;
+        if (bluetoothHidDevice != null && connectedDevice != null) {
+            try {
+                bluetoothHidDevice.sendReport(connectedDevice, 1, new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+            } catch (Exception ignored) {}
+        }
     }
 
     public boolean isTypingActive() {
@@ -231,18 +236,30 @@ public class BluetoothHidManager implements BluetoothProfile.ServiceListener {
 
         executor.execute(() -> {
             try {
+                // Safety Flush: Release any stuck keys prior to starting
+                byte[] cleanRelease = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+                bluetoothHidDevice.sendReport(targetDevice, 1, cleanRelease);
+                Thread.sleep(15);
+
                 java.util.Random rng = new java.util.Random();
                 for (char c : text.toCharArray()) {
                     if (shouldStopTyping) {
                         Log.d(TAG, "Bluetooth typing stopped by emergency abort.");
+                        bluetoothHidDevice.sendReport(targetDevice, 1, cleanRelease);
                         break;
                     }
 
                     // Handle Pause / Resume at exact character
-                    while (isTypingPaused && !shouldStopTyping) {
-                        Thread.sleep(40);
+                    if (isTypingPaused) {
+                        bluetoothHidDevice.sendReport(targetDevice, 1, cleanRelease);
+                        while (isTypingPaused && !shouldStopTyping) {
+                            Thread.sleep(40);
+                        }
                     }
-                    if (shouldStopTyping) break;
+                    if (shouldStopTyping) {
+                        bluetoothHidDevice.sendReport(targetDevice, 1, cleanRelease);
+                        break;
+                    }
 
                     if (c == '\r') continue; // Skip carriage return to prevent duplicate breaks
 
@@ -254,7 +271,7 @@ public class BluetoothHidManager implements BluetoothProfile.ServiceListener {
                         continue; // Skip unrecognized unsupported characters cleanly
                     }
 
-                    int keyHoldTime = 8 + rng.nextInt(14); // 8ms - 22ms realistic contact
+                    int keyHoldTime = 12 + rng.nextInt(12); // 12ms - 24ms realistic contact
                     int charDelay = minDelayMs + rng.nextInt(Math.max(1, maxDelayMs - minDelayMs + 1));
 
                     // Extra micro-pause for spaces and brackets
@@ -268,10 +285,11 @@ public class BluetoothHidManager implements BluetoothProfile.ServiceListener {
                     Thread.sleep(keyHoldTime);
 
                     // Key Release Report
-                    byte[] releaseReport = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-                    bluetoothHidDevice.sendReport(targetDevice, 1, releaseReport);
+                    bluetoothHidDevice.sendReport(targetDevice, 1, cleanRelease);
                     Thread.sleep(charDelay);
                 }
+                // Final safety release
+                bluetoothHidDevice.sendReport(targetDevice, 1, cleanRelease);
                 isTypingActive = false;
                 if (!shouldStopTyping && callback != null) callback.onSuccess();
             } catch (Exception e) {

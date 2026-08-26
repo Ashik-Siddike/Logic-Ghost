@@ -884,10 +884,18 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
 
         print(f"[SendInput Stealth Engine] >>> INJECTING {len(text_to_type)} CHARACTERS (Raw Driver Input Active) <<<", flush=True)
 
-        # Safety: Release any stuck OS modifier keys (Alt, Ctrl, Win) via SendInput
+        # Safety: Ensure no modifier keys (Shift, Ctrl, Alt) are stuck in down state
         try:
-            for vk in [0x12, 0x11, 0x5B, 0x5C]: # VK_MENU, VK_CONTROL, VK_LWIN, VK_RWIN
-                send_input_vk(vk, 0, key_hold_time=0)
+            user32 = ctypes.windll.user32
+            for vk in [0x10, 0x11, 0x12]: # VK_SHIFT, VK_CONTROL, VK_MENU (Send KEYUP only)
+                inp_up = INPUT()
+                inp_up.type = INPUT_KEYBOARD
+                inp_up.union.ki.wVk = vk
+                inp_up.union.ki.wScan = 0
+                inp_up.union.ki.dwFlags = KEYEVENTF_KEYUP
+                inp_up.union.ki.time = 0
+                inp_up.union.ki.dwExtraInfo = None
+                user32.SendInput(1, ctypes.byref(inp_up), ctypes.sizeof(INPUT))
         except Exception:
             pass
 
