@@ -942,32 +942,36 @@ def humanize_code_for_typing(code_text):
     return '\n'.join(humanized_lines)
 
 def flush_all_modifier_keys():
-    """Forces KEYUP on Shift, Ctrl, Alt, Windows Keys, and extended modifiers to prevent any accidental shortcuts."""
+    """
+    Safely releases Shift, Ctrl, Alt, or Win keys ONLY IF they are physically or logically held down.
+    Never sends synthetic standalone Alt KEYUP which triggers Windows / Notepad / Browser KeyTips/Ribbon shortcuts!
+    """
     if sys.platform != "win32":
         return
     ensure_attached_to_default_desktop()
     try:
         user32 = ctypes.windll.user32
         MODIFIER_VKS = [
-            0x10, 0xA0, 0xA1,  # VK_SHIFT, VK_LSHIFT, VK_RSHIFT
-            0x11, 0xA2, 0xA3,  # VK_CONTROL, VK_LCONTROL, VK_RCONTROL
-            0x12, 0xA4, 0xA5,  # VK_MENU (Alt), VK_LMENU, VK_RMENU
-            0x5B, 0x5C,        # VK_LWIN, VK_RWIN (Windows Keys)
-            0x14               # VK_CAPITAL (Caps Lock)
+            0x10, 0xA0, 0xA1,  # Shift, LShift, RShift
+            0x11, 0xA2, 0xA3,  # Ctrl, LCtrl, RCtrl
+            0x12, 0xA4, 0xA5,  # Alt, LAlt, RAlt
+            0x5B, 0x5C         # LWin, RWin
         ]
         for vk in MODIFIER_VKS:
-            inp_up = INPUT()
-            inp_up.type = INPUT_KEYBOARD
-            inp_up.union.ki.wVk = vk
-            inp_up.union.ki.wScan = 0
-            inp_up.union.ki.dwFlags = KEYEVENTF_KEYUP
-            inp_up.union.ki.time = 0
-            inp_up.union.ki.dwExtraInfo = None
-            user32.SendInput(1, ctypes.byref(inp_up), ctypes.sizeof(INPUT))
+            # Only send KEYUP if the key is ACTUALLY pressed down (high bit set)
+            if (user32.GetAsyncKeyState(vk) & 0x8000) != 0:
+                inp_up = INPUT()
+                inp_up.type = INPUT_KEYBOARD
+                inp_up.union.ki.wVk = vk
+                inp_up.union.ki.wScan = 0
+                inp_up.union.ki.dwFlags = KEYEVENTF_KEYUP
+                inp_up.union.ki.time = 0
+                inp_up.union.ki.dwExtraInfo = None
+                user32.SendInput(1, ctypes.byref(inp_up), ctypes.sizeof(INPUT))
     except Exception:
         pass
 
-def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=None):
+def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=None, initial_delay_sec=1.5):
     """
     Types text character-by-character into active foreground window on Windows.
     Simulates real human physical typing with:
@@ -978,6 +982,7 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     5. Muscle-memory burst typing on common programming keywords
     6. Natural thinking hesitation pauses before new lines and structural syntax
     7. Syllable cognitive micro-jitter for identifier names
+    8. Initial Focus Grace Period (allows operator to position cursor into active input box)
     Allows instant emergency abort via typing_controller.
     """
     import random
@@ -993,6 +998,15 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     with typing_lock:
         ensure_attached_to_default_desktop()
         typing_controller.start_typing()
+
+        # Initial Focus Grace Period (allows operator to position cursor into active input box)
+        if initial_delay_sec and float(initial_delay_sec) > 0:
+            delay_f = float(initial_delay_sec)
+            print(f"[SendInput Stealth Engine] ⏳ Focus grace period ({delay_f}s)... Click into target input field!", flush=True)
+            for _ in range(int(delay_f * 20)):
+                if typing_controller.should_stop():
+                    return False
+                time.sleep(0.05)
 
         VK_RETURN = 0x0D
         VK_TAB = 0x09
@@ -1963,20 +1977,22 @@ def handle_type():
 
     min_delay = data.get('min_delay_ms')
     max_delay = data.get('max_delay_ms')
+    initial_delay = data.get('initial_delay_sec', 1.5)
 
     # Launch keystroke injection in a daemon thread so HTTP response is returned immediately (<5ms)
     # allowing /settings/speed and /api/type/stop to process concurrently without network blocking!
     threading.Thread(
         target=inject_keystrokes_to_active_window,
         args=(text,),
-        kwargs={"min_delay_ms": min_delay, "max_delay_ms": max_delay},
+        kwargs={"min_delay_ms": min_delay, "max_delay_ms": max_delay, "initial_delay_sec": initial_delay},
         daemon=True
     ).start()
 
     return jsonify({
         "success": True,
         "characters_typed": len(text),
-        "message": f"Keystroke injection active for {len(text)} characters"
+        "initial_delay_sec": initial_delay,
+        "message": f"Keystroke injection active for {len(text)} characters (Delay: {initial_delay}s)"
     })
 
 @app.route('/api/type/stop', methods=['POST'])
@@ -2013,6 +2029,7 @@ def handle_type_sequence():
     slots_list = data.get('slots', [])
     inter_slot_key = data.get('inter_key', 'TAB').upper()
     delay_between_slots_sec = float(data.get('inter_delay_sec', 1.0))
+    initial_delay_sec = float(data.get('initial_delay_sec', 1.5))
 
     if not slots_list:
         return jsonify({"error": "No slots provided"}), 400
@@ -2025,13 +2042,20 @@ def handle_type_sequence():
         KEYEVENTF_KEYUP = 0x0002
 
         print(f"[Auto-Sequence] Starting multi-slot injection for {len(slots_list)} slots...", flush=True)
+        if initial_delay_sec > 0:
+            print(f"[Auto-Sequence] ⏳ Focus grace period ({initial_delay_sec}s)... Click into first input box!", flush=True)
+            for _ in range(int(initial_delay_sec * 20)):
+                if typing_controller.should_stop():
+                    return
+                time.sleep(0.05)
+
         for i, text in enumerate(slots_list):
             if typing_controller.should_stop():
                 print("[Auto-Sequence] Interrupted before slot execution.", flush=True)
                 break
 
             if text and text.strip():
-                ok = inject_keystrokes_to_active_window(text.strip())
+                ok = inject_keystrokes_to_active_window(text.strip(), initial_delay_sec=0)
                 if not ok or typing_controller.should_stop():
                     print("[Auto-Sequence] Aborted during keystroke injection.", flush=True)
                     break

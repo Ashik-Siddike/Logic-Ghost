@@ -2314,7 +2314,8 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        updateStatusText("🚀 INJECTING AUTO-SEQUENCE (CODE -> TAB -> REASON)...");
+        updateStatusText("⏳ AUTO-SEQUENCE: CLICK FIRST BOX ON PC (1.5s BUFFER)...");
+        Toast.makeText(MainActivity.this, "⏳ 1.5s buffer: Click first box on PC now!", Toast.LENGTH_SHORT).show();
         String serverUrl = getResolvedServerUrl();
         String seqEndpoint = serverUrl.replaceAll("/+$", "") + "/type_sequence";
 
@@ -2730,7 +2731,8 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        updateStatusText("⚡ INJECTING KEYSTROKES TO ACTIVE WINDOW...");
+        updateStatusText("⏳ FOCUS BUFFER: CLICK PC INPUT BOX (1.5s)...");
+        Toast.makeText(MainActivity.this, "⏳ 1.5s buffer: Click input box on PC now!", Toast.LENGTH_SHORT).show();
         String serverUrl = getResolvedServerUrl();
         String typeEndpoint = serverUrl.replaceAll("/+$", "") + "/type";
 

@@ -406,16 +406,18 @@ app.post('/type', async (req, res) => {
         const text = req.body.text;
         const min_delay_ms = req.body.min_delay_ms;
         const max_delay_ms = req.body.max_delay_ms;
+        const initial_delay_sec = req.body.initial_delay_sec !== undefined ? req.body.initial_delay_sec : 1.5;
 
         if (!text) {
             return res.status(400).json({ error: 'Text is required for typing' });
         }
 
-        console.log(`[Express] Forwarding typing request (${text.length} chars, range=${min_delay_ms}-${max_delay_ms}ms) to Python engine...`);
+        console.log(`[Express] Forwarding typing request (${text.length} chars, range=${min_delay_ms}-${max_delay_ms}ms, initial_delay=${initial_delay_sec}s) to Python engine...`);
         const pythonResponse = await axios.post(PYTHON_TYPE_URL, { 
             text,
             min_delay_ms,
-            max_delay_ms
+            max_delay_ms,
+            initial_delay_sec
         }, { timeout: 120000 });
 
         return res.json(pythonResponse.data);
@@ -433,11 +435,13 @@ app.post('/type_sequence', async (req, res) => {
         const slots = req.body.slots || [];
         const inter_key = req.body.inter_key || 'TAB';
         const inter_delay_sec = req.body.inter_delay_sec || 1.2;
+        const initial_delay_sec = req.body.initial_delay_sec !== undefined ? req.body.initial_delay_sec : 1.5;
 
         const pythonResponse = await axios.post(PYTHON_TYPE_SEQUENCE_URL, {
             slots,
             inter_key,
-            inter_delay_sec
+            inter_delay_sec,
+            initial_delay_sec
         }, { timeout: 120000 });
 
         return res.json(pythonResponse.data);
