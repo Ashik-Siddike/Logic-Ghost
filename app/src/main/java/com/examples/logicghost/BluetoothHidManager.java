@@ -353,7 +353,7 @@ public class BluetoothHidManager implements BluetoothProfile.ServiceListener {
             case '>': return new int[]{shift, 0x37};
             case '/': return new int[]{0, 0x38};
             case '?': return new int[]{shift, 0x38};
-            default: return new int[]{0, 0x2C};
+            default: return new int[]{0, 0};
         }
     }
 }

@@ -539,7 +539,57 @@ BASE_MASTER_PROMPT = (
     "• Prefix with: [CHECK] followed by the correct option letter and text.\n"
     "  Example: [CHECK] Option B: O(n log n)\n\n"
     "PROTOCOL 5: DIRECT COMPARISON / BEST OPTION QUESTIONS (PREFIX: [COMPARE])\n"
-    "• Prefix with: [COMPARE] BEST: <Selected Option> | WHY: <Clear, simple 1-sentence reason>."
+    "• Prefix with: [COMPARE] BEST: <Selected Option> | WHY: <Clear, simple 1-sentence reason>.\n\n"
+    "PROTOCOL 6: AETHER / MULTIMANGO AUDIO TRANSCRIPT REVIEW & STT CORRECTION (PREFIX: [TRANSCRIPT])\n"
+    "When an audio player, transcript review, speech-to-text task, or spoken Bengali segment is presented:\n"
+    "• Prefix your response with: [TRANSCRIPT] followed immediately by the corrected transcript.\n"
+    "• Output ONLY the exact corrected transcript that belongs in the active text box.\n"
+    "• STRICTLY FOLLOW ALL AETHER GUIDELINES IN THE KNOWLEDGEBASE:\n"
+    "  - Apply ONLY approved Bengali fillers in [ ]: [আ], [উম], [হুম], [আচ্ছা], [ঠিক], [ইয়ে], [ওহ], [উফ], [মানে], [শসস], [ওহ-হা], [হ্যাঁ]. (No brackets if words have actual semantic meaning like greetings/agreements).\n"
+    "  - Apply English non-speech sound tags in < >: <cough>, <laugh>, <cry>, <throatclear>, <breath>, <pause>, <gasp>, <swallow>, <gag>, <noise>, <music>, <inaudible>.\n"
+    "  - Convert numbers, currency, time, percentages, and dates to STANDARD WRITTEN/NUMERIC FORM (e.g. $500, €10, 1974, 42, 20%, বিকাল 3:00 টা, 1 জানুয়ারি, 2025, 5' 6\", 50 mph).\n"
+    "  - Punctuate by intonation (rising pitch = ? even without question words).\n"
+    "  - Incomplete words get hyphens (জা- জানা- জানাথন), full word repetitions get NO hyphens (একটা একটা একটা), cutoffs get em-dash (—).\n"
+    "  - Foreign words in Bengali: {বাংলা(English)}.\n"
+    "  - Uncertain guess: ((শব্দ)).\n"
+    "  - DO NOT output explanations or preamble. Just the corrected text ready to be typed into the box.\n\n"
+    "PROTOCOL 7: MULTIMODAL & IMAGE REVIEW / COMPARISON\n"
+    "When an image comparison, realism rating, visual defect, or ad review task is presented:\n"
+    "• If Multiple Choice: Use [CHECK] Option X.\n"
+    "• If Comparison/Best: Use [COMPARE] BEST: <X> | WHY: <Brief reason>.\n"
+    "• If Multi-part justification/rating: Use <<<SLOT:RATING>>> and <<<SLOT:EXPLANATION>>>.\n\n"
+    "PROTOCOL 8: REALISM QUIZ (SPOT THE REAL PHOTO - REAL VS AI)\n"
+    "When asked 'Which image is more likely to be a real photograph? (Image A vs Image B)' or evaluating photographic authenticity:\n"
+    "• Identify the genuine camera photograph vs the AI-generated synthetic image.\n"
+    "• STRICT EVALUATION RULES (vs-1786750284-realism-quiz-v2):\n"
+    "  - NEVER choose an image because it 'pops', has higher resolution, or looks sharper. Real photos come in all quality levels.\n"
+    "  - Pinpoint the exact AI tells in the synthetic image:\n"
+    "    1. Light with no source (soft light from all angles without a physical lamp/sun/window, no real cast shadows).\n"
+    "    2. Waxy/plastic texture (skin without pores, hair rendered as a rigid block/sheet, fabric with no weave, food with no crumbs).\n"
+    "    3. Text breakdown (letters that look like words from afar but dissolve into meaningless symbols up close).\n"
+    "    4. Impossible geometry or reflection glitches.\n"
+    "• Output: [CHECK] Image A (or Image B) - Real Photo | Fake Tell: <Specific AI tell in other image>.\n\n"
+    "PROTOCOL 9: TEXT-TO-IMAGE PAIRWISE EVALUATION (260126-text-to-image-compare)\n"
+    "When evaluating Image A (left) vs Image B (right) against a text prompt:\n"
+    "• Structure your response with:\n"
+    "<<<SLOT:RATING>>>\n"
+    "1. Instruction Following: <Image A / Image B / Tie>\n"
+    "2. Visual Quality: <Image A / Image B / Tie>\n"
+    "3. Less AI-Generated: <Image A / Image B / Tie>\n"
+    "4. Overall Choice: <Strongly Prefer A / Slightly Prefer A / Tie / Slightly Prefer B / Strongly Prefer B>\n"
+    "<<<SLOT:EXPLANATION>>>\n"
+    "<2-3 sentence technical justification citing concrete visual elements in Image A vs Image B>\n\n"
+    "PROTOCOL 10: OMNI TTS ELO & DUAL VOICE COMPARISON (260209-omni-tts-elo)\n"
+    "When comparing Response A vs Response B voice audio clips against an input text/audio prompt:\n"
+    "• Structure your response with:\n"
+    "<<<SLOT:RATING>>>\n"
+    "• Winner: <Response A / Response B / Tie>\n"
+    "• Audio Quality: <Technical signal check - noise, hiss, distortion>\n"
+    "• Naturalness: <Human rhythm, breath pauses, pacing>\n"
+    "• Pronunciation: <Articulation and phonetic clarity>\n"
+    "• Dominant Factor: <Audio Quality / Naturalness / Pronunciation>\n"
+    "<<<SLOT:EXPLANATION>>>\n"
+    "<Concise 2-sentence justification explaining the superiority of the chosen response>\n"
 )
 
 def build_effective_master_prompt():
@@ -663,6 +713,29 @@ class INPUT(ctypes.Structure):
         ("union", INPUT_UNION)
     ]
 
+if sys.platform == "win32":
+    try:
+        user32 = ctypes.windll.user32
+        user32.SendInput.argtypes = [wintypes.UINT, ctypes.POINTER(INPUT), ctypes.c_int]
+        user32.SendInput.restype = wintypes.UINT
+    except Exception:
+        pass
+
+def ensure_attached_to_default_desktop():
+    """Attaches the calling thread to the user's interactive desktop (WinSta0\\Default)."""
+    if sys.platform != "win32":
+        return
+    try:
+        user32 = ctypes.windll.user32
+        hwinsta = user32.OpenWindowStationW('WinSta0', False, 0x0000037F)
+        if hwinsta:
+            user32.SetProcessWindowStation(hwinsta)
+        hdesk = user32.OpenDesktopW('Default', 0, False, 0x000001FF)
+        if hdesk:
+            user32.SetThreadDesktop(hdesk)
+    except Exception as e:
+        print(f"[Desktop Attach Warning] {e}", flush=True)
+
 def send_input_unicode(char_code, key_hold_time=0.005):
     """Sends a Unicode character via driver-level SendInput API."""
     user32 = ctypes.windll.user32
@@ -682,7 +755,13 @@ def send_input_unicode(char_code, key_hold_time=0.005):
     inp_up.union.ki.time = 0
     inp_up.union.ki.dwExtraInfo = None
 
-    user32.SendInput(1, ctypes.byref(inp_down), ctypes.sizeof(INPUT))
+    ret = user32.SendInput(1, ctypes.byref(inp_down), ctypes.sizeof(INPUT))
+    if ret == 0:
+        ensure_attached_to_default_desktop()
+        ret = user32.SendInput(1, ctypes.byref(inp_down), ctypes.sizeof(INPUT))
+        if ret == 0:
+            err = ctypes.windll.kernel32.GetLastError()
+            print(f"[SendInput Warning] Unicode {char_code} failed with error {err}", flush=True)
     if key_hold_time > 0:
         time.sleep(key_hold_time)
     user32.SendInput(1, ctypes.byref(inp_up), ctypes.sizeof(INPUT))
@@ -706,7 +785,13 @@ def send_input_vk(vk, scancode, key_hold_time=0.005):
     inp_up.union.ki.time = 0
     inp_up.union.ki.dwExtraInfo = None
 
-    user32.SendInput(1, ctypes.byref(inp_down), ctypes.sizeof(INPUT))
+    ret = user32.SendInput(1, ctypes.byref(inp_down), ctypes.sizeof(INPUT))
+    if ret == 0:
+        ensure_attached_to_default_desktop()
+        ret = user32.SendInput(1, ctypes.byref(inp_down), ctypes.sizeof(INPUT))
+        if ret == 0:
+            err = ctypes.windll.kernel32.GetLastError()
+            print(f"[SendInput Warning] VK 0x{vk:02X} failed with error {err}", flush=True)
     if key_hold_time > 0:
         time.sleep(key_hold_time)
     user32.SendInput(1, ctypes.byref(inp_up), ctypes.sizeof(INPUT))
@@ -769,6 +854,10 @@ def humanize_code_for_typing(code_text):
     3. Naturally varies ~20-30% of binary operators and control syntax for realistic human coding aesthetics.
     """
     if not code_text or not code_text.strip():
+        return code_text
+
+    # Bypass code humanizer for Bengali or non-code plain text to keep formatting 100% exact
+    if re.search(r'[\u0980-\u09FF]', code_text) or not re.search(r'[{};=+\-*/<>]|\b(def|class|function|var|let|const|import|return)\b', code_text):
         return code_text
 
     import random
@@ -852,6 +941,32 @@ def humanize_code_for_typing(code_text):
 
     return '\n'.join(humanized_lines)
 
+def flush_all_modifier_keys():
+    """Forces KEYUP on Shift, Ctrl, Alt, Windows Keys, and extended modifiers to prevent any accidental shortcuts."""
+    if sys.platform != "win32":
+        return
+    ensure_attached_to_default_desktop()
+    try:
+        user32 = ctypes.windll.user32
+        MODIFIER_VKS = [
+            0x10, 0xA0, 0xA1,  # VK_SHIFT, VK_LSHIFT, VK_RSHIFT
+            0x11, 0xA2, 0xA3,  # VK_CONTROL, VK_LCONTROL, VK_RCONTROL
+            0x12, 0xA4, 0xA5,  # VK_MENU (Alt), VK_LMENU, VK_RMENU
+            0x5B, 0x5C,        # VK_LWIN, VK_RWIN (Windows Keys)
+            0x14               # VK_CAPITAL (Caps Lock)
+        ]
+        for vk in MODIFIER_VKS:
+            inp_up = INPUT()
+            inp_up.type = INPUT_KEYBOARD
+            inp_up.union.ki.wVk = vk
+            inp_up.union.ki.wScan = 0
+            inp_up.union.ki.dwFlags = KEYEVENTF_KEYUP
+            inp_up.union.ki.time = 0
+            inp_up.union.ki.dwExtraInfo = None
+            user32.SendInput(1, ctypes.byref(inp_up), ctypes.sizeof(INPUT))
+    except Exception:
+        pass
+
 def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=None):
     """
     Types text character-by-character into active foreground window on Windows.
@@ -876,6 +991,7 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
     text_to_type = humanize_code_for_typing(text)
 
     with typing_lock:
+        ensure_attached_to_default_desktop()
         typing_controller.start_typing()
 
         VK_RETURN = 0x0D
@@ -883,22 +999,15 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
         VK_BACK = 0x08
         VK_SPACE = 0x20
 
+        user32 = ctypes.windll.user32
+        fg = user32.GetForegroundWindow()
+        title = ctypes.create_unicode_buffer(512)
+        user32.GetWindowTextW(fg, title, 512)
+        print(f"[SendInput Stealth Engine] Target Foreground Window: HWND {fg} ('{title.value}')", flush=True)
         print(f"[SendInput Stealth Engine] >>> INJECTING {len(text_to_type)} CHARACTERS (Raw Driver Input Active) <<<", flush=True)
 
-        # Safety: Ensure no modifier keys (Shift, Ctrl, Alt) are stuck in down state
-        try:
-            user32 = ctypes.windll.user32
-            for vk in [0x10, 0x11, 0x12]: # VK_SHIFT, VK_CONTROL, VK_MENU (Send KEYUP only)
-                inp_up = INPUT()
-                inp_up.type = INPUT_KEYBOARD
-                inp_up.union.ki.wVk = vk
-                inp_up.union.ki.wScan = 0
-                inp_up.union.ki.dwFlags = KEYEVENTF_KEYUP
-                inp_up.union.ki.time = 0
-                inp_up.union.ki.dwExtraInfo = None
-                user32.SendInput(1, ctypes.byref(inp_up), ctypes.sizeof(INPUT))
-        except Exception:
-            pass
+        # Safety: Release all stuck modifiers (Win, Shift, Ctrl, Alt) before starting
+        flush_all_modifier_keys()
 
         typo_cooldown = 20 # Minimum characters before next typo can occur
         chars_since_typo = 20
@@ -973,6 +1082,7 @@ def inject_keystrokes_to_active_window(text, min_delay_ms=None, max_delay_ms=Non
             print(f"[SendInput Stealth Engine] ✅ Successfully finished typing {len(text_to_type)} characters.", flush=True)
             return True
         finally:
+            flush_all_modifier_keys()
             typing_controller.finish_typing()
 
 def clean_code_snippet(text):
@@ -1039,7 +1149,7 @@ def parse_ai_response(raw_text):
     tag = "[TYPE]"
     payload = raw_text
 
-    tag_match = re.search(r'\[(TYPE|CHECK|VOICE|COMPARE)\]', raw_text, re.IGNORECASE)
+    tag_match = re.search(r'\[(TYPE|CHECK|VOICE|COMPARE|TRANSCRIPT)\]', raw_text, re.IGNORECASE)
     if tag_match:
         tag_name = tag_match.group(1).upper()
         tag = f"[{tag_name}]"
@@ -1054,6 +1164,10 @@ def parse_ai_response(raw_text):
 
     if tag == "[TYPE]":
         payload = clean_code_snippet(payload)
+    elif tag == "[TRANSCRIPT]":
+        # Strip code markdown backticks if any, but preserve exact text and tags
+        payload = re.sub(r'^```[a-zA-Z0-9_-]*\n?', '', payload, flags=re.MULTILINE)
+        payload = re.sub(r'\n?```$', '', payload, flags=re.MULTILINE).strip()
 
     return tag, payload, False, {}
 
@@ -1168,22 +1282,38 @@ def analyze_with_rotated_gemini_api(image_path):
     
 def build_effective_audio_prompt():
     base = (
-        "You are an elite coding expert, AI benchmark evaluator, RLHF specialist, and technical problem solver.\n"
-        "Carefully listen to and understand the user's spoken audio / question / prompt in any language (English, Bengali, Hindi, etc.).\n"
-        "Transcribe and analyze what was asked or spoken in the audio, and provide the most direct, accurate, high-quality, optimal answer.\n\n"
-        "STRICT OUTPUT PROTOCOLS:\n\n"
-        "PROTOCOL 1: MULTI-PART / CODE + EXPLANATION / RLHF TASKS:\n"
-        "When the audio asks for code along with an explanation or evaluation:\n"
-        "Structure your response with:\n"
+        "You are an elite coding expert, AI benchmark evaluator, RLHF specialist, and Bengali ASR Speech-to-Text transcriber.\n"
+        "Carefully listen to the provided audio.\n\n"
+        "AUTOMATIC INTENT DETECTION & OUTPUT PROTOCOLS:\n\n"
+        "PROTOCOL 1: AETHER / MULTIMANGO BENGALI ASR TRANSCRIPTION (CRITICAL):\n"
+        "If the audio is a Bengali speech clip, conversation, or speech-to-text / transcript review task:\n"
+        "• Your SOLE OBJECTIVE is to transcribe what the speaker said VERBATIM according to the Aether Master Rules.\n"
+        "• DO NOT ANSWER OR REPLY TO QUESTIONS ASKED IN THE AUDIO. Transcribe what was spoken.\n"
+        "• Prefix your output with: [TRANSCRIPT] followed immediately by the exact verbatim transcript.\n"
+        "• STRICT TRANSCRIPTION RULES:\n"
+        "  1. Golden Rule: Transcribe verbatim as heard. Never clean up, summarize, or fix grammar/pronunciation.\n"
+        "  2. Religious Text: Transcribe exactly as spoken without correcting from scripture.\n"
+        "  3. Approved 12 Bengali Fillers in [ ]: [আ], [উম], [হুম], [আচ্ছা], [ঠিক], [ইয়ে], [ওহ], [উফ], [মানে], [শসস], [ওহ-হা], [হ্যাঁ].\n"
+        "     CAUTION: Do NOT put brackets if the word has real semantic meaning (e.g. agreement 'আচ্ছা, বুঝলাম!', answering 'হ্যাঁ, আমি যাব।').\n"
+        "  4. Non-Speech Sounds in < > (English tags with surrounding space): <cough>, <laugh>, <cry>, <throatclear>, <breath>, <pause> (>1s silence), <gasp>, <swallow>, <gag>, <noise>, <music>, <inaudible>. Do NOT transcribe background song lyrics.\n"
+        "  5. Standard Written Form: Numbers, currency, dates, percentages, time, metrics MUST be in standard digits/symbols ($500, €10, 1974, 42, 25 লক্ষ, 20%, বিকাল 3:00 টা, 1 জানুয়ারি, 2025, 5' 6\", 50 mph, রুম 305, AT&T).\n"
+        "  6. False Starts, Stammering, Cutoffs: Word fragments hyphenated (জা- জানা-), stammering hyphenated (তা-তা-তাই), word repetitions WITHOUT hyphens (একটা একটা একটা), cutoff at end em-dash (—), cutoff at start em-dash (—).\n"
+        "  7. Uncertain Words vs Inaudible: 70% educated guess in double parens ((ভারসাম্য)). Completely unintelligible: <inaudible>.\n"
+        "  8. Foreign Words: {বাংলা(English)} e.g. {মিটিং(meeting)}, {কনফ্লিক্ট(Conflict)}. Brands: Google, AT&T.\n"
+        "  9. Intonation Punctuation: Rising tone MUST end in ? even without question words. Allowed: ।, ,, ?, !, “”, -, –.\n"
+        "  10. Elongated words spelled normally (e.g. 'হ্যালো').\n"
+        "• Output ONLY the verbatim transcript with [TRANSCRIPT] prefix. No explanations.\n\n"
+        "PROTOCOL 2: MULTI-PART / CODE + EXPLANATION / RLHF CODING TASKS:\n"
+        "When the audio is a user giving a coding prompt or asking for code along with explanation:\n"
+        "Structure with:\n"
         "<<<SLOT:RATING>>>\nConcise verdict/rating\n"
-        "<<<SLOT:CODE>>>\nOnly the clean, 100% production-ready solution code\n"
-        "<<<SLOT:EXPLANATION>>>\nDetailed technical explanation covering root cause, logic, and complexity.\n"
-        "<<<SLOT:AUDIT>>>\nEdge cases & security notes.\n\n"
-        "PROTOCOL 2: STANDARD CODING OR TEXT:\n"
-        "• Prefix with [TYPE] followed by the pure code or text solution to type.\n"
-        "• Prefix with [CHECK] for multiple-choice or true/false questions.\n"
-        "• Prefix with [VOICE] for direct spoken answers.\n"
-        "Do not add conversational filler. Provide the exact solution directly."
+        "<<<SLOT:CODE>>>\nProduction code\n"
+        "<<<SLOT:EXPLANATION>>>\nTechnical explanation\n"
+        "<<<SLOT:AUDIT>>>\nEdge cases & security notes\n\n"
+        "PROTOCOL 3: STANDARD CODING OR ORAL INTERVIEW QUESTIONS:\n"
+        "• Prefix with [TYPE] for pure code/text solutions.\n"
+        "• Prefix with [CHECK] for multiple-choice answers.\n"
+        "• Prefix with [VOICE] for direct spoken answers to conceptual interview questions."
     )
     ctx_info = context_manager.get_info()
     if ctx_info["enabled"] and ctx_info["text"]:
@@ -1282,6 +1412,236 @@ def analyze_audio_with_rotated_gemini_api(audio_path):
                     print(f"[API Parallel Audio Race Warning] Key {f'{k[:6]}...{k[-4:]}'} failed: {e}. Checking other parallel racer...", flush=True)
 
     raise Exception(f"All API keys failed in parallel audio race or were quarantined. Last error: {last_err}")
+
+def execute_gemini_multimodal_attempt(api_key, model_name, contents, gen_config):
+    masked_key = f"{api_key[:6]}...{api_key[-4:]}" if len(api_key) > 10 else "***"
+    http_opts = types.HttpOptions(timeout=15000) if hasattr(types, 'HttpOptions') else None
+    client = genai.Client(api_key=api_key, http_options=http_opts) if http_opts else genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model=model_name,
+        contents=contents,
+        config=gen_config
+    )
+    raw_text = (response.text or "").strip()
+    if not raw_text:
+        raise Exception("Empty response received from Gemini API")
+    return raw_text, masked_key
+
+def analyze_multi_image_with_rotated_gemini_api(image_paths):
+    """
+    Analyzes multiple images (e.g. Image A vs Image B, or Prompt + Multi-photos) in a single Gemini Vision call.
+    Uses Parallel Dual-Key Speculative Execution.
+    """
+    total_keys = len(rotator.keys)
+    if total_keys == 0:
+        raise Exception("No Gemini API Keys configured.")
+
+    img_parts = [preprocess_and_optimize_image_for_gemini(p) for p in image_paths if os.path.exists(p)]
+    if not img_parts:
+        raise Exception("No valid images could be loaded for batch analysis.")
+
+    prompt = build_effective_master_prompt()
+    contents = [prompt] + img_parts
+
+    curr_model_info = model_manager.get_info()
+    model_name = curr_model_info.get("model", "gemini-2.5-flash")
+    gen_config = model_manager.get_generate_config()
+
+    last_err = None
+    active_count = rotator.get_active_count()
+    max_rounds = max(1, (active_count + 1) // 2)
+
+    for round_idx in range(max_rounds):
+        key1 = rotator.get_next_key()
+        key2 = rotator.get_next_key() if active_count > 1 else None
+        keys_to_race = [k for k in [key1, key2] if k]
+        if not keys_to_race:
+            break
+
+        masked_keys = [f"{k[:6]}...{k[-4:]}" for k in keys_to_race]
+        print(f"[API Parallel Batch Race] (Round {round_idx+1}/{max_rounds}) Racing {len(keys_to_race)} Keys on {len(img_parts)} images...", flush=True)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(keys_to_race)) as executor:
+            future_to_key = {
+                executor.submit(execute_gemini_multimodal_attempt, k, model_name, contents, gen_config): k
+                for k in keys_to_race
+            }
+            for future in concurrent.futures.as_completed(future_to_key):
+                k = future_to_key[future]
+                try:
+                    raw_text, masked_key = future.result()
+                    print(f"[API Parallel Batch Race] 🏁 WINNER: Key {masked_key} won race ({len(raw_text)} chars).", flush=True)
+                    tag, payload, is_multi_slot, slots = parse_ai_response(raw_text)
+                    return {
+                        "raw_answer": raw_text,
+                        "tag": tag,
+                        "payload": payload,
+                        "is_multi_slot": is_multi_slot,
+                        "slots": slots,
+                        "engine": f"{model_name}-batch",
+                        "key_used": masked_key,
+                        "model_preset": curr_model_info['current_preset'],
+                        "rules_active": context_manager.get_info()["enabled"]
+                    }
+                except Exception as e:
+                    last_err = e
+                    rotator.mark_key_failed(k, e)
+                    print(f"[API Parallel Batch Race Warning] Key failed: {e}", flush=True)
+
+    raise Exception(f"All API keys failed in batch image race. Last error: {last_err}")
+
+def analyze_video_with_rotated_gemini_api(video_path):
+    """
+    Analyzes MP4 video file with Gemini Multimodal for scene alignment, reverse prompting, and quality QA.
+    """
+    total_keys = len(rotator.keys)
+    if total_keys == 0:
+        raise Exception("No Gemini API Keys configured.")
+
+    with open(video_path, 'rb') as f:
+        vid_bytes = f.read()
+
+    vid_part = types.Part.from_bytes(data=vid_bytes, mime_type="video/mp4")
+    prompt = (
+        "You are an expert video benchmark evaluator and reverse prompt engineer.\n"
+        "Carefully analyze the video clip.\n"
+        "1. Identify the core action, visual style, lighting, camera movement, and subjects.\n"
+        "2. Structure your reverse prompt or evaluation according to guidelines:\n"
+        "<<<SLOT:RATING>>>\n"
+        "Concise scene summary & camera movement (e.g. Pan, Zoom, Tracking, Static)\n"
+        "<<<SLOT:CODE>>>\n"
+        "Exact Reverse Prompt (Opening Scene, Action, Ending)\n"
+        "<<<SLOT:EXPLANATION>>>\n"
+        "Detailed visual coherence, motion smoothness, and lighting consistency assessment\n"
+    )
+    ctx_info = context_manager.get_info()
+    if ctx_info["enabled"] and ctx_info["text"]:
+        prompt += f"\n\n### MANDATORY REFERENCE GUIDELINES:\n{ctx_info['text']}\n### END GUIDELINES\n"
+
+    contents = [prompt, vid_part]
+    curr_model_info = model_manager.get_info()
+    model_name = curr_model_info.get("model", "gemini-2.5-flash")
+    gen_config = model_manager.get_generate_config()
+
+    last_err = None
+    active_count = rotator.get_active_count()
+    max_rounds = max(1, (active_count + 1) // 2)
+
+    for round_idx in range(max_rounds):
+        key1 = rotator.get_next_key()
+        key2 = rotator.get_next_key() if active_count > 1 else None
+        keys_to_race = [k for k in [key1, key2] if k]
+        if not keys_to_race:
+            break
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(keys_to_race)) as executor:
+            future_to_key = {
+                executor.submit(execute_gemini_multimodal_attempt, k, model_name, contents, gen_config): k
+                for k in keys_to_race
+            }
+            for future in concurrent.futures.as_completed(future_to_key):
+                k = future_to_key[future]
+                try:
+                    raw_text, masked_key = future.result()
+                    tag, payload, is_multi_slot, slots = parse_ai_response(raw_text)
+                    return {
+                        "raw_answer": raw_text,
+                        "tag": tag,
+                        "payload": payload,
+                        "is_multi_slot": is_multi_slot,
+                        "slots": slots,
+                        "engine": f"{model_name}-video",
+                        "key_used": masked_key,
+                        "model_preset": curr_model_info['current_preset'],
+                        "rules_active": ctx_info["enabled"]
+                    }
+                except Exception as e:
+                    last_err = e
+                    rotator.mark_key_failed(k, e)
+
+    raise Exception(f"All API keys failed in video race. Last error: {last_err}")
+
+def analyze_dual_audio_with_rotated_gemini_api(audio_a_path, audio_b_path):
+    """
+    Performs pairwise TTS / Voice comparison (Omni TTS ELO) comparing Voice A vs Voice B.
+    """
+    total_keys = len(rotator.keys)
+    if total_keys == 0:
+        raise Exception("No Gemini API Keys configured.")
+
+    with open(audio_a_path, 'rb') as f:
+        bytes_a = f.read()
+    with open(audio_b_path, 'rb') as f:
+        bytes_b = f.read()
+
+    part_a = types.Part.from_bytes(data=bytes_a, mime_type="audio/mp4")
+    part_b = types.Part.from_bytes(data=bytes_b, mime_type="audio/mp4")
+
+    prompt = (
+        "You are an elite speech evaluation specialist and TTS ELO pairwise judge (Omni TTS ELO).\n"
+        "Carefully listen to Voice A (First Audio) and Voice B (Second Audio).\n"
+        "Compare them head-to-head on the 5 NorthStar evaluation criteria:\n"
+        "1. Audio Quality (hiss, noise, clipping, technical distortion only - do not penalize pacing here)\n"
+        "2. Naturalness (human breath, natural pacing, organic conversational flow)\n"
+        "3. Persona Likeness (speaker voice similarity and tone)\n"
+        "4. Pronunciation Faithfulness (articulation clarity)\n"
+        "5. Dominant Factor: Declare the decisive dimension.\n\n"
+        "STRICT OUTPUT FORMAT:\n"
+        "<<<SLOT:RATING>>>\n"
+        "• Winner: <Response A / Response B / Tie>\n"
+        "• Audio Quality: <Score summary - noise/hiss>\n"
+        "• Naturalness: <Pacing, pauses, breath summary>\n"
+        "• Pronunciation: <Articulation clarity summary>\n"
+        "• Dominant Factor: <Audio Quality / Naturalness / Pronunciation>\n"
+        "<<<SLOT:EXPLANATION>>>\n"
+        "<Concise 2-sentence justification explaining why the winning response is superior>\n"
+    )
+    ctx_info = context_manager.get_info()
+    if ctx_info["enabled"] and ctx_info["text"]:
+        prompt += f"\n\n### MANDATORY REFERENCE GUIDELINES:\n{ctx_info['text']}\n### END GUIDELINES\n"
+
+    contents = [prompt, "Voice A Sample:", part_a, "Voice B Sample:", part_b]
+    curr_model_info = model_manager.get_info()
+    model_name = curr_model_info.get("model", "gemini-2.5-flash")
+    gen_config = model_manager.get_generate_config()
+
+    last_err = None
+    active_count = rotator.get_active_count()
+    max_rounds = max(1, (active_count + 1) // 2)
+
+    for round_idx in range(max_rounds):
+        key1 = rotator.get_next_key()
+        key2 = rotator.get_next_key() if active_count > 1 else None
+        keys_to_race = [k for k in [key1, key2] if k]
+        if not keys_to_race:
+            break
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(keys_to_race)) as executor:
+            future_to_key = {
+                executor.submit(execute_gemini_multimodal_attempt, k, model_name, contents, gen_config): k
+                for k in keys_to_race
+            }
+            for future in concurrent.futures.as_completed(future_to_key):
+                k = future_to_key[future]
+                try:
+                    raw_text, masked_key = future.result()
+                    tag, payload, is_multi_slot, slots = parse_ai_response(raw_text)
+                    return {
+                        "raw_answer": raw_text,
+                        "tag": tag,
+                        "payload": payload,
+                        "is_multi_slot": is_multi_slot,
+                        "slots": slots,
+                        "engine": f"{model_name}-tts-elo",
+                        "key_used": masked_key,
+                        "model_preset": curr_model_info['current_preset'],
+                        "rules_active": ctx_info["enabled"]
+                    }
+                except Exception as e:
+                    last_err = e
+                    rotator.mark_key_failed(k, e)
+
+    raise Exception(f"All API keys failed in dual audio race. Last error: {last_err}")
 
 class GeminiAutomationEngine:
     def __init__(self):
@@ -1446,6 +1806,39 @@ def worker_thread():
                         "engine": "none"
                     }
                 result_holder['result'] = res
+            elif action == 'process_batch_images':
+                if len(rotator.keys) > 0 and HAS_GENAI:
+                    res = analyze_multi_image_with_rotated_gemini_api(args['image_paths'])
+                else:
+                    res = {
+                        "raw_answer": "[COMPARE] No Gemini API Key configured.",
+                        "tag": "[COMPARE]",
+                        "payload": "Please configure Gemini API Key",
+                        "engine": "none"
+                    }
+                result_holder['result'] = res
+            elif action == 'process_video':
+                if len(rotator.keys) > 0 and HAS_GENAI:
+                    res = analyze_video_with_rotated_gemini_api(args['video_path'])
+                else:
+                    res = {
+                        "raw_answer": "[TYPE] No Gemini API Key configured.",
+                        "tag": "[TYPE]",
+                        "payload": "Please configure Gemini API Key",
+                        "engine": "none"
+                    }
+                result_holder['result'] = res
+            elif action == 'compare_audio':
+                if len(rotator.keys) > 0 and HAS_GENAI:
+                    res = analyze_dual_audio_with_rotated_gemini_api(args['audio_path_a'], args['audio_path_b'])
+                else:
+                    res = {
+                        "raw_answer": "[COMPARE] No Gemini API Key configured.",
+                        "tag": "[COMPARE]",
+                        "payload": "Please configure Gemini API Key",
+                        "engine": "none"
+                    }
+                result_holder['result'] = res
             elif action == 'stealth_hide':
                 hide_browser_stealth()
                 result_holder['result'] = {"success": True, "mode": "hidden"}
@@ -1480,6 +1873,46 @@ def handle_process():
 
     return jsonify(result_holder.get('result', {}))
 
+@app.route('/process_batch_images', methods=['POST'])
+def handle_process_batch_images():
+    data = request.json or {}
+    image_paths = data.get('imagePaths', [])
+
+    if not image_paths or not isinstance(image_paths, list):
+        return jsonify({"error": "Valid list of imagePaths required"}), 400
+
+    result_holder = {}
+    done_event = threading.Event()
+    task_queue.put(('process_batch_images', {'image_paths': image_paths}, result_holder, done_event))
+
+    if not done_event.wait(timeout=120):
+        return jsonify({"error": "Batch processing timed out after 120s"}), 504
+
+    if 'error' in result_holder:
+        return jsonify({"error": result_holder['error']}), 500
+
+    return jsonify(result_holder.get('result', {}))
+
+@app.route('/process_video', methods=['POST'])
+def handle_process_video():
+    data = request.json or {}
+    video_path = data.get('videoPath')
+
+    if not video_path or not os.path.exists(video_path):
+        return jsonify({"error": "Valid videoPath required"}), 400
+
+    result_holder = {}
+    done_event = threading.Event()
+    task_queue.put(('process_video', {'video_path': video_path}, result_holder, done_event))
+
+    if not done_event.wait(timeout=120):
+        return jsonify({"error": "Video processing timed out after 120s"}), 504
+
+    if 'error' in result_holder:
+        return jsonify({"error": result_holder['error']}), 500
+
+    return jsonify(result_holder.get('result', {}))
+
 @app.route('/process_audio', methods=['POST'])
 def handle_process_audio():
     data = request.json or {}
@@ -1494,6 +1927,27 @@ def handle_process_audio():
 
     if not done_event.wait(timeout=120):
         return jsonify({"error": "Audio processing timed out after 120s"}), 504
+
+    if 'error' in result_holder:
+        return jsonify({"error": result_holder['error']}), 500
+
+    return jsonify(result_holder.get('result', {}))
+
+@app.route('/compare_audio', methods=['POST'])
+def handle_compare_audio():
+    data = request.json or {}
+    audio_path_a = data.get('audioPathA')
+    audio_path_b = data.get('audioPathB')
+
+    if not audio_path_a or not audio_path_b or not os.path.exists(audio_path_a) or not os.path.exists(audio_path_b):
+        return jsonify({"error": "Both audioPathA and audioPathB must exist"}), 400
+
+    result_holder = {}
+    done_event = threading.Event()
+    task_queue.put(('compare_audio', {'audio_path_a': audio_path_a, 'audio_path_b': audio_path_b}, result_holder, done_event))
+
+    if not done_event.wait(timeout=120):
+        return jsonify({"error": "Voice comparison timed out after 120s"}), 504
 
     if 'error' in result_holder:
         return jsonify({"error": result_holder['error']}), 500

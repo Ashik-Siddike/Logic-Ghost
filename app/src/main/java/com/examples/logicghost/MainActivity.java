@@ -51,6 +51,14 @@ import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
+import androidx.camera.video.FileOutputOptions;
+import androidx.camera.video.PendingRecording;
+import androidx.camera.video.Quality;
+import androidx.camera.video.QualitySelector;
+import androidx.camera.video.Recorder;
+import androidx.camera.video.Recording;
+import androidx.camera.video.VideoCapture;
+import androidx.camera.video.VideoRecordEvent;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -170,6 +178,54 @@ public class MainActivity extends AppCompatActivity {
     private ImageCapture imageCapture;
     private BluetoothHidManager hidManager;
 
+    // Capture Modes (1-Shot, Batch, Voice A/B, Video)
+    private enum CaptureMode {
+        SINGLE,
+        BATCH,
+        VOICE_AB,
+        VIDEO
+    }
+    private CaptureMode currentCaptureMode = CaptureMode.SINGLE;
+
+    // Mode Switcher Views
+    private TextView btnModeSingle, btnModeBatch, btnModeVoiceAB, btnModeVideo;
+    private FrameLayout layoutStagingDock;
+    private LinearLayout layoutBatchControls, layoutVoiceABControls, layoutVideoControls;
+
+    // Batch Mode Views & State
+    private TextView tvBatchBadge;
+    private Button btnClearBatch, btnSubmitBatch;
+    private final List<File> stagedBatchPhotos = new ArrayList<>();
+
+    // Voice A/B Mode Views & State
+    private Button btnRecVoiceA, btnRecVoiceB, btnCompareVoiceAB, btnClearVoiceAB;
+    private File voiceAFile = null;
+    private File voiceBFile = null;
+    private int recordingVoiceTarget = 0; // 0=none, 1=Voice A, 2=Voice B
+
+    // Video Mode Views & State
+    private TextView tvVideoTimer;
+    private Button btnClearVideo, btnSubmitVideo;
+    private VideoCapture<Recorder> videoCaptureUseCase;
+    private Recording activeVideoRecording;
+    private File currentVideoFile = null;
+    private boolean isRecordingVideo = false;
+    private long videoRecordingStartTime = 0;
+    private final Runnable videoTimerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isRecordingVideo) {
+                long elapsedSec = (System.currentTimeMillis() - videoRecordingStartTime) / 1000;
+                long mins = elapsedSec / 60;
+                long secs = elapsedSec % 60;
+                if (tvVideoTimer != null) {
+                    tvVideoTimer.setText(String.format(Locale.getDefault(), "🔴 %02d:%02d", mins, secs));
+                }
+                handler.postDelayed(this, 500);
+            }
+        }
+    };
+
     // Audio & Voice Question Listening
     private MediaRecorder mediaRecorder;
     private File currentAudioFile;
@@ -205,6 +261,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         hideSystemUI();
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         initViews();
@@ -292,6 +349,55 @@ public class MainActivity extends AppCompatActivity {
         tabSlotCode = findViewById(R.id.tabSlotCode);
         tabSlotReason = findViewById(R.id.tabSlotReason);
         tabSlotRating = findViewById(R.id.tabSlotRating);
+
+        // Multi-Modal Mode Switcher Tabs
+        btnModeSingle = findViewById(R.id.btnModeSingle);
+        btnModeBatch = findViewById(R.id.btnModeBatch);
+        btnModeVoiceAB = findViewById(R.id.btnModeVoiceAB);
+        btnModeVideo = findViewById(R.id.btnModeVideo);
+
+        layoutStagingDock = findViewById(R.id.layoutStagingDock);
+        layoutBatchControls = findViewById(R.id.layoutBatchControls);
+        layoutVoiceABControls = findViewById(R.id.layoutVoiceABControls);
+        layoutVideoControls = findViewById(R.id.layoutVideoControls);
+
+        // Batch Mode Controls
+        tvBatchBadge = findViewById(R.id.tvBatchBadge);
+        btnClearBatch = findViewById(R.id.btnClearBatch);
+        btnSubmitBatch = findViewById(R.id.btnSubmitBatch);
+
+        // Voice A/B Mode Controls
+        btnRecVoiceA = findViewById(R.id.btnRecVoiceA);
+        btnRecVoiceB = findViewById(R.id.btnRecVoiceB);
+        btnCompareVoiceAB = findViewById(R.id.btnCompareVoiceAB);
+        btnClearVoiceAB = findViewById(R.id.btnClearVoiceAB);
+
+        // Video Mode Controls
+        tvVideoTimer = findViewById(R.id.tvVideoTimer);
+        btnClearVideo = findViewById(R.id.btnClearVideo);
+        btnSubmitVideo = findViewById(R.id.btnSubmitVideo);
+
+        // Mode Switcher Tab Click Listeners
+        if (btnModeSingle != null) btnModeSingle.setOnClickListener(v -> switchCaptureMode(CaptureMode.SINGLE));
+        if (btnModeBatch != null) btnModeBatch.setOnClickListener(v -> switchCaptureMode(CaptureMode.BATCH));
+        if (btnModeVoiceAB != null) btnModeVoiceAB.setOnClickListener(v -> switchCaptureMode(CaptureMode.VOICE_AB));
+        if (btnModeVideo != null) btnModeVideo.setOnClickListener(v -> switchCaptureMode(CaptureMode.VIDEO));
+
+        // Batch Controls Click Listeners
+        if (btnClearBatch != null) btnClearBatch.setOnClickListener(v -> clearBatchStaging());
+        if (btnSubmitBatch != null) btnSubmitBatch.setOnClickListener(v -> submitBatchImages());
+
+        // Voice A/B Controls Click Listeners
+        if (btnRecVoiceA != null) btnRecVoiceA.setOnClickListener(v -> toggleRecordVoiceA());
+        if (btnRecVoiceB != null) btnRecVoiceB.setOnClickListener(v -> toggleRecordVoiceB());
+        if (btnCompareVoiceAB != null) btnCompareVoiceAB.setOnClickListener(v -> submitVoiceABComparison());
+        if (btnClearVoiceAB != null) btnClearVoiceAB.setOnClickListener(v -> clearVoiceAB());
+
+        // Video Controls Click Listeners
+        if (btnClearVideo != null) btnClearVideo.setOnClickListener(v -> clearVideo());
+        if (btnSubmitVideo != null) btnSubmitVideo.setOnClickListener(v -> submitVideo());
+
+        updateModeSwitcherUI();
 
         // Always ensure a valid URL exists (Defaults to http://127.0.0.1:5000)
         String savedUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL);
@@ -423,7 +529,7 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-        btnCapture.setOnClickListener(v -> captureAndProcessScreen());
+        btnCapture.setOnClickListener(v -> onShutterClick());
 
         // Quick View Result Floating Pill
         if (btnQuickResult != null) {
@@ -720,16 +826,25 @@ public class MainActivity extends AppCompatActivity {
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
                 int displayRotation = getWindowManager().getDefaultDisplay().getRotation();
-                imageCapture = new ImageCapture.Builder()
-                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                        .setTargetRotation(displayRotation)
-                        .build();
-
                 CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
                 cameraProvider.unbindAll();
-                camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
 
-                updateStatusText("CAMERA READY • PINCH TO ZOOM");
+                if (currentCaptureMode == CaptureMode.VIDEO) {
+                    Recorder recorder = new Recorder.Builder()
+                            .setQualitySelector(QualitySelector.from(Quality.SD))
+                            .build();
+                    videoCaptureUseCase = VideoCapture.withOutput(recorder);
+                    videoCaptureUseCase.setTargetRotation(displayRotation);
+                    camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, videoCaptureUseCase);
+                    updateStatusText("VIDEO CAMERA READY • TAP SHUTTER TO RECORD");
+                } else {
+                    imageCapture = new ImageCapture.Builder()
+                            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                            .setTargetRotation(displayRotation)
+                            .build();
+                    camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
+                    updateStatusText("CAMERA READY • PINCH TO ZOOM");
+                }
             } catch (ExecutionException | InterruptedException e) {
                 Log.e(TAG, "Use case binding failed", e);
                 updateStatusText("CAMERA ERROR: " + e.getMessage());
@@ -744,6 +859,9 @@ public class MainActivity extends AppCompatActivity {
             int displayRotation = getWindowManager().getDefaultDisplay().getRotation();
             if (imageCapture != null) {
                 imageCapture.setTargetRotation(displayRotation);
+            }
+            if (videoCaptureUseCase != null) {
+                videoCaptureUseCase.setTargetRotation(displayRotation);
             }
         } catch (Exception ignored) {}
     }
@@ -814,6 +932,9 @@ public class MainActivity extends AppCompatActivity {
 
                 if (imageCapture != null) {
                     imageCapture.setTargetRotation(surfaceRotation);
+                }
+                if (videoCaptureUseCase != null) {
+                    videoCaptureUseCase.setTargetRotation(surfaceRotation);
                 }
 
                 if (targetDegrees != currentDeviceRotationDegrees) {
@@ -996,6 +1117,546 @@ public class MainActivity extends AppCompatActivity {
                 updateStatusText("CAPTURE FAILED: " + exception.getMessage());
             }
         });
+    }
+
+    private void onShutterClick() {
+        switch (currentCaptureMode) {
+            case SINGLE:
+                captureAndProcessScreen();
+                break;
+            case BATCH:
+                captureBatchFrame();
+                break;
+            case VOICE_AB:
+                if (recordingVoiceTarget != 0) {
+                    stopVoiceTargetRecording();
+                } else if (voiceAFile == null || !voiceAFile.exists()) {
+                    startVoiceTargetRecording(1);
+                } else if (voiceBFile == null || !voiceBFile.exists()) {
+                    startVoiceTargetRecording(2);
+                } else {
+                    submitVoiceABComparison();
+                }
+                break;
+            case VIDEO:
+                toggleVideoRecording();
+                break;
+        }
+    }
+
+    private void switchCaptureMode(CaptureMode newMode) {
+        if (currentCaptureMode == newMode) return;
+
+        if (isRecordingVideo) {
+            stopVideoRecording();
+        }
+        if (isRecordingAudio) {
+            stopAudioRecordingAndSolve();
+        }
+        if (recordingVoiceTarget != 0) {
+            stopVoiceTargetRecording();
+        }
+
+        CaptureMode oldMode = currentCaptureMode;
+        currentCaptureMode = newMode;
+        updateModeSwitcherUI();
+
+        if (oldMode == CaptureMode.VIDEO || newMode == CaptureMode.VIDEO) {
+            startCamera();
+        }
+    }
+
+    private void updateModeSwitcherUI() {
+        resetModeTab(btnModeSingle);
+        resetModeTab(btnModeBatch);
+        resetModeTab(btnModeVoiceAB);
+        resetModeTab(btnModeVideo);
+
+        if (layoutStagingDock != null) layoutStagingDock.setVisibility(View.GONE);
+        if (layoutBatchControls != null) layoutBatchControls.setVisibility(View.GONE);
+        if (layoutVoiceABControls != null) layoutVoiceABControls.setVisibility(View.GONE);
+        if (layoutVideoControls != null) layoutVideoControls.setVisibility(View.GONE);
+
+        switch (currentCaptureMode) {
+            case SINGLE:
+                highlightModeTab(btnModeSingle);
+                updateStatusText("📸 1-SHOT MODE READY");
+                break;
+            case BATCH:
+                highlightModeTab(btnModeBatch);
+                if (layoutStagingDock != null) layoutStagingDock.setVisibility(View.VISIBLE);
+                if (layoutBatchControls != null) layoutBatchControls.setVisibility(View.VISIBLE);
+                updateBatchBadgeUI();
+                updateStatusText("🖼️ BATCH MODE: SNAP PHOTOS & TAP SUBMIT");
+                break;
+            case VOICE_AB:
+                highlightModeTab(btnModeVoiceAB);
+                if (layoutStagingDock != null) layoutStagingDock.setVisibility(View.VISIBLE);
+                if (layoutVoiceABControls != null) layoutVoiceABControls.setVisibility(View.VISIBLE);
+                updateVoiceABUI();
+                updateStatusText("🎙️ DUAL VOICE: RECORD A & B TO COMPARE");
+                break;
+            case VIDEO:
+                highlightModeTab(btnModeVideo);
+                if (layoutStagingDock != null) layoutStagingDock.setVisibility(View.VISIBLE);
+                if (layoutVideoControls != null) layoutVideoControls.setVisibility(View.VISIBLE);
+                updateVideoUI();
+                updateStatusText("🎥 VIDEO MODE: TAP SHUTTER TO RECORD");
+                break;
+        }
+    }
+
+    private void highlightModeTab(TextView tab) {
+        if (tab == null) return;
+        tab.setBackgroundResource(R.drawable.btn_pill_cute_primary);
+        tab.setTextColor(Color.parseColor("#020B14"));
+    }
+
+    private void resetModeTab(TextView tab) {
+        if (tab == null) return;
+        tab.setBackgroundResource(R.drawable.btn_pill_cute_glass);
+        tab.setTextColor(Color.parseColor("#94A3B8"));
+    }
+
+    private void captureBatchFrame() {
+        triggerHapticShutterNotification(btnCapture);
+        if (imageCapture == null) {
+            Toast.makeText(this, "Camera not initialized", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        updateStatusText("📸 CAPTURING FRAME #" + (stagedBatchPhotos.size() + 1) + "...");
+        File photoFile = new File(getCacheDir(), "batch_" + (stagedBatchPhotos.size() + 1) + "_" + System.currentTimeMillis() + ".jpg");
+        ImageCapture.OutputFileOptions outputOptions = new ImageCapture.OutputFileOptions.Builder(photoFile).build();
+
+        imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(this), new ImageCapture.OnImageSavedCallback() {
+            @Override
+            public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+                imageProcessingExecutor.execute(() -> {
+                    File readyFile = optimizeImageForUpload(photoFile);
+                    handler.post(() -> {
+                        stagedBatchPhotos.add(readyFile);
+                        updateBatchBadgeUI();
+                        triggerHapticSolveNotification();
+                        updateStatusText("✅ FRAME #" + stagedBatchPhotos.size() + " STAGED • SNAP MORE OR SUBMIT");
+                        Toast.makeText(MainActivity.this, "📸 Frame #" + stagedBatchPhotos.size() + " staged! Tap SUBMIT BATCH when ready.", Toast.LENGTH_SHORT).show();
+                    });
+                });
+            }
+
+            @Override
+            public void onError(@NonNull ImageCaptureException exception) {
+                Log.e(TAG, "Batch frame capture failed: " + exception.getMessage(), exception);
+                updateStatusText("CAPTURE FAILED: " + exception.getMessage());
+            }
+        });
+    }
+
+    private void updateBatchBadgeUI() {
+        int count = stagedBatchPhotos.size();
+        if (tvBatchBadge != null) {
+            tvBatchBadge.setText("🖼️ " + count + (count == 1 ? " FRAME" : " FRAMES"));
+        }
+        if (btnSubmitBatch != null) {
+            btnSubmitBatch.setEnabled(count > 0);
+            btnSubmitBatch.setAlpha(count > 0 ? 1.0f : 0.5f);
+        }
+    }
+
+    private void clearBatchStaging() {
+        for (File f : stagedBatchPhotos) {
+            if (f != null && f.exists()) f.delete();
+        }
+        stagedBatchPhotos.clear();
+        updateBatchBadgeUI();
+        updateStatusText("BATCH CLEARED");
+        Toast.makeText(this, "Batch cleared", Toast.LENGTH_SHORT).show();
+    }
+
+    private void submitBatchImages() {
+        if (stagedBatchPhotos.isEmpty()) {
+            Toast.makeText(this, "Capture at least 1 frame first!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        updateStatusText("⚡ SOLVING " + stagedBatchPhotos.size() + " FRAMES WITH GEMINI AI...");
+        uploadBatchImagesToServer(new ArrayList<>(stagedBatchPhotos));
+    }
+
+    private void uploadBatchImagesToServer(List<File> files) {
+        String serverUrl = getResolvedServerUrl();
+        String uploadEndpoint = serverUrl.replaceAll("/+$", "") + "/batch-capture";
+
+        MultipartBody.Builder builder = new MultipartBody.Builder().setType(MultipartBody.FORM);
+        for (File f : files) {
+            String mediaTypeStr = f.getName().endsWith(".webp") ? "image/webp" : "image/jpeg";
+            builder.addFormDataPart("images", f.getName(), RequestBody.create(f, MediaType.parse(mediaTypeStr)));
+        }
+
+        Request request = new Request.Builder()
+                .url(uploadEndpoint)
+                .post(builder.build())
+                .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                handler.post(() -> {
+                    updateStatusText("NETWORK ERROR: " + e.getMessage());
+                    Toast.makeText(MainActivity.this, "Server unreachable: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    handler.post(() -> updateStatusText("SERVER ERROR (" + response.code() + ")"));
+                    return;
+                }
+                String responseBody = response.body() != null ? response.body().string() : "";
+                parseAndRenderResponse(responseBody, "BATCH");
+            }
+        });
+    }
+
+    private void toggleRecordVoiceA() {
+        if (!hasAllPermissions()) {
+            requestAppPermissions();
+            return;
+        }
+        if (recordingVoiceTarget == 1) {
+            stopVoiceTargetRecording();
+        } else {
+            if (recordingVoiceTarget != 0) stopVoiceTargetRecording();
+            startVoiceTargetRecording(1);
+        }
+    }
+
+    private void toggleRecordVoiceB() {
+        if (!hasAllPermissions()) {
+            requestAppPermissions();
+            return;
+        }
+        if (recordingVoiceTarget == 2) {
+            stopVoiceTargetRecording();
+        } else {
+            if (recordingVoiceTarget != 0) stopVoiceTargetRecording();
+            startVoiceTargetRecording(2);
+        }
+    }
+
+    private void startVoiceTargetRecording(int target) {
+        try {
+            File file = new File(getCacheDir(), "voice_" + (target == 1 ? "a_" : "b_") + System.currentTimeMillis() + ".m4a");
+            mediaRecorder = new MediaRecorder();
+            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+            mediaRecorder.setAudioEncodingBitRate(128000);
+            mediaRecorder.setAudioSamplingRate(44100);
+            mediaRecorder.setOutputFile(file.getAbsolutePath());
+            mediaRecorder.prepare();
+            mediaRecorder.start();
+
+            recordingVoiceTarget = target;
+            if (target == 1) voiceAFile = file;
+            else voiceBFile = file;
+
+            triggerHapticSolveNotification();
+            updateVoiceABUI();
+            updateStatusText(target == 1 ? "🎙️ RECORDING VOICE A... TAP TO STOP" : "🎙️ RECORDING VOICE B... TAP TO STOP");
+        } catch (Exception e) {
+            Log.e(TAG, "Voice target recording failed: " + e.getMessage(), e);
+            recordingVoiceTarget = 0;
+            updateVoiceABUI();
+            updateStatusText("MIC ERROR: " + e.getMessage());
+        }
+    }
+
+    private void stopVoiceTargetRecording() {
+        try {
+            if (mediaRecorder != null) {
+                try { mediaRecorder.stop(); } catch (Exception ignored) {}
+                mediaRecorder.release();
+                mediaRecorder = null;
+            }
+        } catch (Exception ignored) {}
+
+        int finishedTarget = recordingVoiceTarget;
+        recordingVoiceTarget = 0;
+        triggerHapticSolveNotification();
+        updateVoiceABUI();
+        updateStatusText("✅ VOICE " + (finishedTarget == 1 ? "A" : "B") + " RECORDED");
+    }
+
+    private void clearVoiceAB() {
+        if (recordingVoiceTarget != 0) {
+            stopVoiceTargetRecording();
+        }
+        if (voiceAFile != null && voiceAFile.exists()) voiceAFile.delete();
+        if (voiceBFile != null && voiceBFile.exists()) voiceBFile.delete();
+        voiceAFile = null;
+        voiceBFile = null;
+        recordingVoiceTarget = 0;
+        updateVoiceABUI();
+        updateStatusText("VOICE RECORDINGS CLEARED");
+    }
+
+    private void updateVoiceABUI() {
+        if (btnRecVoiceA == null || btnRecVoiceB == null) return;
+        if (recordingVoiceTarget == 1) {
+            btnRecVoiceA.setText("🔴 STOP A");
+            btnRecVoiceA.setBackgroundResource(R.drawable.btn_pill_cute_danger);
+            btnRecVoiceA.setTextColor(Color.parseColor("#FFFFFF"));
+        } else if (voiceAFile != null && voiceAFile.exists() && voiceAFile.length() > 500) {
+            btnRecVoiceA.setText("✅ VOICE A");
+            btnRecVoiceA.setBackgroundResource(R.drawable.btn_pill_cute_primary);
+            btnRecVoiceA.setTextColor(Color.parseColor("#020B14"));
+        } else {
+            btnRecVoiceA.setText("🎙️ REC A");
+            btnRecVoiceA.setBackgroundResource(R.drawable.btn_pill_cute_glass);
+            btnRecVoiceA.setTextColor(Color.parseColor("#00F0FF"));
+        }
+
+        if (recordingVoiceTarget == 2) {
+            btnRecVoiceB.setText("🔴 STOP B");
+            btnRecVoiceB.setBackgroundResource(R.drawable.btn_pill_cute_danger);
+            btnRecVoiceB.setTextColor(Color.parseColor("#FFFFFF"));
+        } else if (voiceBFile != null && voiceBFile.exists() && voiceBFile.length() > 500) {
+            btnRecVoiceB.setText("✅ VOICE B");
+            btnRecVoiceB.setBackgroundResource(R.drawable.btn_pill_cute_primary);
+            btnRecVoiceB.setTextColor(Color.parseColor("#020B14"));
+        } else {
+            btnRecVoiceB.setText("🎙️ REC B");
+            btnRecVoiceB.setBackgroundResource(R.drawable.btn_pill_cute_glass);
+            btnRecVoiceB.setTextColor(Color.parseColor("#38BDF8"));
+        }
+
+        boolean readyToCompare = (voiceAFile != null && voiceAFile.exists()) && (voiceBFile != null && voiceBFile.exists());
+        if (btnCompareVoiceAB != null) {
+            btnCompareVoiceAB.setEnabled(readyToCompare);
+            btnCompareVoiceAB.setAlpha(readyToCompare ? 1.0f : 0.5f);
+        }
+    }
+
+    private void submitVoiceABComparison() {
+        if (voiceAFile == null || !voiceAFile.exists() || voiceBFile == null || !voiceBFile.exists()) {
+            Toast.makeText(this, "Record both Voice A and Voice B first!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        updateStatusText("⚡ COMPARING VOICES A & B WITH GEMINI ELO...");
+        uploadAudioComparisonToServer(voiceAFile, voiceBFile);
+    }
+
+    private void uploadAudioComparisonToServer(File fileA, File fileB) {
+        String serverUrl = getResolvedServerUrl();
+        String uploadEndpoint = serverUrl.replaceAll("/+$", "") + "/compare-audio";
+
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("audio_a", fileA.getName(), RequestBody.create(fileA, MediaType.parse("audio/mp4")))
+                .addFormDataPart("audio_b", fileB.getName(), RequestBody.create(fileB, MediaType.parse("audio/mp4")))
+                .build();
+
+        Request request = new Request.Builder()
+                .url(uploadEndpoint)
+                .post(requestBody)
+                .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                handler.post(() -> {
+                    updateStatusText("NETWORK ERROR: " + e.getMessage());
+                    Toast.makeText(MainActivity.this, "Server unreachable: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    handler.post(() -> updateStatusText("SERVER ERROR (" + response.code() + ")"));
+                    return;
+                }
+                String responseBody = response.body() != null ? response.body().string() : "";
+                parseAndRenderResponse(responseBody, "COMPARE");
+            }
+        });
+    }
+
+    private void toggleVideoRecording() {
+        if (!hasAllPermissions()) {
+            requestAppPermissions();
+            return;
+        }
+        if (isRecordingVideo) {
+            stopVideoRecording();
+        } else {
+            startVideoRecording();
+        }
+    }
+
+    private void startVideoRecording() {
+        if (videoCaptureUseCase == null) {
+            Toast.makeText(this, "Video capture not ready", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        currentVideoFile = new File(getCacheDir(), "vid_" + System.currentTimeMillis() + ".mp4");
+        FileOutputOptions outputOptions = new FileOutputOptions.Builder(currentVideoFile).build();
+
+        try {
+            PendingRecording pending = videoCaptureUseCase.getOutput()
+                    .prepareRecording(this, outputOptions);
+
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                pending.withAudioEnabled();
+            }
+
+            activeVideoRecording = pending.start(ContextCompat.getMainExecutor(this), recordEvent -> {
+                if (recordEvent instanceof VideoRecordEvent.Start) {
+                    isRecordingVideo = true;
+                    videoRecordingStartTime = System.currentTimeMillis();
+                    handler.post(videoTimerRunnable);
+                    updateVideoUI();
+                    triggerHapticShutterNotification(btnCapture);
+                    updateStatusText("🔴 RECORDING VIDEO... TAP SHUTTER TO STOP");
+                } else if (recordEvent instanceof VideoRecordEvent.Finalize) {
+                    VideoRecordEvent.Finalize finalizeEvent = (VideoRecordEvent.Finalize) recordEvent;
+                    isRecordingVideo = false;
+                    handler.removeCallbacks(videoTimerRunnable);
+                    triggerHapticSolveNotification();
+                    if (!finalizeEvent.hasError()) {
+                        long durSec = (System.currentTimeMillis() - videoRecordingStartTime) / 1000;
+                        if (tvVideoTimer != null) {
+                            tvVideoTimer.setText(String.format(Locale.getDefault(), "🎥 %02d:%02d READY", durSec / 60, durSec % 60));
+                        }
+                        updateVideoUI();
+                        updateStatusText("✅ VIDEO READY (" + durSec + "s) • TAP SUBMIT");
+                    } else {
+                        Log.e(TAG, "Video recording finalize error: " + finalizeEvent.getError());
+                        updateStatusText("VIDEO ERROR: " + finalizeEvent.getError());
+                    }
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start video recording: " + e.getMessage(), e);
+            updateStatusText("VIDEO START FAILED: " + e.getMessage());
+        }
+    }
+
+    private void stopVideoRecording() {
+        if (activeVideoRecording != null) {
+            activeVideoRecording.stop();
+            activeVideoRecording = null;
+        }
+        isRecordingVideo = false;
+        handler.removeCallbacks(videoTimerRunnable);
+        updateVideoUI();
+    }
+
+    private void clearVideo() {
+        if (isRecordingVideo) {
+            stopVideoRecording();
+        }
+        if (currentVideoFile != null && currentVideoFile.exists()) {
+            currentVideoFile.delete();
+        }
+        currentVideoFile = null;
+        if (tvVideoTimer != null) tvVideoTimer.setText("🎥 00:00");
+        updateVideoUI();
+        updateStatusText("VIDEO CLEARED");
+    }
+
+    private void updateVideoUI() {
+        if (btnSubmitVideo == null) return;
+        boolean hasVideo = (currentVideoFile != null && currentVideoFile.exists() && currentVideoFile.length() > 500);
+        btnSubmitVideo.setEnabled(hasVideo && !isRecordingVideo);
+        btnSubmitVideo.setAlpha((hasVideo && !isRecordingVideo) ? 1.0f : 0.5f);
+    }
+
+    private void submitVideo() {
+        if (currentVideoFile == null || !currentVideoFile.exists()) {
+            Toast.makeText(this, "Record a video first!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        updateStatusText("⚡ ANALYZING VIDEO WITH GEMINI AI...");
+        uploadVideoToServer(currentVideoFile);
+    }
+
+    private void uploadVideoToServer(File videoFile) {
+        String serverUrl = getResolvedServerUrl();
+        String uploadEndpoint = serverUrl.replaceAll("/+$", "") + "/video-capture";
+
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("video", videoFile.getName(), RequestBody.create(videoFile, MediaType.parse("video/mp4")))
+                .build();
+
+        Request request = new Request.Builder()
+                .url(uploadEndpoint)
+                .post(requestBody)
+                .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                handler.post(() -> {
+                    updateStatusText("NETWORK ERROR: " + e.getMessage());
+                    Toast.makeText(MainActivity.this, "Server unreachable: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    handler.post(() -> updateStatusText("SERVER ERROR (" + response.code() + ")"));
+                    return;
+                }
+                String responseBody = response.body() != null ? response.body().string() : "";
+                parseAndRenderResponse(responseBody, "VIDEO");
+            }
+        });
+    }
+
+    private void parseAndRenderResponse(String responseBody, String defaultTag) {
+        try {
+            JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
+            String tag = json.has("tag") ? json.get("tag").getAsString() : ("[" + defaultTag + "]");
+            String payload = json.has("payload") ? json.get("payload").getAsString() : "";
+            String duration = json.has("duration") ? json.get("duration").getAsString() : "1.2s";
+            boolean isMulti = json.has("is_multi_slot") && json.get("is_multi_slot").getAsBoolean();
+
+            String code = "";
+            String reason = "";
+            String rating = "";
+            String audit = "";
+
+            if (json.has("slots") && json.get("slots").isJsonObject()) {
+                JsonObject slotsObj = json.getAsJsonObject("slots");
+                if (slotsObj.has("code")) code = slotsObj.get("code").getAsString();
+                if (slotsObj.has("explanation")) reason = slotsObj.get("explanation").getAsString();
+                if (slotsObj.has("rating")) rating = slotsObj.get("rating").getAsString();
+                if (slotsObj.has("audit")) audit = slotsObj.get("audit").getAsString();
+            }
+
+            final String finalCode = code;
+            final String finalReason = reason;
+            final String finalRating = rating;
+            final String finalAudit = audit;
+
+            handler.post(() -> {
+                updateStatusText("✅ " + defaultTag + " SOLVED (" + duration + ")");
+                renderResponseUI(tag, payload, duration, isMulti, finalCode, finalReason, finalRating, finalAudit);
+
+                // Save to history
+                String timeNow = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+                historyList.add(0, new HistoryItem(tag, payload, duration, timeNow, isMulti, finalCode, finalReason, finalRating, finalAudit));
+                if (historyList.size() > 10) historyList.remove(historyList.size() - 1);
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Response parse error: " + e.getMessage(), e);
+            handler.post(() -> updateStatusText("PARSE ERROR: " + e.getMessage()));
+        }
     }
 
     private void showModelSettingsDialog() {
@@ -1488,6 +2149,11 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     tvCompareReason.setText("");
                 }
+            } else if ("[TRANSCRIPT]".equalsIgnoreCase(tag)) {
+                tvTagHeader.setText("[TRANSCRIPT]");
+                tvTagHeader.setBackgroundColor(Color.parseColor("#06B6D4"));
+                layoutTypeMode.setVisibility(View.VISIBLE);
+                tvCodePayload.setText(payload);
             } else {
                 // [TYPE] Default Code Mode
                 tvTagHeader.setBackgroundColor(Color.parseColor("#00FF88"));
@@ -2018,6 +2684,14 @@ public class MainActivity extends AppCompatActivity {
         return Character.isLetterOrDigit(c) || c == '_' || c == '-' || c == '\'';
     }
 
+    private boolean containsNonAscii(String s) {
+        if (s == null) return false;
+        for (char c : s.toCharArray()) {
+            if (c > 127) return true;
+        }
+        return false;
+    }
+
     private void triggerSmartAutoTyping(String payloadToType) {
         if (payloadToType == null || payloadToType.trim().isEmpty()) {
             Toast.makeText(this, "No text/code in this slot to type.", Toast.LENGTH_SHORT).show();
@@ -2025,6 +2699,18 @@ public class MainActivity extends AppCompatActivity {
         }
 
         boolean btConnected = hidManager != null && hidManager.isConnected();
+        boolean hasUnicode = containsNonAscii(payloadToType);
+
+        if (hasUnicode) {
+            // Bengali / Unicode characters REQUIRE PC driver SendInput (via USB or Wi-Fi tunnel)
+            if (isServerOnline) {
+                triggerDirectServerTyping(payloadToType);
+            } else {
+                Toast.makeText(this, "⚠️ বাংলা/ইউনিকোড টাইপ করতে USB Cable বা Wi-Fi দিয়ে ল্যাপটপ কানেক্ট করুন!", Toast.LENGTH_LONG).show();
+                updateStatusText("⚠️ UNICODE REQUIRES USB/WI-FI DRIVER");
+            }
+            return;
+        }
 
         if (isServerOnline) {
             // 1. Prioritize fast USB tunnel when server is reachable
@@ -2234,6 +2920,11 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception ignored) {}
             mediaRecorder = null;
         }
+        if (activeVideoRecording != null) {
+            try { activeVideoRecording.stop(); } catch (Exception ignored) {}
+            activeVideoRecording = null;
+        }
+        handler.removeCallbacks(videoTimerRunnable);
         if (tts != null) {
             tts.stop();
             tts.shutdown();

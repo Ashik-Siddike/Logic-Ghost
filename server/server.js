@@ -10,7 +10,10 @@ const FormData = require('form-data');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const PYTHON_PROCESS_URL = 'http://127.0.0.1:5001/process';
+const PYTHON_PROCESS_BATCH_IMAGES_URL = 'http://127.0.0.1:5001/process_batch_images';
+const PYTHON_PROCESS_VIDEO_URL = 'http://127.0.0.1:5001/process_video';
 const PYTHON_PROCESS_AUDIO_URL = 'http://127.0.0.1:5001/process_audio';
+const PYTHON_COMPARE_AUDIO_URL = 'http://127.0.0.1:5001/compare_audio';
 const PYTHON_TYPE_URL = 'http://127.0.0.1:5001/type';
 const PYTHON_STATUS_URL = 'http://127.0.0.1:5001/status';
 const PYTHON_STEALTH_HIDE = 'http://127.0.0.1:5001/stealth/hide';
@@ -211,6 +214,185 @@ app.post('/audio-capture', upload.single('audio'), async (req, res) => {
         console.error('[Express] Error processing audio capture:', err.message);
         return res.status(500).json({
             error: 'Failed to process audio capture',
+            details: err.response ? err.response.data : err.message
+        });
+    }
+});
+
+/**
+ * POST /batch-capture: Receives multiple images (e.g. Photo 1, Photo 2) and routes to Gemini Vision
+ */
+app.post('/batch-capture', upload.array('images', 10), async (req, res) => {
+    const startTime = Date.now();
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No images provided in batch request' });
+        }
+
+        const imagePaths = req.files.map(f => f.path);
+        console.log(`[Express] Received batch capture with ${imagePaths.length} images. Processing with Gemini Vision...`);
+
+        const pythonResponse = await axios.post(PYTHON_PROCESS_BATCH_IMAGES_URL, {
+            imagePaths: imagePaths
+        }, { timeout: 120000 });
+
+        const data = pythonResponse.data || {};
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`[Express] Batch AI processed in ${duration}s. Tag: ${data.tag || '[COMPARE]'}`);
+
+        const item = {
+            id: Date.now(),
+            time: new Date().toLocaleTimeString(),
+            duration: duration + 's',
+            imageCount: imagePaths.length,
+            tag: data.tag || '[COMPARE]',
+            payload: data.payload || '',
+            is_multi_slot: data.is_multi_slot || false,
+            slots: data.slots || {},
+            engine: data.engine || 'gemini-2.5-flash-batch',
+            key_used: data.key_used || '',
+            rules_active: data.rules_active || false
+        };
+
+        activityFeed.unshift(item);
+        if (activityFeed.length > 30) activityFeed.pop();
+
+        return res.json({
+            success: true,
+            tag: data.tag || '[COMPARE]',
+            payload: data.payload || '',
+            is_multi_slot: data.is_multi_slot || false,
+            slots: data.slots || {},
+            raw_answer: data.raw_answer || '',
+            engine: data.engine,
+            key_used: data.key_used,
+            rules_active: data.rules_active || false,
+            duration: duration + 's'
+        });
+    } catch (err) {
+        console.error('[Express] Error processing batch capture:', err.message);
+        return res.status(500).json({
+            error: 'Failed to process batch images',
+            details: err.response ? err.response.data : err.message
+        });
+    }
+});
+
+/**
+ * POST /video-capture: Receives video recording from phone, routes to Gemini Multimodal
+ */
+app.post('/video-capture', upload.single('video'), async (req, res) => {
+    const startTime = Date.now();
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No video file provided in request' });
+        }
+
+        const videoPath = req.file.path;
+        console.log(`[Express] Received video capture: ${videoPath}. Processing with Gemini Video Engine...`);
+
+        const pythonResponse = await axios.post(PYTHON_PROCESS_VIDEO_URL, {
+            videoPath: videoPath
+        }, { timeout: 120000 });
+
+        const data = pythonResponse.data || {};
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`[Express] Video AI processed in ${duration}s. Tag: ${data.tag || '[TYPE]'}`);
+
+        const item = {
+            id: Date.now(),
+            time: new Date().toLocaleTimeString(),
+            duration: duration + 's',
+            videoFile: path.basename(videoPath),
+            tag: data.tag || '[TYPE]',
+            payload: data.payload || '',
+            is_multi_slot: data.is_multi_slot || false,
+            slots: data.slots || {},
+            engine: data.engine || 'gemini-2.5-flash-video',
+            key_used: data.key_used || '',
+            rules_active: data.rules_active || false
+        };
+
+        activityFeed.unshift(item);
+        if (activityFeed.length > 30) activityFeed.pop();
+
+        return res.json({
+            success: true,
+            tag: data.tag || '[TYPE]',
+            payload: data.payload || '',
+            is_multi_slot: data.is_multi_slot || false,
+            slots: data.slots || {},
+            raw_answer: data.raw_answer || '',
+            engine: data.engine,
+            key_used: data.key_used,
+            rules_active: data.rules_active || false,
+            duration: duration + 's'
+        });
+    } catch (err) {
+        console.error('[Express] Error processing video capture:', err.message);
+        return res.status(500).json({
+            error: 'Failed to process video capture',
+            details: err.response ? err.response.data : err.message
+        });
+    }
+});
+
+/**
+ * POST /compare-audio: Receives dual audio recordings (Voice A and Voice B), routes to Gemini TTS ELO
+ */
+app.post('/compare-audio', upload.fields([{ name: 'audio_a', maxCount: 1 }, { name: 'audio_b', maxCount: 1 }]), async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const fileA = req.files && req.files['audio_a'] ? req.files['audio_a'][0] : null;
+        const fileB = req.files && req.files['audio_b'] ? req.files['audio_b'][0] : null;
+
+        if (!fileA || !fileB) {
+            return res.status(400).json({ error: 'Both audio_a and audio_b are required for voice comparison' });
+        }
+
+        console.log(`[Express] Received dual audio comparison: Voice A (${fileA.filename}), Voice B (${fileB.filename}). Processing...`);
+
+        const pythonResponse = await axios.post(PYTHON_COMPARE_AUDIO_URL, {
+            audioPathA: fileA.path,
+            audioPathB: fileB.path
+        }, { timeout: 120000 });
+
+        const data = pythonResponse.data || {};
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`[Express] Voice Comparison processed in ${duration}s. Tag: ${data.tag || '[COMPARE]'}`);
+
+        const item = {
+            id: Date.now(),
+            time: new Date().toLocaleTimeString(),
+            duration: duration + 's',
+            tag: data.tag || '[COMPARE]',
+            payload: data.payload || '',
+            is_multi_slot: data.is_multi_slot || false,
+            slots: data.slots || {},
+            engine: data.engine || 'gemini-2.5-flash-tts-elo',
+            key_used: data.key_used || '',
+            rules_active: data.rules_active || false
+        };
+
+        activityFeed.unshift(item);
+        if (activityFeed.length > 30) activityFeed.pop();
+
+        return res.json({
+            success: true,
+            tag: data.tag || '[COMPARE]',
+            payload: data.payload || '',
+            is_multi_slot: data.is_multi_slot || false,
+            slots: data.slots || {},
+            raw_answer: data.raw_answer || '',
+            engine: data.engine,
+            key_used: data.key_used,
+            rules_active: data.rules_active || false,
+            duration: duration + 's'
+        });
+    } catch (err) {
+        console.error('[Express] Error comparing audio:', err.message);
+        return res.status(500).json({
+            error: 'Failed to compare audio',
             details: err.response ? err.response.data : err.message
         });
     }

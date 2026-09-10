@@ -689,6 +689,265 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- Mode Switcher Tabs Dock (Single, Batch, Voice A/B, Video) -->
+        <LinearLayout
+            android:id="@+id/layoutModeSwitcher"
+            android:layout_width="match_parent"
+            android:layout_height="28dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingHorizontal="10dp"
+            android:layout_marginBottom="6dp">
+
+            <TextView
+                android:id="@+id/btnModeSingle"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="📸 1-SHOT"
+                android:textColor="#020B14"
+                android:background="@drawable/btn_pill_cute_primary"
+                android:textSize="9.5sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:layout_marginEnd="3dp"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <TextView
+                android:id="@+id/btnModeBatch"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="🖼️ BATCH"
+                android:textColor="#94A3B8"
+                android:background="@drawable/btn_pill_cute_glass"
+                android:textSize="9.5sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:layout_marginEnd="3dp"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <TextView
+                android:id="@+id/btnModeVoiceAB"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1.1"
+                android:text="🎙️ A/B VOICE"
+                android:textColor="#94A3B8"
+                android:background="@drawable/btn_pill_cute_glass"
+                android:textSize="9.5sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:layout_marginEnd="3dp"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <TextView
+                android:id="@+id/btnModeVideo"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="🎥 VIDEO"
+                android:textColor="#94A3B8"
+                android:background="@drawable/btn_pill_cute_glass"
+                android:textSize="9.5sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:clickable="true"
+                android:focusable="true"/>
+        </LinearLayout>
+
+        <!-- Staging / Multi-Asset Action Bar (Dynamic depending on active mode) -->
+        <FrameLayout
+            android:id="@+id/layoutStagingDock"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:paddingHorizontal="10dp"
+            android:layout_marginBottom="6dp"
+            android:visibility="gone">
+
+            <!-- 1. BATCH MODE STAGING CONTROLS -->
+            <LinearLayout
+                android:id="@+id/layoutBatchControls"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvBatchBadge"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1.2"
+                    android:text="🖼️ 0 FRAMES"
+                    android:textColor="#00F0FF"
+                    android:background="@drawable/btn_pill_cute_glass"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="4dp"/>
+
+                <Button
+                    android:id="@+id/btnClearBatch"
+                    android:layout_width="44dp"
+                    android:layout_height="match_parent"
+                    android:text="🗑️"
+                    android:background="@drawable/btn_pill_cute_danger"
+                    android:textColor="#FF4D6D"
+                    android:textSize="13sp"
+                    android:gravity="center"
+                    android:padding="0dp"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="4dp"
+                    android:elevation="4dp"/>
+
+                <Button
+                    android:id="@+id/btnSubmitBatch"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="2.2"
+                    android:text="🚀 SUBMIT BATCH"
+                    android:background="@drawable/btn_pill_cute_primary"
+                    android:textColor="#020B14"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:elevation="4dp"/>
+            </LinearLayout>
+
+            <!-- 2. DUAL VOICE A/B CONTROLS -->
+            <LinearLayout
+                android:id="@+id/layoutVoiceABControls"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <Button
+                    android:id="@+id/btnRecVoiceA"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1.2"
+                    android:text="🎙️ VOICE A"
+                    android:background="@drawable/btn_pill_cute_glass"
+                    android:textColor="#00F0FF"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:padding="0dp"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="3dp"
+                    android:elevation="4dp"/>
+
+                <Button
+                    android:id="@+id/btnRecVoiceB"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1.2"
+                    android:text="🎙️ VOICE B"
+                    android:background="@drawable/btn_pill_cute_glass"
+                    android:textColor="#38BDF8"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:padding="0dp"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="3dp"
+                    android:elevation="4dp"/>
+
+                <Button
+                    android:id="@+id/btnCompareVoiceAB"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1.4"
+                    android:text="⚖️ COMPARE"
+                    android:background="@drawable/btn_pill_cute_purple"
+                    android:textColor="#FFFFFF"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:padding="0dp"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="3dp"
+                    android:elevation="4dp"/>
+
+                <Button
+                    android:id="@+id/btnClearVoiceAB"
+                    android:layout_width="40dp"
+                    android:layout_height="match_parent"
+                    android:text="🗑️"
+                    android:background="@drawable/btn_pill_cute_danger"
+                    android:textColor="#FF4D6D"
+                    android:textSize="13sp"
+                    android:gravity="center"
+                    android:padding="0dp"
+                    android:includeFontPadding="false"
+                    android:elevation="4dp"/>
+            </LinearLayout>
+
+            <!-- 3. VIDEO MODE CONTROLS -->
+            <LinearLayout
+                android:id="@+id/layoutVideoControls"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvVideoTimer"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1.2"
+                    android:text="🎥 00:00"
+                    android:textColor="#38BDF8"
+                    android:background="@drawable/btn_pill_cute_glass"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="4dp"/>
+
+                <Button
+                    android:id="@+id/btnClearVideo"
+                    android:layout_width="44dp"
+                    android:layout_height="match_parent"
+                    android:text="🗑️"
+                    android:background="@drawable/btn_pill_cute_danger"
+                    android:textColor="#FF4D6D"
+                    android:textSize="13sp"
+                    android:gravity="center"
+                    android:padding="0dp"
+                    android:includeFontPadding="false"
+                    android:layout_marginEnd="4dp"
+                    android:elevation="4dp"/>
+
+                <Button
+                    android:id="@+id/btnSubmitVideo"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="2.2"
+                    android:text="🚀 SUBMIT VIDEO"
+                    android:background="@drawable/btn_pill_cute_primary"
+                    android:textColor="#020B14"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:elevation="4dp"/>
+            </LinearLayout>
+        </FrameLayout>
+
         <!-- Row 1: Typing Action Buttons (Single Row Zero-Scroll Responsive Dock) -->
         <FrameLayout
             android:layout_width="match_parent"
@@ -745,17 +1004,18 @@
                     android:id="@+id/btnTypeDirect"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="2.6"
+                    android:layout_weight="2.3"
                     android:text="✨ TYPE"
                     android:background="@drawable/btn_pill_cute_primary"
                     android:textColor="#020B14"
-                    android:textSize="11.5sp"
+                    android:textSize="11sp"
                     android:textStyle="bold"
                     android:gravity="center"
                     android:includeFontPadding="false"
-                    android:letterSpacing="0.04"
+                    android:letterSpacing="0.03"
                     android:singleLine="true"
-                    android:layout_marginEnd="5dp"
+                    android:padding="0dp"
+                    android:layout_marginEnd="4dp"
                     android:elevation="4dp"/>
 
                 <!-- 4. Pause / Resume Typing Button -->
@@ -763,16 +1023,17 @@
                     android:id="@+id/btnPauseResume"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="1.8"
+                    android:layout_weight="1.7"
                     android:text="⏸️ PAUSE"
                     android:background="@drawable/btn_pill_cute_glass"
                     android:textColor="#FBBF24"
-                    android:textSize="10.5sp"
+                    android:textSize="10sp"
                     android:textStyle="bold"
                     android:gravity="center"
                     android:includeFontPadding="false"
                     android:singleLine="true"
-                    android:layout_marginEnd="5dp"
+                    android:padding="0dp"
+                    android:layout_marginEnd="4dp"
                     android:elevation="4dp"/>
 
                 <!-- 5. Emergency Stop Button -->
@@ -780,15 +1041,16 @@
                     android:id="@+id/btnStopResponse"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="1.4"
+                    android:layout_weight="1.6"
                     android:text="🛑 STOP"
                     android:background="@drawable/btn_pill_cute_danger"
                     android:textColor="#FF4D6D"
-                    android:textSize="10.5sp"
+                    android:textSize="9.5sp"
                     android:textStyle="bold"
                     android:gravity="center"
                     android:includeFontPadding="false"
                     android:singleLine="true"
+                    android:padding="0dp"
                     android:elevation="4dp"/>
             </LinearLayout>
 
@@ -810,9 +1072,11 @@
                     android:text="💻 CODE"
                     android:background="@drawable/btn_pill_cute_primary"
                     android:textColor="#020B14"
-                    android:textSize="9.5sp"
+                    android:textSize="9sp"
                     android:textStyle="bold"
                     android:gravity="center"
+                    android:padding="0dp"
+                    android:minWidth="0dp"
                     android:includeFontPadding="false"
                     android:singleLine="true"
                     android:layout_marginEnd="3dp"
@@ -827,9 +1091,11 @@
                     android:text="📝 REASON"
                     android:background="@drawable/btn_pill_cute_glass"
                     android:textColor="#00FF88"
-                    android:textSize="9.5sp"
+                    android:textSize="9sp"
                     android:textStyle="bold"
                     android:gravity="center"
+                    android:padding="0dp"
+                    android:minWidth="0dp"
                     android:includeFontPadding="false"
                     android:singleLine="true"
                     android:layout_marginEnd="3dp"
@@ -844,9 +1110,11 @@
                     android:text="⭐ RATING"
                     android:background="@drawable/btn_pill_cute_purple"
                     android:textColor="#E9D5FF"
-                    android:textSize="9.5sp"
+                    android:textSize="9sp"
                     android:textStyle="bold"
                     android:gravity="center"
+                    android:padding="0dp"
+                    android:minWidth="0dp"
                     android:includeFontPadding="false"
                     android:singleLine="true"
                     android:layout_marginEnd="3dp"
@@ -861,9 +1129,11 @@
                     android:text="🪄 AUTO"
                     android:background="@drawable/btn_pill_cute_glass"
                     android:textColor="#38BDF8"
-                    android:textSize="9.5sp"
+                    android:textSize="9sp"
                     android:textStyle="bold"
                     android:gravity="center"
+                    android:padding="0dp"
+                    android:minWidth="0dp"
                     android:includeFontPadding="false"
                     android:singleLine="true"
                     android:layout_marginEnd="3dp"
@@ -874,12 +1144,14 @@
                     android:id="@+id/btnPauseResumeMultiSlot"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="0.85"
+                    android:layout_weight="0.8"
                     android:text="⏸️"
                     android:background="@drawable/btn_pill_cute_glass"
                     android:textColor="#FBBF24"
                     android:textSize="13sp"
                     android:gravity="center"
+                    android:padding="0dp"
+                    android:minWidth="0dp"
                     android:includeFontPadding="false"
                     android:singleLine="true"
                     android:layout_marginEnd="3dp"
@@ -890,12 +1162,14 @@
                     android:id="@+id/btnStopMultiSlot"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="0.85"
+                    android:layout_weight="0.8"
                     android:text="🛑"
                     android:background="@drawable/btn_pill_cute_danger"
                     android:textColor="#FF4D6D"
                     android:textSize="13sp"
                     android:gravity="center"
+                    android:padding="0dp"
+                    android:minWidth="0dp"
                     android:includeFontPadding="false"
                     android:singleLine="true"
                     android:elevation="4dp"/>

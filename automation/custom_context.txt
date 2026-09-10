@@ -1,172 +1,153 @@
---- PAGE 1 ---
-নেটওয়া র্ক  অ্যাডমিনেস্ট্রেশনে অ্যান্ড সা র্ক সস
-চূড়ান্ত প্রস্তুতি - বিগতি বিছরেরে প্রশ্ন বিশ্লেষণ (২০১৯ - ২০২৪)
-১. সর্কাচ্চ অগ্রাধিার প্রাপ্ত প্রশ্নালি (ারার আসা)
--াগ: অতি সংক্ষিপ্ত প্রশ্নালি
-Telnet ী এং নে ্যহৃতি হয়?[৫ ার] ২০২৩
-CIDR ী / লিতি ী াঝায়?[৪ ার] ২০২৪
-Routing ী এং নে রা হয়?[৪ ার] ২০২৩
-Static routing redundancy লিতি ী াঝায়?[৪ ার] ২০২৩
-Subnetting ী এং নে রা হয়?[৪ ার]
-VLSM ী?[৪ ার]
-Loop-back interface-এর াজ ী?[৪ ার]
-PAT / PAT overloading ী?[৪ ার]
-HSRP (Hot stand-by router protocol) ী / সংজ্ঞা দাও?[৩ ার] ২০২৪
-Spanning tree / Root guard / BPDU guard ী?[৩ ার] ২০২৪
-DHCP-এর পূর্করূপ লিখ / াজ ী?[৩ ার] ২০২৩
-OSI model ী?[৩ ার]
-Virtual link নে ্যহৃতি হয়?[৩ ার]
-Ether channel ী?[৩ ার]
-Topology table ী?[৩ ার]
-NAT ী / সুধিা ী?[৩ ার]
-SSH া লি?[২ ার] ২০২৪
-IPv4-এর সীমিাদ্ধতিা লিখ।[২ ার] ২০২৪
-Trunk link ী?[২ ার] ২০২৩
-খ-াগ: সংক্ষিপ্ত প্রশ্নালি
-TCP/IP এং OSI model-এর মিাঝ পার্ক্য লিখ / লিয়ারগুলিার নোমি লিখ।[৫ ার] ২০২৪
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
+================================================================================
+AETHER (MULTIMANGO / OUTLIER) MASTER EVALUATION & TRANSCRIPTION KNOWLEDGEBASE
+================================================================================
 
---- PAGE 2 ---
-Static NAT ও Dynamic NAT-এর মিাঝ পার্ক্য লিখ।[৫ ার] ২০২৪
-OSPF-এর Terminology গুলিা লিখ।[৪ ার] ২০২৪
-Spanning tree protocol (Cost calculation / Port fast / BPDU) ্যাখ্যা র।[৪ ার] ২০২৩
-Subnetting-এর সুধিা / CIDR-এর গুরুত্ব লিখ।[৩ ার] ২০২৩
-GLBP-এর শষ্ট্যগুলিা উল্লেখ র।[৩ ার] ২০২৪
-IPv4 ও IPv6-এর মিাঝ পার্ক্য / সীমিাদ্ধতিা লিখ।[৩ ার]
-Straight-through ও Cross-over cabling-এর মিাঝ পার্ক্য লিখ।[৩ ার]
-VLAN ও Inter-VLAN-এর মিাঝ পার্ক্য লিখ।[২ ার] ২০২৩
-DHCP-এর প্রয়াজনেীয়তিা লিখ।[২ ার]
-গ-াগ: রচনোমিূলি প্রশ্নালি
-OSI Reference Model অা TCP/IP model-এর প্রতিটি লিয়ারর ার্কপ্রালি চত্রসহ র্কনো র।
-[৬ ার] ২০২৩
-EIGRP Configuration / Neighbor adjacency ও Topology table র্কনো র।[৫ ার] ২০২৩
-CIDR পদ্ধতি ্যহার র Class-A/B/C Subnetting প্রক্রিয়া র্কনো র।[৪ ার] ২০২৪
-Spanning tree protocol-এর Cost ্যালি ু লিশনে / BPDU Guard-এর ফাংশনে র্কনো র।
-[৪ ার] ২০২৪
-Network address translation (NAT) / Static ও Dynamic NAT সম্প র্ক  স্তারতি ্যাখ্যা দাও।
-[৪ ার] ২০২৩
-VLSM ডজাইনে প্রক্রিয়া সংক্ষিপ র্কনো র / স্তারতি লিখ।[৪ ার] ২০২৩
-চত্রসহ OSPF অপারশনে র্কনো র।[৩ ার] ২০২৪
-Static, Dynamic ও Default routing পদ্ধতির সুধিা, অসুধিা ও পার্ক্য লিখ।[৩ ার]
-IPv6 Protocol-এর Addressing পদ্ধতি চত্রসহ র্কনো র।[২ ার] ২০২৪
-Gateway load balancing protocol (GLBP) স্তারতি র্কনো র।[২ ার]
-২. এার আসা প্রশ্নালি (রশনের জনে্য)
--াগ: অতি সংক্ষিপ্ত প্রশ্নালি
-প্রটাকল স্যুট কী?
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
+--------------------------------------------------------------------------------
+MODULE 1: BENGALI SPEECH-TO-TEXT / ASR TRANSCRIPT REVIEW RULES (CRITICAL)
+--------------------------------------------------------------------------------
+GOLDEN RULE: "If you can hear it, you should transcribe it."
+- Audio is the ultimate source of truth.
+- NEVER clean up, smooth over, or summarize speech. Do not correct bad grammar, mispronunciations, dialect, or slurred words.
+- In religious texts (Quran verses, etc.), NEVER correct the speaker to match standard scripture; transcribe verbatim as spoken.
 
---- PAGE 3 ---
-অ্যুাকটিভ ডিরেক্টরে (Active directory) কাক বিল?
-ভালনারেবিলটিস (Vulnerabilities) কী?
-Network বিলতি কী বিাঝায়?
-Collision বিলতি কী বিাঝায়?
-IPv6-এরে দৈর্ঘ্যু কতি বিট?
-VRRP-এরে সংজ্ঞা দৈাও।
-BPDU ফিল্টারে-এরে কাজ কী?
-রেডিানডি্যুান্সি কী?
-Broadcast domain কাক বিল?
-Summarization কী?
-IP Routing কাক বিল?
-OSPF area বিলতি কী বিাঝায়?
-Protocol কী?
-VLSM Design কাক বিল?
-খ-াগ: সংক্ষিপ্ত প্রশ্নালি
-ক্লাস 'বি'-এরে নটওয়াক র্ঘ  সংখ্যুা ও হাস্ট সংখ্যুা গণনা করে।
-পাটর্ঘ ফিাস্ট (Port fast)-এরে বিশিষ্ট্যু লখ।
-সকউরেটি পাসওয়াডি র্ঘ  পলস এলমেন্টগুলা লখ।
-Cloud computing-এরে বিশিষ্ট্যু লখ। (সলবিাস বিহভূ র্ঘ তি)
-Routing information protocol বিণর্ঘনা করে।
-কলশিন ও ব্রডিকাস্ট ডিামেইন-এরে মোঝ পার্ঘক্যু লখ।
-DHCP snooping কীভাবি কাজ করে?
-Neighbour adjacency কী?
-User security level কীভাবি কাজ করে?
-Protected port-এরে বিণর্ঘনা দৈাও।
-মোল্টলয়ারে সইচ-এরে সংক্ষিপ্ত বিণর্ঘনা দৈাও।
-Rapid spanning tree প্রটাকল বি্যুাখ্যুা করে।
-Network-এ IP routing-এরে Configure পদ্ধতি বিণর্ঘনা করে।
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
+1. APPROVED FILLER WORDS [brackets] (STRICTLY BENGALI, ONLY 12 WORDS ALLOWED):
+   Use [] ONLY when the speaker is hesitating, stalling, or thinking aloud without semantic meaning.
+   Approved 12 words:
+   [আ]   [উম]   [হুম]   [আচ্ছা]   [ঠিক]   [ইয়ে]   [ওহ]   [উফ]   [মানে]   [শসস]   [ওহ-হা]   [হ্যাঁ]
 
---- PAGE 4 ---
-Inter-network-এরে প্রয়াজনীয়তিা লখ।
-IPv6 Address-এরে Expression লখ।
-গ-াগ: রচনোমিূলি প্রশ্নালি
-Active directory ডিামেইন সাভ র্ঘ স বিলতি কী বিাঝায়? আলাচনা করে।
-CIA-এরে বিণর্ঘনা দৈাও।
-চত্রসহ RIP রোউটিং বিণর্ঘনা করে।
-চত্রসহ VTP কনফিগারে করে বিণর্ঘনা করে।
-DHCP Snooping পদ্ধতি বিণর্ঘনা করে।
-Multilayer-switch-এরে সাহা্যু Inter-Vlan routing-এরে পদ্ধতি বিণর্ঘনা করে।
-বিশ্লেষণটি ২০১৯ ক ২০২৪ সালরে প্রশ্নপত্ররে উপরে ভত্তি করে তিরে।
-শুভকামেনা রেইল তিামোরে পরেীক্ষিারে জন্যু! 
-• 
-• 
-• 
-• 
-• 
-• 
-• 
-•
+   * CRITICAL DISTINCTION:
+     - Pure hesitation/stalling: [আ], তাদেরও ভোটদানের অধিকার থাকা উচিত।
+     - Meaningful word / affirmation / greeting / answer: Write NORMALLY WITHOUT BRACKETS!
+       Example: "আচ্ছা, বুঝলাম!" (Not filler, interjection -> write normally)
+       Example: "হ্যাঁ, আমি যাব।" (Answering yes -> write normally)
+
+2. NON-SPEECH SOUND TAGS <angles> (STRICTLY IN ENGLISH):
+   Must be in English, enclosed in <>, with a space before and after.
+   Approved tags:
+   <cough>        : Coughing sound.
+   <laugh>        : Laughter. (If words are spoken while laughing, transcribe words and add <laugh>).
+   <cry>          : Crying/sobbing.
+   <throatclear>  : Throat clearing sound.
+   <breath>       : Audible, distinct breath / sigh.
+   <pause>        : Silence longer than 1 second.
+   <gasp>         : Sharp intake of breath expressing surprise/shock.
+   <swallow>      : Audible swallowing.
+   <gag>          : Gagging/retching.
+   <noise>        : Any distinct environmental sound (traffic, hum, click, rustle).
+   <music>        : Background music. (DO NOT transcribe background song lyrics, just use <music>).
+   <inaudible>    : Completely unintelligible speech where no guess is possible.
+
+3. STANDARD WRITTEN FORMAT (NUMBERS, DATES, TIME, CURRENCY - STRICT NOT VERBATIM):
+   Spoken expressions for numbers, currency, time, percentages MUST be converted into standard written/numeric form:
+   - Numbers: "উনিশ শো চুয়াত্তর" -> 1974 | "বিয়াল্লিশ" -> 42 | "পঁচিশ লক্ষ" -> 25 লক্ষ
+   - Currency: "পাঁচশো ডলার" -> $500 | "দশ ইউরো" -> €10 | "একশো টাকা" -> 100 টাকা
+   - Percentage: "কুড়ি শতাংশ" -> 20%
+   - Time: "বিকাল তিনটে" -> বিকাল 3:00 টা (or 15:00)
+   - Dates: "পয়লা জানুয়ারি, দুই হাজার পঁচিশ" -> 1 জানুয়ারি, 2025
+   - Measurements: "পাঁচ ফুট ছয় ইঞ্চি" -> 5' 6" | "ঘণ্টায় পঞ্চাশ মাইল" -> 50 mph
+   - Addresses/Rooms: "রুম নম্বর তিন শূন্য পাঁচ" -> রুম 305 | "একশ তেইশ মেন স্ট্রিট" -> 123 মেন স্ট্রিট
+   - Recognized Brands: "এটি অ্যান্ড টি" -> AT&T
+
+4. FALSE STARTS, STUTTERING, AND CUTOFFS:
+   - Word Fragment (Incomplete word): Add hyphen -> "জা- জানা- জানাথন"
+   - Stammering/Stuttering: Add hyphen -> "তা-তা-তাই নাকি"
+   - Full Word Repetition: NO HYPHEN! -> "একটা একটা একটা ভেলোসিরাপ্টর" (DO NOT write একটা-একটা)
+   - Audio cuts off at the end: Add trailing em-dash -> "আমি খেলতে যাওয়ার—"
+   - Audio begins mid-word: Add leading em-dash -> "—শনে পৌঁছেছিলাম"
+
+5. UNCERTAIN WORDS VS INAUDIBLE:
+   - Guessable (~70% confident): Use double parentheses (( )).
+     Example: আপনার ((ভারসাম্য)) নিয়ে একটা সমস্যা হচ্ছে।
+   - Completely unintelligible: <inaudible>.
+     NEVER use <inaudible> if a reasonable guess can be made.
+
+6. FOREIGN WORDS:
+   - English or foreign word spoken in Bengali sentence: Write in curly brackets with Bengali phonetics + Romanized spelling in parentheses:
+     Example: সে {মিটিং(meeting)} এ যায়নি।
+     Example: এটা নিয়ে {কনফ্লিক্ট(Conflict)} হবে।
+   - Uncertain foreign word: {((word))} or ((word)).
+   - Globally recognized proper brand names (e.g. AT&T, Google) do not need curly brackets.
+
+7. ELONGATED WORDS:
+   - Always spell normally regardless of audio duration.
+     Example: Speaker says "হ্যালোওওও" -> spell "হ্যালো".
+
+8. PUNCTUATION BY INTONATION:
+   - Allowed punctuations ONLY: । (দাঁড়ি), , (কমা), ? (প্রশ্নবোধক), ! (বিস্ময়সূচক), “” (কোটেশন), - (হাইফেন), – or — (ড্যাশ).
+   - INTONATION RULE: Rising pitch/tone MUST be punctuated with ? even without a question word!
+     Example: Audio: "তুমি ভালো আছো" with rising tone -> transcribe: "তুমি ভালো আছো?"
+
+9. COMMONLY USED WORDS & PROFANITY:
+   - "OK" / "All right" -> ঠিক আছে
+   - "'Cause" -> কারণ
+   - Profanity / Slang / Colloquialisms: Transcribe EXACTLY as pronounced without censorship.
+
+10. REJECTION RULES (WHEN TO REJECT VS CONTINUE):
+   - DO NOT reject if background noise/static is present as long as the primary speaker is understandable. Add <noise> tag instead.
+   - Click "Can't Hear" ONLY if the entire clip is 100% unintelligible or contains zero human speech (only silence or music).
+   - Click "Different Language" ONLY if the ENTIRE clip is in another language (e.g. full clip is Hindi/English). 1 or 2 foreign words do NOT qualify.
+
+--------------------------------------------------------------------------------
+MODULE 2: AETHER MULTIMODAL & IMAGE EVALUATION RULES
+--------------------------------------------------------------------------------
+1. Image-to-Image / Visual Comparison:
+   - Evaluate text accuracy, photorealism, visual flaws, and overall suitability.
+   - Flaws to check: Extra limbs, distorted fingers, blurry text, unnatural lighting, artifacts.
+2. Ad / Creative Suitability:
+   - Check if text is legible, branding is clear, and no inappropriate content exists.
+3. Object Differences / Bounding Box Verification:
+   - Carefully verify added, removed, or modified objects between original and generated images.
+
+--------------------------------------------------------------------------------
+MODULE 3: VIDEO CONVERSATION & PROMPT GENERATION RULES (GUIDELINES.MP4)
+--------------------------------------------------------------------------------
+1. Reverse Prompting:
+   - When given an existing video, think backwards: "What user prompt would cause an AI to generate this specific video clip?"
+2. Segment Alignment:
+   - Break video into distinct segments matching prompt instructions (Opening scene, Action sequence, Resolution/Ending).
+3. Audio / Visual Options:
+   - Note whether to keep video sound, mute audio, or keep background music.
+
+--------------------------------------------------------------------------------
+MODULE 4: REALISM QUIZ & SPOT THE REAL PHOTOGRAPH RULES (vs-1786750284-realism-quiz-v2)
+--------------------------------------------------------------------------------
+1. Task Goal:
+   - Determine: "Which image is more likely to be a real photograph? (Image A vs Image B)"
+   - 24 questions in qualification. Focus on finding real camera capture vs AI generation.
+2. The Golden Don'ts:
+   - NEVER select an image simply because it "pops", looks better, has vibrant colors, or higher sharpness/resolution.
+   - Real photos come in low, medium, and high quality. AI images also come in all qualities.
+   - Do NOT use blockiness at high zoom as evidence of AI (it is JPEG/file saving artifact).
+3. Key Tells / Signs of AI (Look for these specifically):
+   - Light with no source: Soft, flat, even light coming from nowhere, no visible sun/lamp/window, no real cast shadows.
+   - Waxy or plastic materials: Skin with zero pores, hair rendered as a solid sheet rather than individual strands, fabric with no texture/weave, food with no crumbs.
+   - Text falling apart up close: Gibberish pseudo-letters, font styles changing mid-word, or text that remains unnaturally sharp when the rest of the depth-of-field is blurry.
+   - Physical / Anatomy flaws: Inconsistent reflections in eyes/mirrors, extra or merged fingers, impossible perspective angles.
+
+--------------------------------------------------------------------------------
+MODULE 5: TEXT-TO-IMAGE PAIRWISE EVALUATION RULES (260126-text-to-image-compare)
+--------------------------------------------------------------------------------
+1. Task Setup:
+   - Prompt at the top, Image A (left) and Image B (right).
+2. Answer the 4 Standard Sub-Questions:
+   - Question 1: Instruction Following -> Which image depicts the requested action, subjects, and descriptors accurately?
+   - Question 2: Visual Quality -> Composition, lighting, clarity, rendering quality.
+   - Question 3: Less AI-Generated -> More photorealistic, fewer telltale AI artifacts or plastic skin.
+   - Question 4: Overall Choice -> Strongly Prefer A / Slightly Prefer A / Tie / Slightly Prefer B / Strongly Prefer B.
+3. Justification Guidelines:
+   - Provide a concise 2-3 sentence technical justification citing concrete visual elements in Image A vs Image B.
+
+--------------------------------------------------------------------------------
+MODULE 6: OMNI TTS ELO & VOICE PAIRWISE COMPARISON (260209-omni-tts-elo / live-s2s-elo)
+--------------------------------------------------------------------------------
+1. Task Setup:
+   - Input script/audio, Response A audio player, Response B audio player.
+2. Evaluation Dimensions:
+   - Audio Quality: Evaluate ONLY the technical audio signal (hiss, buzz, background noise, clipping, robotic distortion).
+     * DO NOT penalize pacing or emotion under Audio Quality.
+   - Naturalness: Realistic human breath, conversational pauses, natural speech tempo, organic intonation.
+   - Persona Likeness: Matches requested speaker persona (gender, age, accent, mood).
+   - Pronunciation Faithfulness: Proper articulation, no skipped syllables or mangled sounds.
+   - Overall Preference: Force a choice between Response A and Response B to reward subtle but real quality superiority.
+   - Dominant Factor: Declare the decisive dimension (e.g. Naturalness, Audio Quality) and write a clear 2-sentence justification.
+================================================================================
