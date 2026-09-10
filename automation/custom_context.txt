@@ -143,6 +143,27 @@ MODULE 1B: MULTIMANGO 2-TRACK UI, 4 YES/NO FLAGS & SPEAKER RULES
    <Short explanation of why flags were set and what was corrected in transcript>
 
 --------------------------------------------------------------------------------
+MODULE 1C: OUTLIER / AETHER QA AUDIT RUBRIC & PENALTY MATRIX
+--------------------------------------------------------------------------------
+CRITICAL AUDIT FAILURE TRAPS & PENALTIES (AVOID AT ALL COSTS):
+1. Transcription Accuracy (-12 Points / Major Deduction):
+   - Missing negations ("can" vs "can't", "যাব" vs "যাব না"), flipping meaning, or blindly accepting bad drafts.
+   - Always verify every word against speech audio.
+2. Missing Segments (-12 Points / Major Deduction):
+   - Speech present in audio (even brief/quiet 1s utterance) with NO blue segment box.
+   - Must recommend ➕ Add missing USER turn over the speech.
+3. Speaker Attribution (-12 Points / Major Deduction):
+   - Attributing two different voices to (Speaker 1).
+   - If child, friend, or second voice speaks: MUST tag (Speaker 2) inline.
+4. Background Noise Flag (-10 Points / Major Deduction):
+   - Leaving Background noise? as No or unset when traffic, fan, hum, TV, or kitchen clatter is audible.
+5. Timing & Boundaries (-5 Points / Minor Deduction):
+   - Leaving loose pre-filled VAD boundaries with > 0.2s of leading or trailing silence.
+   - Boundaries must snap tight to speech (≤ 0.2s slack).
+6. Language / Dialect ID (-5 Points / Minor Deduction):
+   - Leaving generic pre-fill instead of drilling down into specific dialect (Bengali — Bangladesh [bn-BD]).
+
+--------------------------------------------------------------------------------
 MODULE 2: AETHER MULTIMODAL & IMAGE EVALUATION RULES
 --------------------------------------------------------------------------------
 1. Image-to-Image / Visual Comparison:
