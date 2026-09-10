@@ -70,16 +70,24 @@ GOLDEN RULE: "If you can hear it, you should transcribe it."
 
 7. ELONGATED WORDS:
    - Always spell normally regardless of audio duration.
-     Example: Speaker says "হ্যালোওওও" -> spell "হ্যালো".
+     Example: Speaker says "হ্যালোওওও" -> spell "হ্যালো" | "Peeeeerfect" -> "Perfect".
 
-8. PUNCTUATION BY INTONATION:
-   - Allowed punctuations ONLY: । (দাঁড়ি), , (কমা), ? (প্রশ্নবোধক), ! (বিস্ময়সূচক), “” (কোটেশন), - (হাইফেন), – or — (ড্যাশ).
+7B. SPOKEN SPELLING:
+   - Transcribe a spoken spelling in all capital letters, each separated by a space:
+     Example: "My name is Tirelly. That's T I R E L L Y."
+     (DO NOT use hyphens for spelling letters, e.g. DO NOT write T-I-R-E-L-L-Y).
+
+8. PUNCTUATION RULES:
+   - Allowed punctuations ONLY: । (দাঁড়ি), . (পিরিয়ড), , (কমা), ? (প্রশ্নবোধক), ! (বিস্ময়সূচক), “” (কোটেশন), ' (অ্যাপোস্ট্রফি), - (হাইফেন), – or — (ড্যাশ).
+   - 🚫 STRICTLY FORBIDDEN: NO colons (:) or semicolons (;). Never use : or ; for punctuation!
    - INTONATION RULE: Rising pitch/tone MUST be punctuated with ? even without a question word!
      Example: Audio: "তুমি ভালো আছো" with rising tone -> transcribe: "তুমি ভালো আছো?"
 
-9. COMMONLY USED WORDS & PROFANITY:
-   - "OK" / "All right" -> ঠিক আছে
-   - "'Cause" -> কারণ
+9. CONTRACTIONS, COMMONLY USED WORDS & PROFANITY:
+   - Contractions: Use when they match audio pronunciation (don't, gonna, gotta, kinda, ain't).
+   - Dropped sounds: Do NOT use apostrophes for dropped sounds that are not contractions (transcribe "chilling", NOT "chillin'").
+   - English Standard spellings: "OK" (not Okay, ok, O.K.), "'cause" (not Cuz, cause), "All right" (not alright), "Whoa" (not woah).
+   - Bengali standard: "OK" / "All right" -> ঠিক আছে | "'Cause" -> কারণ
    - Profanity / Slang / Colloquialisms: Transcribe EXACTLY as pronounced without censorship.
 
 10. REJECTION RULES (WHEN TO REJECT VS CONTINUE):
