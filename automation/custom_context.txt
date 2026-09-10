@@ -88,6 +88,53 @@ GOLDEN RULE: "If you can hear it, you should transcribe it."
    - Click "Different Language" ONLY if the ENTIRE clip is in another language (e.g. full clip is Hindi/English). 1 or 2 foreign words do NOT qualify.
 
 --------------------------------------------------------------------------------
+MODULE 1B: MULTIMANGO 2-TRACK UI, 4 YES/NO FLAGS & SPEAKER RULES
+--------------------------------------------------------------------------------
+1. TWO-TRACK SYSTEM:
+   - USER Track (Blue band, Top): What the user said. ONLY EDIT THIS TRACK.
+   - BOT Track (Green band, Bottom): What the assistant said. FROZEN / Read-only. Never edit.
+2. TIMING & SEGMENT BOUNDARIES (≤0.2s):
+   - Must hug speech closely at start and end.
+   - If a segment has NO human speech (only silence, fan hum, TV, music) -> Recommend: 🗑️ DELETE SEGMENT. Leaving it gets a "Spurious Segments" penalty.
+   - If speech is present with no blue box -> Recommend: ➕ ADD MISSING USER TURN.
+   - NEVER stretch a segment across silence; create a separate segment instead.
+3. THE 4 YES/NO FLAGS (FOR EVERY USER SEGMENT):
+   Evaluate and explicitly report each flag for the segment:
+   • Background noise:
+     - Yes: HVAC hum, traffic, wind, birds, kitchen clatter, fan, appliance beep.
+     - No: Clean recording.
+   • Other person:
+     - Yes: User talks to or responds to someone in room who isn't the model.
+     - No: User only addresses the model.
+   • Side-speech:
+     - Yes: Any speech in the room that isn't the user or model (TV, radio, podcast, background voices).
+     - No: Only user and bot speech.
+   • Cut off:
+     - Yes: User speech ends mid-word, clipped abruptly, or interrupted.
+     - No: Finished naturally.
+   * Independence cases:
+     - TV on in background, user talks to bot: Background noise=Yes, Side-speech=Yes, Other person=No.
+     - Friend talks and user replies: Other person=Yes, Side-speech=Yes, Background noise=No.
+4. SPEAKER TAGGING:
+   - Start transcript with: (Speaker 1)
+   - If multiple voices or overlapping speech in ONE segment, DO NOT split the segment!
+     Keep in one segment and tag inline: (Speaker 1) <Speech 1> (Speaker 2) <Speech 2>
+5. RESPONSE FORMAT FOR MULTIMANGO SEGMENTS:
+   Whenever analyzing a Multimango screen or audio segment, structure with:
+   <<<SLOT:RATING>>>
+   • Language: Bengali — Bangladesh (bn-BD)
+   • Timing: [OK / Adjust start: X.X / Adjust end: Y.Y / DELETE SEGMENT]
+   • 4 Flags:
+     - Background noise: [Yes / No]
+     - Other person: [Yes / No]
+     - Side-speech: [Yes / No]
+     - Cut off: [Yes / No]
+   <<<SLOT:CODE>>>
+   (Speaker 1) <Exact Corrected Transcript with [fillers], numbers, punctuation>
+   <<<SLOT:EXPLANATION>>>
+   <Short explanation of why flags were set and what was corrected in transcript>
+
+--------------------------------------------------------------------------------
 MODULE 2: AETHER MULTIMODAL & IMAGE EVALUATION RULES
 --------------------------------------------------------------------------------
 1. Image-to-Image / Visual Comparison:
